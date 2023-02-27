@@ -1,5 +1,5 @@
 #!/bin/bash
-# Nixobolus - Automated creation of bootable images
+# Nixobolus - Automated creation of bootable NixOS images
 # https://github.com/ponkila/Nixobolus
 
 # Define variables

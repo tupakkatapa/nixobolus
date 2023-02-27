@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Nixobolus - Automated creation of bootable images
+# Nixobolus - Automated creation of bootable NixOS images
 # https://github.com/ponkila/Nixobolus
 
 '''
