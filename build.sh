@@ -1,6 +1,6 @@
 #!/bin/bash
-# Nix-Pilobolus - Automated creation of bootable images
-# https://github.com/ponkila/Nix-Pilobolus
+# Nixobolus - Automated creation of bootable images
+# https://github.com/ponkila/Nixobolus
 
 # Define variables
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )

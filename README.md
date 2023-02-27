@@ -1,4 +1,4 @@
-# Nix-Pilobolus
+# Nixobolus
 Automated creation of bootable images
 
 ## About

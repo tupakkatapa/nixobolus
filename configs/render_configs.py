@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Nix-Pilobolus - Automated creation of bootable images
-# https://github.com/ponkila/Nix-Pilobolus
+# Nixobolus - Automated creation of bootable images
+# https://github.com/ponkila/Nixobolus
 
 '''
 This script loads a YAML or JSON file containing the hosts configuration and renders configuration files 
