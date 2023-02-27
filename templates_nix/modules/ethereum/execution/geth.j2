@@ -1,0 +1,119 @@
+# Nix-Pilobolus - Automated creation of bootable images
+# https://github.com/ponkila/Nix-Pilobolus
+
+{#- Paths #}
+{%- set eth = data.services.ethereum %}
+{%- set geth = eth.clients.geth %}
+
+{#- Defaults #}
+{%- set username    = data.user                     | default("validator") %}
+{%- set network     = geth.network or eth.network   | default("mainnet") %}
+{%- set infra_ip    = geth.infra_ip or eth.infra_ip | default("127.0.0.1") %}
+
+{#- Options #}
+{%- set enable              = geth.enable               | default(true) %}
+{%- set data_dir            = geth.data_dir             | default("/var/mnt/geth") %}
+{%- set port                = geth.port                 | default(30303) %}
+{%- set http_enable         = geth.http_enable          | default(true) %}
+{%- set http_addr           = geth.http_addr            | default(infra_ip) %}
+{%- set http_port           = geth.http_port            | default(8545) %}
+{%- set http_api            = geth.http_api             | default(none) %}
+{%- set http_corsdomain     = geth.http_corsdomain      | default(none) %}
+{%- set http_rpcprefix      = geth.http_rpcprefix       | default(none) %}
+{%- set http_vhosts         = geth.http_vhosts          | default(["localhost"]) %}
+{%- set ws_enable           = geth.ws_enable            | default(true) %}
+{%- set ws_addr             = geth.ws_addr              | default(infra_ip) %}
+{%- set ws_port             = geth.ws_port              | default(8546) %}
+{%- set ws_api              = geth.ws_api               | default(none) %}
+{%- set authrpc_addr        = geth.authrpc_addr         | default(infra_ip) %}
+{%- set authrpc_port        = geth.authrpc_port         | default(8551) %}
+{%- set authrpc_vhosts      = geth.authrpc_vhosts       | default(["localhost"]) %}
+{%- set authrpc_jwtsecret   = geth.authrpc_jwtsecret    | default(data_dir + "/jwt.hex") %}
+{%- set metrics_enable      = geth.metrics_enable       | default(true) %}
+{%- set metrics_addr        = geth.metrics_addr         | default(infra_ip) %}
+{%- set metrics_port        = geth.metrics_port         | default(6060) %}
+{%- set syncmode            = geth.syncmode             | default("snap") %}
+{%- set gcmode              = geth.gcmode               | default("full") %}
+{%- set maxpeers            = geth.maxpeers             | default(50) %}
+
+{ config, pkgs, ... }:
+
+{
+    # GETH
+    systemd.services.go-ethereum = {
+        enable = {{ enable | lower }};
+
+        description = "execution, {{ network }}, alpha";
+        requires = [ "network-online.target" ];
+        after = [ 
+            "network-online.target" 
+            {%- for client in eth.clients %}
+            {%- if client in ["lighthouse", "teku", "nimbus", "prysm"] %}
+            "{{ client }}.service" 
+            {%- endif %}
+            {%- endfor %}
+        ];
+
+        serviceConfig = {
+            Restart = "always";
+            RestartSec = "5s";
+            User = "{{ data.user }}";
+            Group = "{{ data.user }}";
+            Type = "simple";
+        };
+
+        script = ''${pkgs.go-ethereum}/bin/geth
+        --datadir {{ data_dir }} \
+        --{{ network }} \
+        --port {{ port }} \
+
+        {#- RPC AUTH #}
+        --authrpc.addr {{ authrpc_addr }} \
+        --authrpc.port {{ authrpc_port }} \
+        --authrpc.vhosts {{ authrpc_vhosts }} \
+        --authrpc.jwtsecret {{ authrpc_jwtsecret }} \
+
+        {#- HTTP #}
+        {%- if http_enable %} \
+        --http
+        --http.addr {{ http_addr }} \
+        --http.port {{ http_port }} \
+        --http.api {{ http_api }} \
+        --http.corsdomain {{ http_corsdomain }} \
+        --http.rpcprefix {{ http_rpcprefix }} \
+        --http.vhosts {{ http_vhosts }} \
+        {%- endif%}
+
+        {#- WS #}   
+        {%- if ws_enable %}
+        --ws \
+        --ws.addr {{ ws_addr }} \
+        --ws.port {{ ws_port }} \
+        --ws.api {{ ws_api }} \
+        {%- endif %}
+
+        {#- METRICS #}
+        {%- if metrics_enable %}
+        --metrics \
+        --metrics.addr {{ metrics_addr }} \
+        --metrics.port {{ metrics_port }} \
+        {%- endif%}
+
+        {#- OTHER #}
+        --syncmode {{ syncmode }} \
+        --gcmode {{ gcmode }} \
+        --maxpeers {{ maxpeers }}
+        '';
+
+        wantedBy = [ "multi-user.target" ];
+    };
+
+    # Firewall
+    networking.firewall = {
+    allowedTCPPorts = [ {{ port }} ];
+    allowedUDPPorts = [ {{ port }} {{ authrpc_port }}
+                        {%- if http_enable %} {{ http_port }} {%- endif %}
+                        {%- if ws_enable %} {{ ws_port }} {%- endif %}
+                        {%- if metrics_enable %} {{ metrics_port }} {%- endif %} ];
+    };
+}

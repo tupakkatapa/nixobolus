@@ -1,0 +1,155 @@
+# Nix-Pilobolus - Automated creation of bootable images
+# https://github.com/ponkila/Nix-Pilobolus
+
+{#- Defaults #}
+{%- set username = data.user      | default("validator") %}
+{%- set hostname = data.name      | default("") %}
+{%- set mounts   = data.mounts    | default(null) %}
+{%- set timezone = data.timezone  | default("Europe/Lisbon") %}
+{%- set font     = data.font      | default("monospace") %}
+{%- set keymap   = data.keymap    | default("us") %}
+{%- set version  = data.version   | default("22.11") %}
+
+{ system ? "x86_64-linux"
+, nixpkgs ? import <nixpkgs> { }
+, nixos ? import <nixpkgs/nixos> { }
+,
+}:
+
+let
+
+  nixosWNetBoot = import <nixpkgs/nixos> {
+
+    configuration = { config, pkgs, lib, ... }: with lib; {
+
+      imports = [
+        ../../common/netboot.nix
+        ../../common/ramdisk.nix
+        {%- for config in data.rendered_configs %}
+        {{ config }}
+        {%- endfor %}
+      ];
+
+      {%- if mounts %}
+      # Mounts
+      systemd.mounts = [
+      {%- for mount in mounts %}
+          {
+              enable = true;
+              description = "{{ mount.desc or mount.source + "to" + mount.target }}";
+              what = "{{ mount.source }}";
+              where = "{{ mount.target }}";
+              options = "{%- for opt in mount.options %}{{ opt }} {%- endfor %}";
+              type = "btrfs";
+
+              wantedBy = [ "multi-user.target" ];
+          }
+      {%- endfor %}
+      ];
+      {%- endif %}
+
+      # Boot
+      boot.kernelParams = [
+          "mitigations=off"
+          "l1tf=off"
+          "mds=off"
+          "no_stf_barrier"
+          "noibpb"
+          "noibrs"
+          "nopti"
+          "nospec_store_bypass_disable"
+          "nospectre_v1"
+          "nospectre_v2"
+          "tsx=on"
+          "tsx_async_abort=off"
+      ];
+      boot.kernelPackages = pkgs.linuxPackagesFor (pkgs.linux_latest);
+
+      # System packages
+      environment.systemPackages = with pkgs; [
+          btrfs-progs
+          kexec-tools
+          fuse-overlayfs
+          lm_sensors
+      ];
+
+      # Localization
+      networking.hostName = "{{ hostname }}";
+      time.timeZone = "{{ timezone }}";
+      console = {
+        font = "{{ font }}";
+        keyMap = "{{ keymap }}";
+      };
+      
+      # Linger
+      systemd.services.linger = {
+          enable = true;
+
+          requires = [ "local-fs.target" ];
+          after = [ "local-fs.target" ];
+
+          serviceConfig = {
+              Type = "oneshot";
+              ExecStart = ''
+              /run/current-system/sw/bin/loginctl enable-linger {{ username }}
+              '';
+          };
+          wantedBy = [ "multi-user.target" ];
+      };
+
+      # Podman
+      virtualisation.podman.enable = true;
+      # dnsname allows containers to use ${name}.dns.podman to reach each other
+      # on the same host instead of using hard-coded IPs.
+      # NOTE: --net must be the same on the containers, and not eq "host"
+      # TODO: extend this with flannel ontop of wireguard for cross-node comms
+      virtualisation.podman.defaultNetwork.settings.dns_enabled = true;
+
+      # Chrony
+      services.timesyncd.enable = false;
+      services.chrony = {
+          enable = true;
+          servers = [
+              "ntp1.hetzner.de"
+              "ntp2.hetzner.com"
+              "ntp3.hetzner.net"
+          ];
+      };
+
+      # Zram swap
+      #zramSwap.enable = true;
+      #zramSwap.algorithm = "zstd";
+      #zramSwap.memoryPercent = 100;
+
+      # Watchdog
+      systemd.watchdog.device = "/dev/watchdog";
+      systemd.watchdog.runtimeTime = "30s";
+      
+      # User
+      services.getty.autologinUser = "{{ username }}";
+      users.users.{{ username }} = {
+        isNormalUser = true;
+        extraGroups = [ "wheel" ];
+        ## Allow the graphical user to login without password
+        initialHashedPassword = "";
+      };
+      users.users.root.initialHashedPassword = "";
+
+      # Allow passwordless sudo from nixos user
+      security.sudo = {
+        enable = mkDefault true;
+        wheelNeedsPassword = mkForce false;
+      };
+      
+      system.stateVersion = "{{ version }}";
+    };
+  };
+
+  mkNetboot = nixpkgs.pkgs.symlinkJoin {
+    name = "netboot";
+    paths = with nixosWNetBoot.config.system.build; [ netbootRamdisk kernel netbootIpxeScript kexecTree ];
+    preferLocalBuild = true;
+  };
+
+in
+{ pix.ipxe = mkNetboot; }

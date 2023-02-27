@@ -1,0 +1,40 @@
+# Nix-Pilobolus - Automated creation of bootable images
+# https://github.com/ponkila/Nix-Pilobolus
+
+{#- Paths #}
+{%- set home = data.home_manager %}
+
+{#- Defaults #}
+{%- set username = data.user     | default("validator") %}
+{%- set version  = home.version  | default("22.11") %}
+{%- set enable   = home.enable   | default(true) %}
+
+{ config
+, pkgs
+, lib
+, ...
+}:
+{
+  imports = [ <home-manager/nixos> ];
+
+  home-manager.users.{{ username }} = { pkgs, ... }: {
+
+    home.packages = with pkgs; [
+        {%- for package in home.nix_packages %}
+        {{ package }}
+        {%- endfor %}
+    ];
+
+    programs = {
+        {%- for program in home.programs %}
+        {{ program }}.enable = true;
+        {%- endfor %}
+        home-manager.enable = {{ enable | lower }};
+    };
+
+    home.stateVersion = "{{ version }}";
+  };
+
+  home-manager.useUserPackages = true;
+  home-manager.useGlobalPkgs = true;
+}

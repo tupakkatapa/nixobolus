@@ -1,0 +1,120 @@
+# Nix-Pilobolus - Automated creation of bootable images
+# https://github.com/ponkila/Nix-Pilobolus
+
+# Store commonly used values to be referenced later.
+variables:
+    var_1: &addr 192.168.100.10
+
+# General settings that apply to all machines.
+general:
+    user: core
+    timezone: Europe/Helsinki
+    keymap: fi
+    home_manager:
+        version: 23.05
+        nix_packages:
+            - file
+            - tree
+            - bind
+        programs:
+            - tmux
+            - htop
+            - vim
+            - git
+            - fish
+    services:
+        ssh:
+            enable: true
+            permit_root_login: false
+            password_auth: false
+            public_keys:
+                - ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBNMKgTTpGSvPG4p8pRUWg1kqnP9zPKybTHQ0+Q/noY5+M6uOxkLy7FqUIEFUT9ZS/fflLlC/AlJsFBU212UzobA= ssh@secretive.sandbox.local
+                - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKEdpdbTOz0h9tVvkn13k1e8X7MnctH3zHRFmYWTbz9T kari@torque
+
+# Specific configuration for each individual machine. 
+hosts:
+    - name: muhos
+      mounts:
+        - source: /dev/disk/by-label/erigon
+          target: /var/mnt/erigon
+          desc: Erigon Storage
+          options:
+            - noatime
+        - source: /dev/disk/by-label/lighthouse
+          target: /var/mnt/lighthouse
+          desc: Lighthouse Storage
+          options:
+            - noatime
+      services:
+        wireguard:
+            interface: dinar
+            address: 192.168.100.10/32
+            private_key: ENC[AES256_GCM,data:EX4qduiTXKPBQQwQI/2jIPzbqzx2CtiYizq1h6oHhZXWSjJLh6Fqh7HeMrw=,iv:T6Mfs15SCLwzavtqBhyQR7ZbUtBuO0XO2j6Mm/OkTP8=,tag:x1+CcCMT5Aq9yHUVcz6ezw==,type:str]
+            peers:
+                - public_key: ENC[AES256_GCM,data:XQOEkDmZ6E/4YQwrDovQapvCn4Y10qM+Zs9dYZeRsuewrFCOYNDYTpK7Bug=,iv:nh2p510jPgnvIIU/CQsgd6RqDnu/+XCFb4PL3PyliiM=,tag:lDR0g6JeiNGJw05sOuaIXQ==,type:str]
+                  allowed_ips: 192.168.100.0/24
+                  endpoint: ENC[AES256_GCM,data:7D9veJ33ROOcHskxUrsLSXphcw==,iv:OvH2jbl4C9iUzJh0JV96TpdRQhL0tTbI9lXjLwRcm2I=,tag:R7iaaqLhu8J4h735lAi13Q==,type:str]
+                  persistent_keepalive: 25
+        ethereum:
+            network: mainnet
+            clients:
+                # Execution
+                erigon:
+                    enable: true
+                    data_dir: /var/mnt/erigon
+                    infra_ip: *addr
+                    authrpc_hosts:
+                        - '*'
+                    authrpc_addr: *addr
+                    authrpc_jwtsecret: /var/mnt/erigon/jwt.hex
+                    metrics_enable: true
+                    externalcl_enable: true
+                # Consensus
+                lighthouse:
+                    enable: true
+                    data_dir: /var/mnt/lighthouse
+                    infra_ip: *addr
+                    http_enable: true
+                    http_addr: *addr
+                    execution_port: 8551
+                    execution_endpoint: *addr
+                    jwt_secret: /var/mnt/lighthouse/jwt.hex
+                    mev_enable: true
+                    mev_port: 18550
+                    mev_endpoint: *addr
+                    slasher_enable: true
+                    slasher_history_length: 256
+                    slasher_max_db_size: 16
+                    prune_payloads_enable: false
+                    metrics_enable: true
+                    
+# Added by SOPS
+sops:
+    kms: []
+    gcp_kms: []
+    azure_kv: []
+    hc_vault: []
+    age: []
+    lastmodified: "2023-02-27T12:37:30Z"
+    mac: ENC[AES256_GCM,data:mwvgLxO+ac5TYbnri/a8doH8Gk2GqIhGDuF3nMkqPvF5AnUT9mpVrrd1vU1V/7E6/AH8E7XTbzbKno/Lud647sY3e4dDtKJ0lh+DsHxOs717qxYV9FcDaSXAeTdfdW9TQQNiH4sIVNjKzTPL7YFnlVOPDT1YjY7NA+iYP2uJ14s=,iv:d/aqxKFIQfmw1h991Sc7ItRV0FvJI6waoFIptIWOJ9M=,tag:zkGHbmJCJbhDHzOkOjIqTA==,type:str]
+    pgp:
+        - created_at: "2023-02-27T12:37:29Z"
+          enc: |
+            -----BEGIN PGP MESSAGE-----
+
+            hQGMA0asU2osiQzOAQv/YHQ9+W7BDvYOn1Wf74QRurQZE/LERx7kQ4LriDskAFaE
+            luuUE8JCcTN7StpLNrcSIQdnj5r+aLGMBi62NLp1TrVhn0JkV97LT35U2E3R6yIf
+            0Kw3k3SQIvIG+vY8iZo+Fu1e6eJmFHaFXpFCMNnwTWGqJ18W3ydoRwQPOVl56qS1
+            Ala3VyBFiBeIi4l7GnO2NxSb0OML6hjXJJv9uMT3ZuAygrgK2Hs7TEvCXJc9IFiv
+            d1AngbfZn0wmnHK/FYFhDRssNmkDbEfkTbcmqFYPnmFn0aH/hTTH9/tuFAI6hrie
+            mwiRQIBSeOtaz6sA6iBDliTzbCCVTGEr36Vk+V5Cgqoabf+iFk5X7kXSM3fbCfrP
+            O2HkmcNhm9GhxpeI4W+CSx+cLu3MKT0/35Ts1nasx/t8Mpw8gfZBsa1IC6zmWQEF
+            oflvMP3p16rTlVnyYEDARCwbyhL8XND4WYpZvNKoCvsQ9iZfNDY16kBrxap1W6aW
+            iL6noRMlGmUqhEeWG5To0l4BdJ/MmLmhoY9mZdbKFl+MHxAW5CRdLzilsobMBNa6
+            LLc2RrROO8tcfOhutRF5F/bTSRDKSCzYyhfqYLKXC01qx4RNsjpYm5js9DZJxqNg
+            mEp/c+jBPYpLF9S3QRtL
+            =/0Ie
+            -----END PGP MESSAGE-----
+          fp: 89514318CC412AB3DA074269BF90825A41685E00
+    encrypted_regex: ^(public_key|private_key|endpoint)$
+    version: 3.7.3

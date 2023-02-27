@@ -1,0 +1,217 @@
+# Nix-Pilobolus - Automated creation of bootable images
+# https://github.com/ponkila/Nix-Pilobolus
+
+### Info
+#
+#   This YAML file defines the configuration for each machine. Each machine is represented as a list item with key-value
+#   pairs for various settings.
+#
+#   Settings declared in the "general" section apply to all hosts and will be overwritten by the values in host section if they are the same.
+#   Any settings not explicitly defined in the YAML file section will default to the values specified in the corresponding Jinja2 templates.
+
+### Adding custom templates
+#
+#   To add a custom template, create a new file in the "templates_nix" directory or any subdirectory under it.
+#   The rendering script dynamically imports any templates located under the "templates_nix" directory to default.nix file.
+# 
+#   Note that the filename of the new template needs to match with a key name in this YAML file.
+#   In a case where the template file is named "default.j2", the rendering script will check if the parent directory
+#   name matches with a key in this YAML file. If there's a match, it will import and render the template.
+
+# Store commonly used values to be referenced later.
+variables:
+    var_1: &example_1 192.168.1.111
+    var_2: &example_2 192.168.1.115
+
+# General settings that apply to all machines.
+general:
+    user: admin
+    timezone: Europe/Lisbon
+    font: monospace
+    keymap: us
+    version: 22.11
+
+    home_manager:
+        enable: true
+        version: 23.05
+        nix_packages: [ file, tree, bind ]
+        programs: [ tmux, htop, vim, git ]
+
+    services:
+        ssh:
+            enable: true
+            permit_root_login: false
+            password_auth: false
+            public_keys:
+                - <public_key_1>
+                - <public_key_2>
+
+# Specific configuration for each individual machine. 
+hosts:
+    - name: hostname_1
+      # Storing addr as variable to be referenced later
+      addr: &addr_1 192.168.1.111
+      services:
+
+        mounts:
+            - source: /dev/disk/by-label/erigon
+              target: /var/mnt/erigon
+              desc: Erigon Storage
+              options: [ noatime ]
+            - source: /dev/disk/by-label/lighthouse
+              target: /var/mnt/lighthouse
+              desc: Lighthouse Storage
+              options: [ noatime ]
+
+        wireguard:
+            interface: wg0
+            address: 192.168.1.0/32
+            private_key: <private_key>
+            peers:
+                - public_key: <public_key>
+                  allowed_ips: 192.168.1.0/24
+                  endpoint: <end.point.com:51820>
+                  persistent_keepalive: 25
+
+        ethereum:
+
+            # In this section, all of the key-value pairs have values that are 
+            # the same as the defaults set in the corresponding Jinja2 template.
+
+            # These values are included here only for the purpose of example 
+            # and to help keep track of which options have been coded in.
+
+            network: goerli
+            clients:
+                # Execution
+                erigon:
+                    enable: true
+                    data_dir: /var/mnt/erigon
+                    port: 30303
+                    # rpc auth
+                    authrpc_addr: *addr_1
+                    authrpc_port: 8551
+                    authrpc_jwtsecret: /var/mnt/erigon/jwt.hex
+                    authrpc_vhosts: [ "localhost" ]
+                    # external cl
+                    externalcl_enable: true
+                    # http
+                    http_enable: false
+                    http_addr: *addr_1
+                    http_port: 8545
+                    http_api: [ "eth", "erigon", "engine" ]
+                    http_compression_enable: true
+                    http_corsdomain: null
+                    http_rpcprefix: null
+                    http_trace_enable: true
+                    http_vhosts: [ "localhost" ]
+                    # metrics
+                    metrics_enable: false
+                    metrics_addr: *addr_1
+                    metrics_port: 6060
+                    # private api
+                    private_api_addr: *addr_1
+                    private_api_port: 9090
+                    private_api_ratelimit: 31872
+                    # other 
+                    snapshots_enable: false
+                    torrent_port: 42069
+                    # ws
+                    ws_addr: *addr_1
+                    ws_api: null
+                    ws_enable: true
+                    ws_port: 8551
+
+                # Consensus
+                lighthouse:
+                    enable: true
+                    data_dir: /var/mnt/lighthouse
+                    prune_payloads_enable: true
+                    # non stake
+                    checkpoint_sync_url: null
+                    deposit_contract_sync_disable: false
+                    # exec
+                    exec_jwt_secret: /var/mnt/lighthouse/jwt.hex
+                    exec_endpoint: *addr_1
+                    exec_port: 8551
+                    # http
+                    http_enable: true
+                    http_addr: *addr_1
+                    http_port: 5052
+                    # metrics
+                    metrics_enable: true
+                    metrics_addr: *addr_1
+                    metrics_port: 5054
+                    # mev
+                    mev_enable: false
+                    mev_endpoint: *addr_1
+                    mev_port: 18550
+                    # slasher
+                    slasher_enable: false
+                    slasher_history_length: 4096
+                    slasher_max_db_size: 256
+
+    - name: hostname_2
+      addr: &addr_2 192.168.1.115
+
+      mounts:
+        - source: /dev/disk/by-label/geth
+          target: /var/mnt/geth
+          desc: Erigon Storage
+          options: [ noatime ]
+
+      services:
+
+        # You can use wireguard OR tailscale
+
+        wireguard:
+            interface: wg0
+            address: 192.168.1.1/32
+            private_key: <private_key>
+            peers:
+                - public_key: <public_key>
+                  allowed_ips: 192.168.1.0/24
+                  endpoint: <end.point.com:51820>
+                  persistent_keepalive: 25
+
+        tailscale:
+            enable: true
+            auth_key: tskey-1234567890abcdef
+            subnet:  100.65.0.0/16
+
+        ethereum:
+            clients:
+                # Execution
+                geth:
+                    enable: true
+                    network: mainnet
+                    data_dir: /var/mnt/geth
+                    port: 30303
+                    gcmode: full
+                    maxpeers: 50
+                    syncmode: snap
+                    # rpc auth
+                    authrpc_addr: *addr_2
+                    authrpc_port: 8551
+                    authrpc_jwtsecret: /var/mnt/geth/jwt.hex
+                    authrpc_vhosts: [ "localhost" ]
+                    # http
+                    http_enable: true
+                    http_addr: *addr_2
+                    http_port: 8545
+                    http_api: null
+                    http_corsdomain: null
+                    http_rpcprefix: null
+                    http_vhosts: [ "localhost" ]
+                    # metrics
+                    metrics_enable: true
+                    metrics_addr: *addr_2
+                    metrics_port: 6060
+                    # ws
+                    ws_enable: true
+                    ws_addr: *addr_2
+                    ws_port: 8546
+                    ws_api: null
+
+    # Builds even with no key-value pairs
+    - name: hostname_3

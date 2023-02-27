@@ -1,0 +1,124 @@
+{
+	"general": {
+		"user": "core",
+		"timezone": "Europe/Helsinki",
+		"keymap": "fi",
+		"home_manager": {
+			"version": "23.05",
+			"nix_packages": [
+				"file",
+				"tree",
+				"bind"
+			],
+			"programs": [
+				"tmux",
+				"htop",
+				"vim",
+				"git",
+				"fish"
+			]
+		},
+		"services": {
+			"ssh": {
+				"enable": true,
+				"permit_root_login": false,
+				"password_auth": false,
+				"public_keys": [
+					"ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBNMKgTTpGSvPG4p8pRUWg1kqnP9zPKybTHQ0+Q/noY5+M6uOxkLy7FqUIEFUT9ZS/fflLlC/AlJsFBU212UzobA= ssh@secretive.sandbox.local",
+					"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKEdpdbTOz0h9tVvkn13k1e8X7MnctH3zHRFmYWTbz9T kari@torque"
+				]
+			}
+		}
+	},
+	"hosts": [
+		{
+			"name": "muhos",
+			"mounts": [
+				{
+					"source": "/dev/disk/by-label/erigon",
+					"target": "/var/mnt/erigon",
+					"desc": "Erigon Storage",
+					"options": [
+						"noatime"
+					]
+				},
+				{
+					"source": "/dev/disk/by-label/lighthouse",
+					"target": "/var/mnt/lighthouse",
+					"desc": "Lighthouse Storage",
+					"options": [
+						"noatime"
+					]
+				}
+			],
+			"services": {
+				"wireguard": {
+					"interface": "dinar",
+					"address": "192.168.100.10/32",
+					"private_key": "ENC[AES256_GCM,data:Gw8tSvffOwZbT7D2C1GKBWLR28p21llMb8df2qCWKsa42Aq9fgiutmhLvq4=,iv:zGDe8EpUjRHf1DLHt/eeFTOLc9K8x2+Rd4zuIt7T47Q=,tag:02rb7G3RrJwicab8e8NrvA==,type:str]",
+					"peers": [
+						{
+							"public_key": "ENC[AES256_GCM,data:JtFsS10NDMmNCii5vil4obPpeBXacs21gTSQvH+e+PcFB6mySpDDO1GbQM0=,iv:ATW2FWqayXvsAGbTEV2PUwWXVlc8hjcOGh9ELHtr7Dc=,tag:wJCS62MRg111oF+X+wdaKw==,type:str]",
+							"allowed_ips": "192.168.100.0/24",
+							"endpoint": "ENC[AES256_GCM,data:R8OlL732kJhTm4ZCWPKQ2Znhlw==,iv:3L/cRndcjJT4yt+Vk8zV1j3odSQGu+9fPenahGvL3Kk=,tag:JDvJXMTpZsZq2Fwwu2fW9g==,type:str]",
+							"persistent_keepalive": 25
+						}
+					]
+				},
+				"ethereum": {
+					"network": "mainnet",
+					"clients": {
+						"erigon": {
+							"enable": true,
+							"data_dir": "/var/mnt/erigon",
+							"infra_ip": "192.168.100.10",
+							"authrpc_hosts": [
+								"*"
+							],
+							"authrpc_addr": "192.168.100.10",
+							"authrpc_jwtsecret": "/var/mnt/erigon/jwt.hex",
+							"metrics_enable": true,
+							"externalcl_enable": true
+						},
+						"lighthouse": {
+							"enable": true,
+							"data_dir": "/var/mnt/lighthouse",
+							"infra_ip": "192.168.100.10",
+							"http_enable": true,
+							"http_addr": "192.168.100.10",
+							"execution_port": 8551,
+							"execution_endpoint": "192.168.100.10",
+							"jwt_secret": "/var/mnt/lighthouse/jwt.hex",
+							"mev_enable": true,
+							"mev_port": 18550,
+							"mev_endpoint": "192.168.100.10",
+							"slasher_enable": true,
+							"slasher_history_length": 256,
+							"slasher_max_db_size": 16,
+							"prune_payloads_enable": false,
+							"metrics_enable": true
+						}
+					}
+				}
+			}
+		}
+	],
+	"sops": {
+		"kms": null,
+		"gcp_kms": null,
+		"azure_kv": null,
+		"hc_vault": null,
+		"age": null,
+		"lastmodified": "2023-02-27T12:54:13Z",
+		"mac": "ENC[AES256_GCM,data:guL58d/nNsYN2i0JXmbVSipTHaqYpiqRldsAy9utNvw9Idl0m9B+qT2cAtiGjgW0O+2EQqCVDNZFp5cQpNaL7UHqLZEgTgt95BirSQt45itj/MIcTQMoN4TCCi/A9HbsD0T6pRBzfQVK1tpJFHJ5UA/2TdP80jyT2D3UBspW0BQ=,iv:tVDuSj4TLj8PA30G4FLpRTWJI5+jtNuuBvtitxnKRQI=,tag:Og0FGULsGOiW15AISjalOA==,type:str]",
+		"pgp": [
+			{
+				"created_at": "2023-02-27T12:54:13Z",
+				"enc": "-----BEGIN PGP MESSAGE-----\n\nhQGMA0asU2osiQzOAQv+L7hH1bydJ+W+jiLSkxY5JzRQtNxWX7A7OeVjlEQpf18/\nnfCXgNCEkCFl/vN97VwzUx72a1tmwGf/ZhxDK91f+gFghy2PZjFwmtPoMej2XWAl\nJXi5E5uwh4MbKFb5lbqfHj/yyO4dsA+p8xu8kTU/Exsaoq3ySotdXvBL45Ji4xRL\nQ5xYJpXiIVhB7halFg6lq5bEo76UNEQJMjpXU0q/Js3USJvv89orExAnJBWxU67r\nZOl+Y+2JKJ887pvaO/xfVZoO2/IVXDj3ND5Bs93KaK9BnXn1Rc7XD/KasmqfhhmJ\nUhHx+iqqkjvTZSq3sRCwFvZ8T8kO2LXPQMdw7mk4BKtva9sbVAsmoKJRMjYFwrUR\nS2bnsuQgWac99aY+ouTAW9LDzQzxpJV6cHNsR6V+GJJUgqcw49lfixhzunEF1zId\nU4tp90dHgu6UkB6sC2f9QKCxEsl9TRmiVFZO0suevpgogaZOb1LfqLFq7B7UpSod\nMJBr49smi+VkvW7TobPG0lwBCU024dXsuGJ747D3tgMGPdvGQRM31tKNnn6aJogp\nAn/FdQ2cSQKW0X7ZxBrO+oAQlE44PxLEU/yoRr/OqtbbwqpuyCw8kjrFn9KiJ3ms\nS+JmgGXL3p5GDZgPyg==\n=iHXq\n-----END PGP MESSAGE-----\n",
+				"fp": "89514318CC412AB3DA074269BF90825A41685E00"
+			}
+		],
+		"encrypted_regex": "^(public_key|private_key|endpoint)$",
+		"version": "3.7.3"
+	}
+}

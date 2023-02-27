@@ -1,0 +1,45 @@
+# Nix-Pilobolus - Automated creation of bootable images
+# https://github.com/ponkila/Nix-Pilobolus
+
+{#- Paths #}
+{%- set wg  = data.services.wireguard %}
+{%- set eth = data.services.ethereum %}
+
+{#- Defaults #}
+{%- set interface = wg.interface | default("wg0") %}
+
+{ config, pkgs, ... }:
+
+{
+    # Wireguard
+    networking.wg-quick.interfaces = {
+        {{ interface }} = {
+            address = [ "{{ wg.address }}" ];
+            privateKey = "{{ wg.private_key }}";
+
+            peers = [
+            {%- for peer in wg.peers %}
+                {
+                    publicKey = "{{ peer.public_key }}";
+                    allowedIPs = [ "{{ peer.allowed_ips }}" ];
+                    endpoint = "{{ peer.endpoint }}";
+                    {%- if peer.persistent_keepalive %}
+                    persistentKeepalive = {{ peer.persistent_keepalive or '25' }};
+                    {%- endif %}
+                }
+            {%- endfor %}
+            ];
+        };
+    };
+
+    # Firewall
+    networking.firewall.interfaces."{{ interface }}".allowedTCPPorts = [
+        {%- if eth %}
+        {%- for client in eth.clients %}
+        {%- if client == "lighthouse" %}
+        5052 # lighthouse
+        {%- endif %}
+        {%- endfor %}
+        {%- endif %}
+    ];
+} 

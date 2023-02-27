@@ -1,0 +1,27 @@
+# Nix-Pilobolus - Automated creation of bootable images
+# https://github.com/ponkila/Nix-Pilobolus
+
+{#- Paths #}
+{%- set ts = data.services.tailscale %}
+
+{#- Defaults #}
+{%- set enable      = ts.enable     | default("false") %}
+{%- set auth_key    = ts.auth_key   | default("tskey-1234567890abcdef") %}
+{%- set subnet      = ts.subnet     | default("100.65.0.0/16") %}
+
+{ config, pkgs, ... }:
+
+{
+    # Tailscale
+    services.tailscale = {
+        enable = true;
+        services.tailscale.authkey = {{ auth_key }};
+        services.tailscale.subnet = {{ subnet }};
+    };
+
+    # Firewall
+    networking.firewall = {
+        checkReversePath = "loose";
+        allowedUDPPorts = [ 41641 ]; # Facilitate firewall punching
+    };
+}
