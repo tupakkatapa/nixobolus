@@ -8,7 +8,7 @@ This repository is a work in progress and is subject to change at any time. Plea
 To use this tool, you'll need to install the following dependencies:
 
 - Nix:        https://zero-to-nix.com/start/install
-- Jinja2:     `pip install jinja2`
+- Jinja2:     `nix-shell -p j2cli jq`
 
 ## Usage 
 To configure your bootable images, simply edit the example.yml file or create your own to define the settings for your deployment. Each machine is represented as a list item with key-value pairs for various settings.
