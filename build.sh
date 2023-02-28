@@ -4,17 +4,23 @@
 
 # Define variables
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-output="$SCRIPT_DIR/images_netboot"
+output="$SCRIPT_DIR/result"
 input_file=""
 prompt=true
 
 # Check dependencies
+if ! command -v nix-env >/dev/null 2>&1; then
+    echo "[-] Nix package manager is not installed. Exiting.."
+    exit 1
+fi
+
 if python -c "import jinja2" >/dev/null 2>&1 || python3 -c "import jinja2" >/dev/null 2>&1; then
     echo "[-] Jinja2 is not installed. Exiting.."
     exit 1
 fi
-if ! command -v nix-env >/dev/null 2>&1; then
-    echo "[-] Nix package manager is not installed. Exiting.."
+
+if ! command -v jq >/dev/null 2>&1; then
+    echo "[-] jq is not installed. Exiting.."
     exit 1
 fi
 
