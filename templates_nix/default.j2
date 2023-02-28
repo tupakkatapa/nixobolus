@@ -4,6 +4,7 @@
 {#- Defaults #}
 {%- set username = data.user      | default("validator") %}
 {%- set hostname = data.name      | default("") %}
+{%- set shell    = data.shell     | default(null) %}
 {%- set mounts   = data.mounts    | default(null) %}
 {%- set timezone = data.timezone  | default("Europe/Lisbon") %}
 {%- set font     = data.font      | default("monospace") %}
@@ -130,6 +131,9 @@ let
       users.users.{{ username }} = {
         isNormalUser = true;
         extraGroups = [ "wheel" ];
+        {%- if shell %}
+        shell = pkgs.{{ shell }};
+        {%- endif %}
         ## Allow the graphical user to login without password
         initialHashedPassword = "";
       };
