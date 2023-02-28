@@ -43,8 +43,8 @@ general:
             permit_root_login: false
             password_auth: false
             public_keys:
-                - <public_key_1>
-                - <public_key_2>
+                - "<public_key_1>"
+                - "<public_key_2>"
 
 # Specific configuration for each individual machine. 
 hosts:
