@@ -120,7 +120,7 @@ if [[ $(grep -E '^(sops:)$' "$input_file") ]]; then
 fi
 
 # Render the Nix config files using the render.py script
-if ! $python "$SCRIPT_DIR/configs/render_configs.py" "$input_file"; then
+if ! $python_cmd "$SCRIPT_DIR/configs/render_configs.py" "$input_file"; then
     echo "[-] Exiting..."
     exit 1
 fi
