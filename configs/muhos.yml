@@ -52,7 +52,7 @@ hosts:
             private_key: ENC[AES256_GCM,data:0fN41KSlOq5GEJe76UrNPyV6rQXMPqjj7VcCuVYWCoh3hi/S/DtKixpIPXA=,iv:QGvW4cYLnyf2WAb3aqTollnxta2aFkgP3KS/M84oqMY=,tag:/jG7lOVMGSQ8xU4sNs7iSA==,type:str]
             peers:
                 - public_key: ENC[AES256_GCM,data:yrzVCqh1Gy3/ZJZzIlK7vSieAc85+vWtyEmw1ukDnOeEPBI/0Q2PlkHN3lo=,iv:4QGRMFwqFz3Rk5myGDqLCUzRafyJFebphx0jSMb5j/M=,tag:mTQouou9tsi9hDwD11OE7Q==,type:str]
-                  allowed_ips: 192.168.100.0/24
+                  allowed_ips: [ "192.168.100.0/24" ]
                   endpoint: ENC[AES256_GCM,data:cd4ZCVlLR/sxtFdiBbyaaY1bTg==,iv:/gV5964inWaFhLiXjb7tRFCaOeiDpzsaaSE9S9NDAdw=,tag:spOy8+3PQpSEfok2wJlG7g==,type:str]
                   persistent_keepalive: 25
         ethereum:

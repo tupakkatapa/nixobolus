@@ -29,11 +29,11 @@ general:
     timezone: "Europe/Lisbon"
     font: "monospace"
     keymap: "us"
-    version: 22.11
+    version: "22.11"
 
     home_manager:
         enable: true
-        version: 23.05
+        version: "23.05"
         nix_packages: [ file, tree, bind ]
         programs: [ tmux, htop, vim, git ]
 
@@ -69,7 +69,7 @@ hosts:
             private_key: "<private_key>"
             peers:
                 - public_key: "<public_key>"
-                  allowed_ips: "192.168.1.0/24"
+                  allowed_ips: [ "192.168.1.0/24" ]
                   endpoint: "<end.point.com:51820>"
                   persistent_keepalive: 25
 
@@ -170,7 +170,7 @@ hosts:
             private_key: "<private_key>"
             peers:
                 - public_key: "<public_key>"
-                  allowed_ips: "192.168.1.0/24"
+                  allowed_ips: [ "192.168.1.0/24" ]
                   endpoint: "<end.point.com:51820>"
                   persistent_keepalive: 25
 

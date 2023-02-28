@@ -21,7 +21,7 @@
             {%- for peer in wg.peers %}
                 {
                     publicKey = "{{ peer.public_key }}";
-                    allowedIPs = [ "{{ peer.allowed_ips }}" ];
+                    allowedIPs = [ {%- for ip in peer.allowed_ips %} "{{ ip }}" {%- endfor %} ];
                     endpoint = "{{ peer.endpoint }}";
                     {%- if peer.persistent_keepalive %}
                     persistentKeepalive = {{ peer.persistent_keepalive or '25' }};
