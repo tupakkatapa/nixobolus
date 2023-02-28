@@ -6,6 +6,7 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 output="$SCRIPT_DIR/result"
 input_file=""
+sops=false
 prompt=true
 
 # Check if nix-build is available
@@ -57,8 +58,14 @@ case "$filetype" in
         fi
         # Extract the names of the hosts from the YAML file
         hosts=$(yq -r '.hosts[].name' $input_file)
+        # Check if the YAML file is encrypted with SOPS
+        if yq 'has("sops")' "$input_file" >/dev/null 2>&1; then
+            sops=true
+        fi
+
         ;;
     json)
+
         # Check if jq is installed
         if ! command -v jq >/dev/null 2>&1; then
             echo "[-] jq is not installed. Exiting.."
@@ -66,6 +73,10 @@ case "$filetype" in
         fi
         # Extract the host names from the JSON file
         hosts=$(jq -r '.hosts[].name' "$input_file")
+        # Check if the JSON file is encrypted with SOPS
+        if jq 'has("sops")' "$input_file" >/dev/null 2>&1; then
+            sops=true
+        fi
         ;;
     *)
         echo "[-] Invalid file format. Only YAML and JSON files are supported."
@@ -101,17 +112,17 @@ if [ -d "$dir" ] && [ "$(ls -A $dir)" ]; then
 fi
 
 # Check if file is encrypted with sops
-if [[ $(grep -E '^(sops:)$' "$input_file") ]]; then
+if $sops; then
     # Check if sops is installed
     if ! command -v sops &> /dev/null; then
         echo "[-] Decryption failed, SOPS not installed. Exiting..."
         exit 1
     fi
 
-    # Decrypt file and write output to configs/config.decrypted.yml
+    # Decrypt file and write output to configs/$filename.decrypted.$filetype
     if ! sops --decrypt "$input_file" > "configs/$filename.decrypted.$filetype"; then
         echo "[-] Decryption failed, exiting..."
-        rm "$input_file"
+        rm "configs/$filename.decrypted.$filetype"
         exit 1
     else
         echo "[+] Decryption successful."
