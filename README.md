@@ -7,17 +7,18 @@ This repository is a work in progress and is subject to change at any time. Plea
 ## Dependencies
 To use this tool, you'll need to install the following dependencies:
 
-- Nix:        https://zero-to-nix.com/start/install
-- Jinja2:     `pip install jinja2`
+- Nix package manager https://zero-to-nix.com/start/install
+
+- Jinja2 and jq
 
 ## Usage 
 To configure your bootable images, simply edit the example.yml file or create your own to define the settings for your deployment. Each machine is represented as a list item with key-value pairs for various settings.
 
 Settings declared in the "general" section apply to all hosts and will be overwritten by the values in host section if they are the same. Any settings not explicitly defined in the configuration file section will default to the values specified in the corresponding Jinja2 templates, which can be found under the templates_nix folder.
 
-To generate your images, run the `build.sh` script with the path to your configuration file as the argument. This will render the Nix configuration files from the Jinja2 templates and build the initrd and kernel for each configured machine using the `nix-build` command. The resulting images will be generated in the images_netboot folder.
+To generate your images, run the `build.sh` script with the path to your configuration file as the argument. This will render the Nix configuration files from the Jinja2 templates and build the initrd and kernel for each configured machine using the `nix-build` command. The resulting images will be generated in the path provided with `-o/--output` flag, defaulting to the result folder.
 
-For example: `./build.sh ./configs/example.yml`
+For example: `./build.sh ./configs/example.yml --output /tmp`
 
 Once you have generated your images, you can use the [kexec](https://wiki.archlinux.org/title/Kexec) script to boot the desired image.
 
