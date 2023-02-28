@@ -19,21 +19,19 @@ if [ -d "$dir" ] && [ "$(ls -A $dir)" ]; then
     if [ "$choice" == "y" ]; then
         rm -rf $dir/*
     fi
-    
 fi
 
 # Check if previous build files exists
-dir="$SCRIPT_DIR/images_netboot"
+dir="$SCRIPT_DIR/result"
 if [ -d "$dir" ] && [ "$(ls -A $dir)" ]; then
     if [ "$prompt" == true ]; then
-        read -p "[?] Delete previous netboot images? (y/n)" choice
+        read -p "[?] Delete previous images? (y/n)" choice
     else
         choice="y"
     fi
     if [ "$choice" == "y" ]; then
         rm -rf $dir/*
     fi
-    
 fi
 
 # Remove unneeded items from the Nix store
