@@ -1,4 +1,4 @@
 configs/nix_configs/hosts/*
-images_netboot/*
+result/*
 *.old
 *decrypted*
