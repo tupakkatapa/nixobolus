@@ -8,19 +8,25 @@ output="$SCRIPT_DIR/result"
 input_file=""
 prompt=true
 
-# Check dependencies
-if ! command -v nix-env >/dev/null 2>&1; then
+# Check if nix-build is available
+if ! command -v nix-build >/dev/null 2>&1; then
     echo "[-] Nix package manager is not installed. Exiting.."
     exit 1
 fi
 
-if python -c "import jinja2" >/dev/null 2>&1 || python3 -c "import jinja2" >/dev/null 2>&1; then
-    echo "[-] Jinja2 is not installed. Exiting.."
+# Check if python is installed
+if command -v python3 >/dev/null 2>&1 ; then
+    python_cmd="python3"
+elif command -v python >/dev/null 2>&1 ; then
+    python_cmd="python"
+else
+    echo "[-] Python is not installed. Exiting.."
     exit 1
 fi
 
-if ! command -v jq >/dev/null 2>&1; then
-    echo "[-] jq is not installed. Exiting.."
+# Check that python can import jinja2
+if ! $python_cmd -c "import jinja2" >/dev/null 2>&1; then
+    echo "[-] Jinja2 is not installed. Exiting.."
     exit 1
 fi
 
@@ -53,6 +59,11 @@ case "$filetype" in
         hosts=$(yq -r '.hosts[].name' $input_file)
         ;;
     json)
+        # Check if jq is installed
+        if ! command -v jq >/dev/null 2>&1; then
+            echo "[-] jq is not installed. Exiting.."
+            exit 1
+        fi
         # Extract the host names from the JSON file
         hosts=$(jq -r '.hosts[].name' "$input_file")
         ;;
@@ -109,7 +120,7 @@ if [[ $(grep -E '^(sops:)$' "$input_file") ]]; then
 fi
 
 # Render the Nix config files using the render.py script
-if ! python3 "$SCRIPT_DIR/configs/render_configs.py" "$input_file"; then
+if ! $python "$SCRIPT_DIR/configs/render_configs.py" "$input_file"; then
     echo "[-] Exiting..."
     exit 1
 fi
