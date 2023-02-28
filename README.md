@@ -21,7 +21,7 @@ To generate your images, run the `build.sh` script with the path to your configu
 
 For example: `./build.sh ./configs/example.yml --output /tmp`
 
-Once you have generated your images, you can use the [kexec](https://wiki.archlinux.org/title/Kexec) script to boot the desired image.
+Once you have generated your images, you can use [kexec](https://wiki.archlinux.org/title/Kexec) or [iPXE](https://ipxe.org/start) to boot the desired image.
 
 ## TODO
 - [x] Home-manager
