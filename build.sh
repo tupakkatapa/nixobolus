@@ -9,7 +9,7 @@ input_file=""
 prompt=true
 
 # Check dependencies
-if ! python -c "import jinja2" >/dev/null 2>&1; then
+if python -c "import jinja2" >/dev/null 2>&1 || python3 -c "import jinja2" >/dev/null 2>&1; then
     echo "[-] Jinja2 is not installed. Exiting.."
     exit 1
 fi
