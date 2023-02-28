@@ -7,9 +7,10 @@ This repository is a work in progress and is subject to change at any time. Plea
 ## Dependencies
 To use this tool, you'll need to install the following dependencies:
 
-- Nix package manager https://zero-to-nix.com/start/install
-
-- Jinja2 and jq
+- [Nix](https://nixos.org/download.html) package manager.
+- [Git](https://git-scm.com/downloads) for cloning this repository.
+- [Jinja2](https://jinja.palletsprojects.com/en/3.0.x/), [jq](https://stedolan.github.io/jq/), and [yq](https://kislyuk.github.io/yq/) for manipulating configuration files and generating templates.
+- [SOPS](https://github.com/mozilla/sops) (optional) for encrypting and decrypting configuration files.
 
 ## Usage 
 To configure your bootable images, simply edit the example.yml file or create your own to define the settings for your deployment. Each machine is represented as a list item with key-value pairs for various settings.
