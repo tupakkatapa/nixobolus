@@ -44,8 +44,13 @@ done
 # Check input file and extract hosts
 case "$filetype" in
     yaml|yml)
+        # Check if yq is installed
+        if ! command -v yq >/dev/null 2>&1; then
+            echo "[-] yq is not installed. Exiting.."
+            exit 1
+        fi
         # Extract the names of the hosts from the YAML file
-        hosts=$(grep -oP '^( {2}| {4})- name: \K\w+' $input_file)
+        hosts=$(yq -r '.hosts[].name' $input_file)
         ;;
     json)
         # Extract the host names from the JSON file
