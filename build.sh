@@ -4,6 +4,7 @@
 
 # Define variables
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+output="$SCRIPT_DIR/images_netboot"
 input_file=""
 prompt=true
 
@@ -17,17 +18,21 @@ if ! command -v nix-env >/dev/null 2>&1; then
     exit 1
 fi
 
-# Iterate through the arguments
-for arg in "$@"; do
-    if [ "$arg" == "--no-prompt" ]; then
-        prompt=false
-    elif [[ $arg == *.yml || $arg == *.yaml || $arg == *.json ]]; then
-        input_file=$arg             # ./configs/config.ext
-        basename="${arg##*/}"       # config.ext
-        filename="${basename%.*}"   # config
-        filetype="${basename##*.}"  # ext
-
-    fi
+# Parse the command line options
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --no-prompt) prompt=false;;
+        -o|--output) output="$2"; shift ;;
+        *.yml|*.yaml|*.json)
+            input_file="$1"                 # ./configs/config.ext
+            basename="${input_file##*/}"    # config.ext
+            filename="${basename%.*}"       # config
+            filetype="${basename##*.}"      # ext
+            ;;
+        *) echo "[-] Unknown parameter passed: $1" >&2
+           exit 1 ;;
+    esac
+    shift
 done
 
 # Check input file and extract hosts
@@ -56,7 +61,7 @@ fi
 total_hosts=$(echo "$hosts" | wc -w)
 
 # Create required directories if they don't exist
-directories=( "$SCRIPT_DIR/images_netboot" "$SCRIPT_DIR/configs/nix_configs/hosts" )
+directories=( "$output" "$SCRIPT_DIR/configs/nix_configs/hosts" )
 for dir in "${directories[@]}"; do
     mkdir -p "$dir"
 done
@@ -102,10 +107,10 @@ fi
 [ "$input_file" == "configs/$filename.decrypted.$filetype" ] && rm "$input_file"
 
 # Check if previous build files exists
-dir="$SCRIPT_DIR/images_netboot"
+dir="$output"
 if [ -d "$dir" ] && [ "$(ls -A $dir)" ]; then
     if [ "$prompt" == true ]; then
-        read -p "[?] Delete previous netboot images and rebuild? (y/n)" choice
+        read -p "[?] Delete previous images and rebuild? (y/n)" choice
     else
         choice="y"
     fi
@@ -132,34 +137,34 @@ SECONDS=0
 # Initialize host building counter
 counter=0
 
-# Loop through the hosts and build the netboot images
+# Loop through the hosts and build the images
 for host in $hosts; do
     
     # Print host name
     let counter++
-    echo -e "\n[+] Building netboot image for $host [$counter/$total_hosts]"
+    echo -e "\n[+] Building images for $host [$counter/$total_hosts]"
     
-    # Build netboot image for $host using nix-build command
+    # Build images for $host using nix-build command
     time nix-build \
         -A pix.ipxe configs/nix_configs/hosts/$host/default.nix \
         -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/refs/heads/nixos-unstable.zip \
         -I home-manager=https://github.com/nix-community/home-manager/archive/master.tar.gz \
-        -o images_netboot/$host ;
+        -o $output/$host ;
         #--show-trace ;
 
-    # Check if building netboot image for $host was successful
+    # Check if building images for $host was successful
     if [ $? -ne 0 ]; then
         echo -e "[-] Build failed for $host"
         if [ "$prompt" == true ]; then
             read -p "[?] Continue? (y/n)" choice
         fi
         if [ "$choice" != "y" ]; then
-            rm -rf $SCRIPT_DIR/images_netboot/$host
+            rm -rf $output/$host
             echo "[+] Exiting..."
             exit 1
         fi
     else
-        echo "[+] Succesfully built image for $host"
+        echo "[+] Succesfully built images for $host"
     fi
 done
 
