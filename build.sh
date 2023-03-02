@@ -6,12 +6,16 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 output="$SCRIPT_DIR/result"
 input_file=""
+filename=""
+filetype=""
+hosts=""
 sops=false
-prompt=true
 
+# Check main dependencies (nix, python, jinja2)
+check_deps() {
 # Check if nix-build is available
 if ! command -v nix-build >/dev/null 2>&1; then
-    echo "[-] Nix package manager is not installed. Exiting.."
+        echo "[-] Nix package manager is not installed."
     exit 1
 fi
 
@@ -21,26 +25,26 @@ if command -v python3 >/dev/null 2>&1 ; then
 elif command -v python >/dev/null 2>&1 ; then
     python_cmd="python"
 else
-    echo "[-] Python is not installed. Exiting.."
+        echo "[-] Python is not installed."
     exit 1
 fi
 
 # Check that python can import jinja2
 if ! $python_cmd -c "import jinja2" >/dev/null 2>&1; then
-    echo "[-] Jinja2 is not installed. Exiting.."
+        echo "[-] Jinja2 is not installed."
     exit 1
 fi
+}
+
 
 # Parse the command line options
+parse_args() {
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --no-prompt) prompt=false;;
         -o|--output) output="$2"; shift ;;
         *.yml|*.yaml|*.json)
-            input_file="$1"                 # ./configs/config.ext
-            basename="${input_file##*/}"    # config.ext
-            filename="${basename%.*}"       # config
-            filetype="${basename##*.}"      # ext
+                input_file="$1"
             ;;
         *) echo "[-] Unknown parameter passed: $1" >&2
            exit 1 ;;
@@ -48,7 +52,11 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# Check input file and extract hosts
+# Extract hostnames and check if decrypted w/ SOPS
+extract_hosts() {
+
+    filetype="${filename##*.}"
+
 case "$filetype" in
     yaml|yml)
         # Check if yq is installed
@@ -88,54 +96,53 @@ if [ -z "$hosts" ]; then
     echo "[-] No hosts found in input file."
     exit 1
 fi
+}
 
-# Get the total count of hosts
-total_hosts=$(echo "$hosts" | wc -w)
-
-# Create required directories if they don't exist
-directories=( "$output" "$SCRIPT_DIR/configs/nix_configs/hosts" )
-for dir in "${directories[@]}"; do
-    mkdir -p "$dir"
-done
-
-# Check if previous configuration files exists
+# Check if previous configuration files exist
+check_prev_config() {
 dir="$SCRIPT_DIR/configs/nix_configs/hosts"
-if [ -d "$dir" ] && [ "$(ls -A $dir)" ]; then
+    if [ -d "$dir" ] && [ "$(ls -A "$dir")" ]; then
     if [ "$prompt" == true ]; then
         read -p "[?] Delete previous config files and render again? (y/n)" choice
     else
         choice="y"
     fi
-    [ "$choice" != "y" ] && { echo "[-] Exiting..."; exit 1; }
-    rm -rf "$dir"/*
+        if [ "$choice" != "y" ]; then
+            echo "[+] Exiting..."
+            exit 1
 fi
+        rm -rf "${dir:?}"/*
+    fi
+}
 
-# Check if file is encrypted with sops
-if $sops; then
+# Decrypt file encrypted with SOPS
+sops_decrypt() {
+
+    input_file=$1
+
     # Check if sops is installed
     if ! command -v sops &> /dev/null; then
         echo "[-] Decryption failed, SOPS not installed. Exiting..."
         exit 1
     fi
 
-    # Decrypt file and write output to configs/$filename.decrypted.$filetype
-    if ! sops --decrypt "$input_file" > "configs/$filename.decrypted.$filetype"; then
+    # Create a temporary file for the decrypted output
+    decrypted_file=$(mktemp)
+
+    # Decrypt file and write output to temporary file
+    if ! sops --decrypt "$input_file" > "$decrypted_file"; then
         echo "[-] Decryption failed, exiting..."
-        rm "configs/$filename.decrypted.$filetype"
+        rm "$decrypted_file"
         exit 1
     else
         echo "[+] Decryption successful."
-        input_file="configs/$filename.decrypted.$filetype"
+        input_file="$decrypted_file"
     fi
-fi
-
-# Render the Nix config files using the render.py script
-if ! $python_cmd "$SCRIPT_DIR/configs/render_configs.py" "$input_file"; then
-    echo "[-] Exiting..."
-    exit 1
-fi
+}
 
 # Check if previous build files exists
+build_images() {
+    # Check if output directory exists and prompt user if necessary
 dir="$output"
 if [ -d "$dir" ] && [ "$(ls -A $dir)" ]; then
     if [ "$prompt" == true ]; then
@@ -221,11 +228,10 @@ secs=$SECONDS
 # Print the message with the time in the desired format
 hrs=$(( secs/3600 )); mins=$(( (secs-hrs*3600)/60 )); secs=$(( secs-hrs*3600-mins*60 ))
 printf "[+] Build(s) completed in: %02d:%02d:%02d\n" $hrs $mins $secs
-
-# Clean up the decrypted input file, if exists
-[ "$input_file" == "configs/$filename.decrypted.$filetype" ] && rm "$input_file"
+}
 
 # Clean up
+cleanup() {
 if [ "$prompt" == true ]; then
     read -p "[?] Delete rendered config files? (y/n)" choice
 else
@@ -236,3 +242,47 @@ if [ "$choice" != "y" ]; then
     exit 1
 fi
 rm -rf "$SCRIPT_DIR"/configs/nix_configs/hosts/*
+}
+
+main() {
+    # Check main dependencies (nix, python, jinja2)
+    check_deps
+
+    # Parse the command line options
+    parse_args "$@"
+
+
+    # Extract hostnames and check if decrypted w/ SOPS
+    extract_hosts
+
+    # Get the total count of hosts
+    total_hosts=$(echo "$hosts" | wc -w)
+
+    # Create required directories if they don't exist
+    directories=( "$output" "$SCRIPT_DIR/configs/nix_configs/hosts" )
+    for dir in "${directories[@]}"; do
+        mkdir -p "$dir"
+    done
+
+    # Check if previous configuration files exist
+    check_prev_config
+
+    # Decrypt file encrypted with SOPS
+    if $sops; then
+        sops_decrypt "$input_file"
+    fi
+
+    # Render the Nix config files using the render.py script
+    if ! $python_cmd "$SCRIPT_DIR/configs/render_configs.py" "$input_file"; then
+        echo "[-] Exiting..."
+        exit 1
+    fi
+
+    # Check if previous build files exists
+    build_images
+
+    # Clean up
+    cleanup
+}
+
+main "$@"
