@@ -276,7 +276,7 @@ build_images() {
 
     # Print the message with the time in the desired format
     hrs=$(( secs/3600 )); mins=$(( (secs-hrs*3600)/60 )); secs=$(( secs-hrs*3600-mins*60 ))
-    printf "[+] Build(s) completed in: %02d:%02d:%02d\n" $hrs $mins $secs
+    printf "\n[+] Build(s) completed in: %02d:%02d:%02d\n" $hrs $mins $secs
 }
 
 # Clean up
