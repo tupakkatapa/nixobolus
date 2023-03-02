@@ -10,7 +10,6 @@ input_file=""
 filename=""
 filetype=""
 hosts=""
-sops=false
 
 # Check main dependencies (nix, python, jinja2)
 check_deps() {
@@ -69,9 +68,16 @@ parse_args() {
         shift
     done
 
+    # Check that the input file exists
+    if [[ -n $input_file && ! -e $input_file ]]; then
+        echo "[-] Input file $input_file does not exist."
+        exit 1
+    fi
+
     # Disable prompt if data is piped to the script
-    if [[ ! -t 0 ]]; then
-        prompt=false
+    if [[ ! -t 0 && ${prompt} == true ]]; then
+        echo "[-] Prompt needs to be disabled when input data is piped to the script."
+        exit 1
     fi
 
     # Check that either input file or piped data is found
