@@ -5,23 +5,27 @@
 {%- set ts = data.services.tailscale %}
 
 {#- Defaults #}
-{%- set enable      = ts.enable     | default("false") %}
-{%- set auth_key    = ts.auth_key   | default("tskey-1234567890abcdef") %}
-{%- set subnet      = ts.subnet     | default("100.65.0.0/16") %}
+{%- set enable          = ts.enable             | default(false) %}
+{%- set port            = ts.port               | default(41641) %}
+{%- set interface       = ts.interface          | default("tailscale0") %}
+{%- set permit_cert_uid = ts.permit_cert_uid    | default(none) %}
 
 { config, pkgs, ... }:
 
 {
     # Tailscale
     services.tailscale = {
-        enable = true;
-        services.tailscale.authkey = {{ auth_key }};
-        services.tailscale.subnet = {{ subnet }};
+        enable = {{ enable | lower }};
+        port = {{ port }};
+        interfaceName = "{{ interface }}";
+        {%- if username %}
+        permitCertUid = {{ permit_cert_uid }}; 
+        {%- endif %}
     };
 
     # Firewall
     networking.firewall = {
         checkReversePath = "loose";
-        allowedUDPPorts = [ 41641 ]; # Facilitate firewall punching
+        allowedUDPPorts = [ {{ port }} ]; # Facilitate firewall punching
     };
 }
