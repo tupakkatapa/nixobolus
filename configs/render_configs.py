@@ -15,19 +15,26 @@ from pathlib import Path
 import traceback
 
 
-def detect_format(file_path):
+def yaml_or_json(file_path):
     '''
-    Tries to detects the format of a file by its content.
+    Detect if a file is YAML or JSON
     '''
-    with open(file_path) as f:
-        first_line = f.readline()
-
-    if first_line.startswith('{'):
+    with open(file_path, 'r') as f:
+        config = f.read()
+    
+    try:
+        config_dict = json.loads(config)
         return 'json'
-    elif first_line.startswith('---'):
+    except json.JSONDecodeError:
+        pass
+    
+    try:
+        config_dict = yaml.safe_load(config)
         return 'yaml'
-    else:
-        return ''
+    except yaml.YAMLError:
+        pass
+
+    raise ValueError('[-] Invalid input format.')
 
 
 def key_exists(data, key):
@@ -92,7 +99,7 @@ def main(input_file):
             with open(input_file, "r") as f:
                 data = yaml.safe_load(f) if input_file.endswith(('yaml', 'yml')) else json.load(f)
         else:
-            detected_format = detect_format(input_file)
+            detected_format = yaml_or_json(input_file)
             if detected_format == 'yaml':
                 with open(input_file, "r") as f:
                     data = yaml.safe_load(f)
@@ -100,7 +107,7 @@ def main(input_file):
                 with open(input_file, "r") as f:
                     data = json.load(f)
             else:
-                sys.exit("[-] Invalid file format. Only YAML and JSON files are supported.")
+                sys.exit("[-] Invalid data format. Only YAML and JSON are supported.")            
     except Exception as e:
         traceback.print_exc()
         sys.exit(f"[-] Failed to load file: {e}")
