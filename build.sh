@@ -171,6 +171,7 @@ SECONDS=0
 counter=0
 
 # Loop through the hosts and build the images
+declare -A symlink_paths
 for host in $hosts; do
     
     # Print host name
@@ -198,7 +199,23 @@ for host in $hosts; do
         fi
     else
         echo "[+] Succesfully built images for $host"
+        # Add the symlink paths to the array
+        symlink_paths[$host]=$(readlink -f "$output"/"$host"/* | sort -u)
     fi
+done
+
+# Print the symlink paths (fancy)
+for host in $(echo "${!symlink_paths[@]}" | tr ' ' '\n' | sort); do
+    echo "[+] $host - result"
+    # Split the string into an array
+    IFS=$'\n' read -rd '' -a paths <<< "${symlink_paths[$host]}"
+    for path in "${paths[@]}"; do
+        if [[ "${path}" == "${paths[-1]}" ]]; then
+            echo " └── ${path}"
+        else
+            echo " ├── ${path}"
+        fi
+    done
 done
 
 # End the timer
