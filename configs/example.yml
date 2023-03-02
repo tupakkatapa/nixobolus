@@ -177,8 +177,9 @@ hosts:
 
         tailscale:
             enable: true
-            auth_key: "1234567890abcdef"
-            subnet: "100.65.0.0/16"
+            port: 41641
+            permit_cert_uid: null
+            interface: "tailscale0"
 
         ethereum:
             clients:
