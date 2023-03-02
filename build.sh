@@ -36,6 +36,22 @@ if ! $python_cmd -c "import jinja2" >/dev/null 2>&1; then
 fi
 }
 
+# Detect filetype from it's contens (yaml, json)
+detect_data_format() {
+
+    local file=$1
+    local firstline=$(head -n1 "$file")
+
+    # Check for YAML
+    if [[ "$firstline" == "---"* ]]; then
+        filetype="yaml"
+    # Check for JSON
+    elif [[ "$firstline" == "{"* ]]; then
+        filetype="json"
+    else
+        filetype=""
+    fi
+}
 
 # Parse the command line options
 parse_args() {
@@ -56,6 +72,14 @@ done
 extract_hosts() {
 
     filetype="${filename##*.}"
+
+    # Detect filetype
+    if [[ -z $filetype ]]; then
+        detect_data_format "$input_file"
+        if [[ -z $filetype ]]; then
+            echo "[-] Invalid file format. Only YAML and JSON files are supported."
+        fi
+    fi
 
 case "$filetype" in
     yaml|yml)
