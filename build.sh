@@ -57,12 +57,11 @@ case "$filetype" in
             exit 1
         fi
         # Extract the names of the hosts from the YAML file
-        hosts=$(yq -r '.hosts[].name' $input_file)
+        hosts=$(yq -r '.hosts[].name' "$input_file")
         # Check if the YAML file is encrypted with SOPS
-        if yq 'has("sops")' "$input_file" >/dev/null 2>&1; then
+        if yq eval 'has("sops")' "$input_file" >/dev/null 2>&1; then
             sops=true
         fi
-
         ;;
     json)
 
@@ -74,7 +73,7 @@ case "$filetype" in
         # Extract the host names from the JSON file
         hosts=$(jq -r '.hosts[].name' "$input_file")
         # Check if the JSON file is encrypted with SOPS
-        if jq 'has("sops")' "$input_file" >/dev/null 2>&1; then
+        if jq -e '.sops | length > 0' "$input_file" >/dev/null 2>&1; then
             sops=true
         fi
         ;;
@@ -108,7 +107,7 @@ if [ -d "$dir" ] && [ "$(ls -A $dir)" ]; then
         choice="y"
     fi
     [ "$choice" != "y" ] && { echo "[-] Exiting..."; exit 1; }
-    rm -rf $dir/*
+    rm -rf "$dir"/*
 fi
 
 # Check if file is encrypted with sops
@@ -136,9 +135,6 @@ if ! $python_cmd "$SCRIPT_DIR/configs/render_configs.py" "$input_file"; then
     exit 1
 fi
 
-# Clean up the decrypted input file, if exists
-[ "$input_file" == "configs/$filename.decrypted.$filetype" ] && rm "$input_file"
-
 # Check if previous build files exists
 dir="$output"
 if [ -d "$dir" ] && [ "$(ls -A $dir)" ]; then
@@ -151,7 +147,7 @@ if [ -d "$dir" ] && [ "$(ls -A $dir)" ]; then
         echo "[+] Exiting..."
         exit 1
     fi
-    rm -rf $dir/*
+    rm -rf "$dir"/*
 else
     if [ "$prompt" == true ]; then
         read -p "[?] Proceed with building? (y/n)" choice
@@ -180,10 +176,10 @@ for host in $hosts; do
     
     # Build images for $host using nix-build command
     time nix-build \
-        -A pix.ipxe configs/nix_configs/hosts/$host/default.nix \
+        -A pix.ipxe configs/nix_configs/hosts/"$host"/default.nix \
         -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/refs/heads/nixos-unstable.zip \
         -I home-manager=https://github.com/nix-community/home-manager/archive/master.tar.gz \
-        -o $output/$host ;
+        -o "$output"/"$host" ;
         #--show-trace ;
 
     # Check if building images for $host was successful
@@ -193,12 +189,13 @@ for host in $hosts; do
             read -p "[?] Continue? (y/n)" choice
         fi
         if [ "$choice" != "y" ]; then
-            rm -rf $output/$host
+            rm -rf "$output"/"$host"
             echo "[+] Exiting..."
             exit 1
         fi
     else
         echo "[+] Succesfully built images for $host"
+        
         # Add the symlink paths to the array
         symlink_paths[$host]=$(readlink -f "$output"/"$host"/* | sort -u)
     fi
@@ -225,6 +222,9 @@ secs=$SECONDS
 hrs=$(( secs/3600 )); mins=$(( (secs-hrs*3600)/60 )); secs=$(( secs-hrs*3600-mins*60 ))
 printf "[+] Build(s) completed in: %02d:%02d:%02d\n" $hrs $mins $secs
 
+# Clean up the decrypted input file, if exists
+[ "$input_file" == "configs/$filename.decrypted.$filetype" ] && rm "$input_file"
+
 # Clean up
 if [ "$prompt" == true ]; then
     read -p "[?] Delete rendered config files? (y/n)" choice
@@ -235,4 +235,4 @@ if [ "$choice" != "y" ]; then
     echo "[+] Exiting..."
     exit 1
 fi
-rm -rf $SCRIPT_DIR/configs/nix_configs/hosts/*
+rm -rf "$SCRIPT_DIR"/configs/nix_configs/hosts/*
