@@ -281,6 +281,15 @@ build_images() {
 
 # Clean up
 cleanup() {
+    # Remove mktemp files
+    temp_files=("$temp_file" "$decrypted_file")
+    for file in "${temp_files[@]}"; do
+        if [ -e "$file" ]; then
+            rm -f "$file"
+        fi
+    done
+
+    # Remove configuration files
     if [ "$prompt" == true ]; then
         read -p "[?] Delete rendered config files? (y/n)" choice
     else
@@ -294,6 +303,10 @@ cleanup() {
 }
 
 main() {
+    # set signal handlers to call cleanup function on exit or SIGINT
+    trap cleanup EXIT
+    trap cleanup SIGINT
+
     # Check main dependencies (nix, python, jinja2)
     check_deps
 
