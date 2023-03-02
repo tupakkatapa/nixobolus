@@ -57,8 +57,7 @@ detect_data_format() {
 parse_args() {
     while [[ "$#" -gt 0 ]]; do
         case $1 in
-            --prompt) prompt=true;;
-            -o|--output) output="$2"; shift ;;
+            -k|--keep-configs) keep_configs=true ;;
             *.yml|*.yaml|*.json)
                 input_file="$1"
                 ;;
@@ -290,8 +289,9 @@ cleanup() {
     done
 
     # Remove configuration files
+    if [ "$keep_configs" == false ]; then
     if [ "$prompt" == true ]; then
-        read -p "[?] Delete rendered config files? (y/n)" choice
+            read -r -p "[?] Delete rendered config files? (y/n)" choice
     else
         choice="y"
     fi
@@ -300,6 +300,7 @@ cleanup() {
         exit 1
     fi
     rm -rf "$SCRIPT_DIR"/configs/nix_configs/hosts/*
+    fi
 }
 
 main() {
