@@ -15,6 +15,21 @@ from pathlib import Path
 import traceback
 
 
+def detect_format(file_path):
+    '''
+    Tries to detects the format of a file by its content.
+    '''
+    with open(file_path) as f:
+        first_line = f.readline()
+
+    if first_line.startswith('{'):
+        return 'json'
+    elif first_line.startswith('---'):
+        return 'yaml'
+    else:
+        return ''
+
+
 def key_exists(data, key):
     '''
     Function to check existence of a key in data structure
@@ -73,14 +88,19 @@ def main(input_file):
 
     # Load the hosts configuration from YAML or JSON file
     try:
-        if input_file.endswith(('.yaml', '.yml')):
+        if input_file.endswith(('yaml', 'yml', 'json')):
             with open(input_file, "r") as f:
-                data = yaml.safe_load(f)
-        elif input_file.endswith('.json'):
-            with open(input_file, "r") as f:
-                data = json.load(f)
+                data = yaml.safe_load(f) if input_file.endswith(('yaml', 'yml')) else json.load(f)
         else:
-            sys.exit("[-] Invalid file format. Only YAML and JSON files are supported.")
+            detected_format = detect_format(input_file)
+            if detected_format == 'yaml':
+                with open(input_file, "r") as f:
+                    data = yaml.safe_load(f)
+            elif detected_format == 'json':
+                with open(input_file, "r") as f:
+                    data = json.load(f)
+            else:
+                sys.exit("[-] Invalid file format. Only YAML and JSON files are supported.")
     except Exception as e:
         traceback.print_exc()
         sys.exit(f"[-] Failed to load file: {e}")
