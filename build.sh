@@ -4,12 +4,9 @@
 
 # Define variables
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-output="$SCRIPT_DIR/result"
+output_dir="$SCRIPT_DIR/result"
+keep_configs=false
 prompt=false
-input_file=""
-filename=""
-filetype=""
-hosts=""
 
 # Check main dependencies (nix, python, jinja2)
 check_deps() {
@@ -36,54 +33,21 @@ check_deps() {
     fi
 }
 
-# Detect filetype from it's contens (yaml, json)
-detect_data_format() {
-
-    local file=$1
-    local firstline=$(head -n1 "$file")
-
-    # Check for YAML
-    if [[ "$firstline" == "---"* ]]; then
-        filetype="yaml"
-    # Check for JSON
-    elif [[ "$firstline" == "{"* ]]; then
-        filetype="json"
-    else
-        filetype=""
-    fi
-}
-
 # Parse the command line options
 parse_args() {
     while [[ "$#" -gt 0 ]]; do
         case $1 in
+            -p|--prompt) prompt=true;;
             -k|--keep-configs) keep_configs=true ;;
+            -o|--output) output_dir="$2"; shift ;;
             *.yml|*.yaml|*.json)
-                input_file="$1"
+                config_file="$1"
                 ;;
             *) echo "[-] Unknown parameter passed: $1" >&2
             exit 1 ;;
         esac
         shift
     done
-
-    # Check that the input file exists
-    if [[ -n $input_file && ! -e $input_file ]]; then
-        echo "[-] Input file $input_file does not exist."
-        exit 1
-    fi
-
-    # Disable prompt if data is piped to the script
-    if [[ ! -t 0 && ${prompt} == true ]]; then
-        echo "[-] Prompt needs to be disabled when input data is piped to the script."
-        exit 1
-    fi
-
-    # Check that either input file or piped data is found
-    if [[ (-z $input_file && -t 0) ]]; then
-        echo "[-] No input file or piped data found."
-        exit 1
-    fi
 }
 
 # Read standard input
@@ -91,21 +55,36 @@ get_stdin() {
     # Read from stdin and store it in the temporary file
     temp_file="$(mktemp)"
     cat > "$temp_file"
-    input_file="$temp_file"
+    config_file="$temp_file"
 }
 
-# Extract hostnames and check if decrypted w/ SOPS
-extract_hosts() {
+# Get filetype (yaml or json)
+get_filetype() {
+    local file=$1
+    local basename="${file##*/}"
+    local firstline
+    filetype="${basename##*.}"
 
-    filetype="${filename##*.}"
-
-    # Detect filetype
-    if [[ -z $filetype ]]; then
-        detect_data_format "$input_file"
-        if [[ -z $filetype ]]; then
-            echo "[-] Invalid file format. Only YAML and JSON files are supported."
+    # Try to detect the filetype by first line
+    if ! [[ "$filetype" =~ ^(yaml|yml|json)$ ]]; then
+        firstline=$(head -n1 "$file")
+        # Check for YAML
+        if [[ "$firstline" == "---"* ]]; then
+            filetype="yaml"
+        # Check for JSON
+        elif [[ "$firstline" == "{"* ]]; then
+            filetype="json"
+        else
+            echo "[-] Unable to detect the data format as YAML or JSON."
+            exit 1
         fi
     fi
+}
+
+# Get hostnames from config file
+get_hostnames() {
+    local config_file=$1
+    local filetype=$2
 
     case "$filetype" in
         yaml|yml)
@@ -115,7 +94,7 @@ extract_hosts() {
                 exit 1
             fi
             # Extract the names of the hosts from the YAML file
-            hosts=$(yq -r '.hosts[].name' "$input_file")
+            hostnames=$(yq -r '.hosts[].name' "$config_file")
             ;;
         json)
 
@@ -125,7 +104,7 @@ extract_hosts() {
                 exit 1
             fi
             # Extract the host names from the JSON file
-            hosts=$(jq -r '.hosts[].name' "$input_file")
+            hostnames=$(jq -r '.hosts[].name' "$config_file")
             ;;
         *)
             echo "[-] Invalid file format. Only YAML and JSON files are supported."
@@ -134,18 +113,18 @@ extract_hosts() {
     esac
 
     # Check if hosts are empty
-    if [ -z "$hosts" ]; then
-        echo "[-] No hosts found in input file."
+    if [ -z "$hostnames" ]; then
+        echo "[-] No hosts found in $config_file"
         exit 1
     fi
 }
 
-# Check if previous configuration files exist
+# Check if previous config files exist
 check_prev_config() {
-    dir="$SCRIPT_DIR/configs/nix_configs/hosts"
+    local dir=$1
     if [ -d "$dir" ] && [ "$(ls -A "$dir")" ]; then
         if [ "$prompt" == true ]; then
-            read -p "[?] Delete previous config files and render again? (y/n)" choice
+            read -r -p "[?] Delete previous config files and render again? (y/n)" choice
         else
             choice="y"
         fi
@@ -159,9 +138,8 @@ check_prev_config() {
 
 # Decrypt file encrypted with SOPS
 sops_decrypt() {
-    
-    input_file=$1
-    filetype=$2
+    local file=$1
+    local filetype=$2
 
     # Check if sops is installed
     if ! command -v sops &> /dev/null; then
@@ -169,32 +147,33 @@ sops_decrypt() {
         exit 1
     fi
 
-    # Check if input file is encrypted with sops
-    if ! sops --input-type "$filetype" --output-type "$filetype" -d "$input_file" >/dev/null 2>&1;then
+    # Check if config file is encrypted with sops
+    if ! sops --input-type "$filetype" --output-type "$filetype" -d "$file" >/dev/null 2>&1;then
         return
     fi
 
     # Create a temporary file for the decrypted output
-    decrypted_file=$(mktemp)
+    decrypted_temp_file=$(mktemp)
 
     # Decrypt file and write output to temporary file
-    if ! sops --input-type "$filetype" --output-type "$filetype" -d "$input_file" > "$decrypted_file"; then
+    if ! sops --input-type "$filetype" --output-type "$filetype" -d "$file" > "$decrypted_temp_file"; then
         echo "[-] Decryption failed."
-        rm "$decrypted_file"
         exit 1
     else
         echo "[+] Decryption successful."
-        input_file="$decrypted_file"
+        config_file="$decrypted_temp_file"
     fi
 }
 
 # Check if previous build files exists
 build_images() {
+    local total_hosts
+    total_hosts=$(echo "$hostnames" | wc -w)
+
     # Check if output directory exists and prompt user if necessary
-    dir="$output"
-    if [ -d "$dir" ] && [ "$(ls -A $dir)" ]; then
+    if [ -d "$output_dir" ] && [ "$(ls -A "$output_dir")" ]; then
         if [ "$prompt" == true ]; then
-            read -p "[?] Delete previous images and rebuild? (y/n)" choice
+            read -r -p "[?] Delete previous images and rebuild? (y/n)" choice
         else
             choice="y"
         fi
@@ -202,10 +181,10 @@ build_images() {
             echo "[+] Exiting..."
             exit 1
         fi
-        rm -rf "$dir"/*
+        rm -rf "${output_dir:?}"/*
     else
         if [ "$prompt" == true ]; then
-            read -p "[?] Proceed with building? (y/n)" choice
+            read -r -p "[?] Proceed with building? (y/n)" choice
         else
             choice="y"
         fi
@@ -223,28 +202,28 @@ build_images() {
 
     # Loop through the hosts and build the images
     declare -A symlink_paths
-    for host in $hosts; do
+    for host in $hostnames; do
         
         # Print host name
-        let counter++
+        (( counter++ ))
         echo -e "\n[+] Building images for $host [$counter/$total_hosts]"
         
         # Build images for $host using nix-build command
         time nix-build \
-            -A pix.ipxe configs/nix_configs/hosts/"$host"/default.nix \
+            -A pix.ipxe "$SCRIPT_DIR"/configs/nix_configs/hosts/"$host"/default.nix \
             -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/refs/heads/nixos-unstable.zip \
             -I home-manager=https://github.com/nix-community/home-manager/archive/master.tar.gz \
-            -o "$output"/"$host" ;
+            -o "$output_dir"/"$host" ;
             #--show-trace ;
 
         # Check if building images for $host was successful
         if [ $? -ne 0 ]; then
             echo -e "[-] Build failed for $host"
             if [ "$prompt" == true ]; then
-                read -p "[?] Continue? (y/n)" choice
+                read -r -p "[?] Continue? (y/n)" choice
             fi
             if [ "$choice" != "y" ]; then
-                rm -rf "$output"/"$host"
+                rm -rf "${output_dir:?}"/"$host"
                 echo "[+] Exiting..."
                 exit 1
             fi
@@ -252,7 +231,7 @@ build_images() {
             echo "[+] Succesfully built images for $host"
             
             # Add the symlink paths to the array
-            symlink_paths[$host]=$(readlink -f "$output"/"$host"/* | sort -u)
+            symlink_paths[$host]=$(readlink -f "$output_dir"/"$host"/* | sort -u)
         fi
     done
 
@@ -290,16 +269,16 @@ cleanup() {
 
     # Remove configuration files
     if [ "$keep_configs" == false ]; then
-    if [ "$prompt" == true ]; then
+        if [ "$prompt" == true ]; then
             read -r -p "[?] Delete rendered config files? (y/n)" choice
-    else
-        choice="y"
-    fi
-    if [ "$choice" != "y" ]; then
-        echo "[+] Exiting..."
-        exit 1
-    fi
-    rm -rf "$SCRIPT_DIR"/configs/nix_configs/hosts/*
+        else
+            choice="y"
+        fi
+        if [ "$choice" != "y" ]; then
+            echo "[+] Exiting..."
+            exit 1
+        fi
+        rm -rf "$SCRIPT_DIR"/configs/nix_configs/hosts/*
     fi
 }
 
@@ -314,43 +293,48 @@ main() {
     # Parse the command line options
     parse_args "$@"
 
-    # Get stdin if input file is not provided
-    if [[ -z "$input_file" && ! -t 0 ]]; then
-        get_stdin
-        if [[ -z "$input_file" ]]; then
-            echo "[-] No input file or piped data found."
+    # Check if stdin was piped
+    if [[ ! -t 0 ]]; then
+        # Get stdin and save to temporary file (sets config_file)
+        get_stdin  
+        if [[ ${prompt} == true ]]; then
+            echo "[-] Prompt needs to be disabled when data is piped to the script."
+            exit 1
         fi
     fi
+    
+    # Check if config_file is set and exists
+    if [[ ! -n "$config_file" && ! -e "$config_file" ]]; then
+        echo "[-] No given config file or piped data found."
+        exit 1
+    fi
 
-    # Extract hostnames and check if decrypted w/ SOPS
-    extract_hosts
+    # Get filetype (yaml or json)
+    get_filetype "$config_file"
 
-    # Get the total count of hosts
-    total_hosts=$(echo "$hosts" | wc -w)
-
+    # Get hostnames from config file
+    get_hostnames "$config_file" "$filetype"
+    
     # Create required directories if they don't exist
-    directories=( "$output" "$SCRIPT_DIR/configs/nix_configs/hosts" )
+    directories=( "$output_dir" "$SCRIPT_DIR/configs/nix_configs/hosts" )
     for dir in "${directories[@]}"; do
         mkdir -p "$dir"
     done
 
-    # Check if previous configuration files exist
-    check_prev_config
+    # Check if previous config files exist
+    check_prev_config "$SCRIPT_DIR/configs/nix_configs/hosts"
 
     # Decrypt if file is encrypted with SOPS
-    sops_decrypt "$input_file" "$filetype"
+    sops_decrypt "$config_file" "$filetype"
 
-    # Render the Nix config files using the render.py script
-    if ! $python_cmd "$SCRIPT_DIR/configs/render_configs.py" "$input_file"; then
+    # Render the Nix config files using the python script
+    if ! $python_cmd "$SCRIPT_DIR/configs/render_configs.py" "$config_file"; then
         echo "[-] Rendering failed."
         exit 1
     fi
 
     # Check if previous build files exists
     build_images
-
-    # Clean up
-    cleanup
 }
 
 main "$@"
