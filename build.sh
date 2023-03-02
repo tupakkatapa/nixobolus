@@ -76,7 +76,7 @@ parse_args() {
 
     # Check that either input file or piped data is found
     if [[ (-z $input_file && -t 0) ]]; then
-        echo "[-] No input file or piped data found. Exiting.."
+        echo "[-] No input file or piped data found."
         exit 1
     fi
 }
@@ -106,29 +106,21 @@ extract_hosts() {
         yaml|yml)
             # Check if yq is installed
             if ! command -v yq >/dev/null 2>&1; then
-                echo "[-] yq is not installed. Exiting.."
+                echo "[-] yq is not installed."
                 exit 1
             fi
             # Extract the names of the hosts from the YAML file
             hosts=$(yq -r '.hosts[].name' "$input_file")
-            # Check if the YAML file is encrypted with SOPS
-            if yq eval 'has("sops")' "$input_file" >/dev/null 2>&1; then
-                sops=true
-            fi
             ;;
         json)
 
             # Check if jq is installed
             if ! command -v jq >/dev/null 2>&1; then
-                echo "[-] jq is not installed. Exiting.."
+                echo "[-] jq is not installed."
                 exit 1
             fi
             # Extract the host names from the JSON file
             hosts=$(jq -r '.hosts[].name' "$input_file")
-            # Check if the JSON file is encrypted with SOPS
-            if jq -e '.sops | length > 0' "$input_file" >/dev/null 2>&1; then
-                sops=true
-            fi
             ;;
         *)
             echo "[-] Invalid file format. Only YAML and JSON files are supported."
@@ -164,19 +156,25 @@ check_prev_config() {
 sops_decrypt() {
     
     input_file=$1
+    filetype=$2
 
     # Check if sops is installed
     if ! command -v sops &> /dev/null; then
-        echo "[-] Decryption failed, SOPS not installed. Exiting..."
+        echo "[-] Decryption failed, SOPS not installed."
         exit 1
+    fi
+
+    # Check if input file is encrypted with sops
+    if ! sops --input-type "$filetype" --output-type "$filetype" -d "$input_file" >/dev/null 2>&1;then
+        return
     fi
 
     # Create a temporary file for the decrypted output
     decrypted_file=$(mktemp)
 
     # Decrypt file and write output to temporary file
-    if ! sops --decrypt "$input_file" > "$decrypted_file"; then
-        echo "[-] Decryption failed, exiting..."
+    if ! sops --input-type "$filetype" --output-type "$filetype" -d "$input_file" > "$decrypted_file"; then
+        echo "[-] Decryption failed."
         rm "$decrypted_file"
         exit 1
     else
@@ -300,7 +298,7 @@ main() {
     if [[ -z "$input_file" && ! -t 0 ]]; then
         get_stdin
         if [[ -z "$input_file" ]]; then
-            echo "[-] No input file or piped data found. Exiting..."
+            echo "[-] No input file or piped data found."
         fi
     fi
 
@@ -319,14 +317,12 @@ main() {
     # Check if previous configuration files exist
     check_prev_config
 
-    # Decrypt file encrypted with SOPS
-    if $sops; then
-        sops_decrypt "$input_file"
-    fi
+    # Decrypt if file is encrypted with SOPS
+    sops_decrypt "$input_file" "$filetype"
 
     # Render the Nix config files using the render.py script
     if ! $python_cmd "$SCRIPT_DIR/configs/render_configs.py" "$input_file"; then
-        echo "[-] Exiting..."
+        echo "[-] Rendering failed."
         exit 1
     fi
 
@@ -338,5 +334,3 @@ main() {
 }
 
 main "$@"
-
-
