@@ -1,0 +1,47 @@
+{
+	"hosts": [
+		{
+			"name": "fungus",
+			"user": "core",
+			"shell": "bash",
+			"timezone": "Europe/Helsinki",
+			"keymap": "fi",
+			"home_manager": {
+				"enable": true,
+				"version": "23.05",
+				"programs": [
+					"vim",
+					"git"
+				]
+			},
+			"services": {
+				"ssh": {
+					"enable": true,
+					"permit_root_login": false,
+					"password_auth": false,
+					"public_keys": [
+						"ENC[AES256_GCM,data:LPcBbEd4bXvgsaKCCe5tf7IWykPojKBnjLhEriEoy0HmxeX3Exn/OAERcMt9n6Trd2ERz+RQoXD9d88dZMAynuDv2ZKzFwcNtvV0TepGdgfECFaYQlzKfHcjBxw=,iv:99erZQkLjDxfM2FEuuc6LV1aSzCfgCZi/7I3oKurwb4=,tag:2pg2x4CeeAb911JzgmSTIg==,type:str]"
+					]
+				}
+			}
+		}
+	],
+	"sops": {
+		"kms": null,
+		"gcp_kms": null,
+		"azure_kv": null,
+		"hc_vault": null,
+		"age": null,
+		"lastmodified": "2023-03-02T13:57:10Z",
+		"mac": "ENC[AES256_GCM,data:EbHb/X1b54ng+hYNdXOPxBVm9EMTa2PkbotvoeVWQCIrDEdKg5ulh5KrnU8gcobkYeshwPemnuSbtWYrRW8K9RnOhQHLVwavLAyMnPfernhBAUQIb2hOmahV342yMlPvd/HxG3OVvbC2yBnnBr1x4jGHfky+5VQX34SwtpV6tic=,iv:SLSt4+XYE/CyeD2Y0gD9C6egjfrdiZqLUcCcaDJ0orE=,tag:kC3UsFuQtN5kFe8DvRXFng==,type:str]",
+		"pgp": [
+			{
+				"created_at": "2023-03-02T13:57:10Z",
+				"enc": "-----BEGIN PGP MESSAGE-----\n\nhQGMA0asU2osiQzOAQv9Gu+Vkx9uBtTxNA2qdCK/ioeZGaTPWSwIKVFTIGaFbfDq\nntflZ2xJ170U1rvPuX86NNt3AHgmwmMHvfUtawrvuGkRfY6GKQVUvk65MoKmWPVi\nP2DmJ40EaDgkgF7WAby8NOKHwa+XqnT0B053e89cmhGRhxek7YFEUtX6Mb0nV2MP\nLOqSeexb460gEUpKUpIVbWf3s4i9V+kNh/MOsIfi/qMl/QBvg8N4ohuuSIUH1Oqp\nRvQI8OPx8iaisj8D+N0uWsYLmiQOlYvQD+HgFBgpEk3hRTDDbh99EsSigfMU/OTS\nkiJLpqnF49HChh3K7+YGJnT6v6rbm5L4WgoqquIg7rnpW/72ZWKovxGcJgBF5+3V\ndL4PxzhmW7rv+Z8SRZ1C4BlyZLfGIHqzXbYLRWHMSN/afi71p9pHcU9cG4bUKaLm\nc9wYjrErIWt884xYeb4CQeKs3xJF+hTmp/yNMqPtIhTvivQMMkwPE/gUYMpIh6S+\n+Jy0zHMzePBI3glFb1QQ0l4BUgws1snR/L6fGX6iYv5YHs7//01RQoJbIvKOo8qG\nXxqHlo4aNxb5jOY0uxfl37nAp1jYBwkQOo3dlMP+58qSiCsO35J8V855qAHwf6tz\nxHOdpULp2TAMevCMzn8m\n=pPk5\n-----END PGP MESSAGE-----\n",
+				"fp": "89514318CC412AB3DA074269BF90825A41685E00"
+			}
+		],
+		"encrypted_regex": "^(public_keys)$",
+		"version": "3.7.3"
+	}
+}

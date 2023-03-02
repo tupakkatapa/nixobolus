@@ -1,0 +1,51 @@
+---
+# Nixobolus - Automated creation of bootable NixOS images
+# https://github.com/ponkila/Nixobolus
+hosts:
+    - name: fungus
+      user: core
+      shell: bash
+      timezone: Europe/Helsinki
+      keymap: fi
+      home_manager:
+        enable: true
+        version: "23.05"
+        programs:
+            - vim
+            - git
+      services:
+        ssh:
+            enable: true
+            permit_root_login: false
+            password_auth: false
+            public_keys:
+                - ENC[AES256_GCM,data:Orapd8OEPuqdrYqTUtknhD6MmSAe0Pjw1HzfuYJ4B9taPVlhPwvzmp/3hee2rlF//8Bj9/gU4Hf6v+HJ/OBeGlLPwrTG3Pa/hyOe2LEyLi8Q8aet09/IBoGHu6g=,iv:EjBoEniHWA8t+IyJADF4qHlIqu8jp2tXxZgGzZRm308=,tag:MaUSrECZIsNrxPbuhA8XFw==,type:str]
+sops:
+    kms: []
+    gcp_kms: []
+    azure_kv: []
+    hc_vault: []
+    age: []
+    lastmodified: "2023-03-02T13:57:04Z"
+    mac: ENC[AES256_GCM,data:F5Xfw1LZz2KLVYYWVixNHxIvGfJZ/9kbh+fDdICz1BpEEl8U9o+c2rQvorfuYEnYBeyIXR8GMqNeGYl/wdk5WhR3bkCQ+FqGMo89VcX4jKCAvSwpCX9HZnxlaC6cevjGoK03Oar2+mZeCGstjIG8tHEdfOGcLgy7QPip6IG9V1Q=,iv:NV4liC/T91fgGcIkZZsxkJNMsG59lfXorckuwjZhFfI=,tag:8p88+SEFum+axAQXNXZ+8g==,type:str]
+    pgp:
+        - created_at: "2023-03-02T13:57:03Z"
+          enc: |
+            -----BEGIN PGP MESSAGE-----
+
+            hQGMA0asU2osiQzOAQv+LXnmq6ZvLuWHfDzevtcfH2i+dqz+VY9WwckrTnmDhk26
+            DmP5ufNI9BlGwhnf9wef8MMh3+no4WwZ4ufE7TInf2hmgxdTH4pst7PKGZVxM2Q4
+            clXmVb4J3J2i1qIRCTRubzG2y8vrodGXFlj+C7WXmh2feabaYNaaPtLTL0Zos3WA
+            +UgSd4K+Rcfd1mc7F+gRZVaUTaHALgkLd368FdNoHXlTJvhQNlXLInT9QBl1ZXbu
+            gp6paukS6MdgXsQXzW+BX8hgXpQdTo+prRSk6JHrLXZEyQ+oSvJAual9ybfGMz8k
+            ExLUgpfrPY6WSuD2xmJko8kL8pwFN8Ix4l+D2hPIPVD/CO5KdR7Gw98CzJoV6rpD
+            uQT9NUuK4KouYXYw9yoygd6+EWvP8sp6tGf0JnuXbjTZwk9I9e/3m3RBnVWr2N1c
+            E52AQlsjppCn50tR884giyfg9tqS+fFxh4CV42JV+p+agXaSbshyoghJBxgRPTin
+            5SmsOQJSjhT3ehakbgNB0lwBcvOLlATWmyz15oH7M7vyG4nz3mutT2ZoswJZ4liJ
+            iZzu3iyvyC8YFBUyHLXAspdC3v07Cl9hj8ATIGVlpo1iZNNK1UJCb3LI1gGH3P7I
+            1x+WRbDgwxZoKpTOQQ==
+            =9pqA
+            -----END PGP MESSAGE-----
+          fp: 89514318CC412AB3DA074269BF90825A41685E00
+    encrypted_regex: ^(public_keys)$
+    version: 3.7.3
