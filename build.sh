@@ -292,7 +292,13 @@ build_images() {
             
             # Print the symlink target paths to the array
             mapfile -t symlink_paths < <(readlink -f "$output_dir"/"$host"/* | sort -u)
-            say "\n[+] $host - result"
+            
+            if "$verbose"; then
+                say "\n[+] $host - result"
+            else
+                echo "=== $host ==="
+            fi
+
             for path in "${symlink_paths[@]}"; do
                 if "$verbose"; then
                     if [[ "${path}" == "${symlink_paths[-1]}" ]]; then
