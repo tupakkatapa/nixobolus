@@ -77,3 +77,8 @@ Here are some resources that i found helpful when learning to put this thing tog
 ### SOPS
 - https://github.com/mozilla/sops
 - https://poweruser.blog/how-to-encrypt-secrets-in-config-files-1dbb794f7352
+
+### Other
+- https://chat.openai.com/chat
+- https://stackoverflow.com/
+- https://en.wikipedia.org/wiki/Pilobolus
