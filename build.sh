@@ -86,7 +86,17 @@ parse_args() {
             -o|--output) output_dir="$2"; shift ;;
             -h|--help) help ;;
             -v|--verbose) verbose=true ;;
-            -h|--help) help;;
+            -*) # Allows combining flags
+                for ((i=2; i<=${#1}; i++)); do
+                    case ${1:i-1:1} in
+                        p) prompt=true ;;
+                        k) keep_configs=true ;;
+                        o) output_dir="$2"; shift ;;
+                        v) verbose=true ;;
+                        *) say "[-] Unrecognized option '-${1:i-1:1}'" >&2; exit 1 ;;
+                    esac
+                done
+                ;;
             *.yml|*.yaml|*.json)
                 config_file="$1"
                 ;;
