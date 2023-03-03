@@ -152,6 +152,31 @@ check_prev_config() {
     fi
 }
 
+# Check if config file is encrypted with sops
+check_sops () {
+    local file=$1
+    local filetype=$2
+
+    # get_hostnames() checks that yq or jq is installed
+    # get_filetype() checks that $filetype is yaml, yml or json
+
+    if [[ "$filetype" =~ ^(yaml|yml)$ ]]; then
+        # Check if the YAML file is encrypted with SOPS
+        if yq -e 'has("sops")' "$file" >/dev/null 2>&1; then
+            return 0
+        else
+            return 1
+        fi
+    elif [[ "$filetype" == json ]]; then
+        # Check if the JSON file is encrypted with SOPS
+        if jq -e '.sops | length > 0' "$file" >/dev/null 2>&1; then
+            return 0
+        else
+            return 1
+        fi
+    fi
+}
+
 # Decrypt file encrypted with SOPS
 sops_decrypt() {
     local file=$1
@@ -161,11 +186,6 @@ sops_decrypt() {
     if ! command -v sops &> /dev/null; then
         echo "[-] Decryption failed, SOPS not installed."
         exit 1
-    fi
-
-    # Check if config file is encrypted with sops
-    if ! sops --input-type "$filetype" --output-type "$filetype" -d "$file" >/dev/null 2>&1;then
-        return
     fi
 
     # Create a temporary file for the decrypted output
@@ -341,7 +361,9 @@ main() {
     check_prev_config "$SCRIPT_DIR/configs/nix_configs/hosts"
 
     # Decrypt if file is encrypted with SOPS
-    sops_decrypt "$config_file" "$filetype"
+    if check_sops "$config_file" "$filetype"; then
+        sops_decrypt "$config_file" "$filetype"
+    fi
 
     # Render the Nix config files using the python script
     if ! $python_cmd "$SCRIPT_DIR/configs/render_configs.py" "$config_file"; then
