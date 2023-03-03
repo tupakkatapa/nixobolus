@@ -173,13 +173,6 @@ def main(input_file):
         default_config_path = host_config_dir / "default.nix"
         render_config_files(host, default_template_path.as_posix(), default_config_path.as_posix())
 
-        # Print rendered configuration files for this host
-        print(f"[+] {hostname} - config")
-        for path in rendered_configs:
-            print(f" ├── {path[2:]}")
-        print(f" └── default.nix")
-
-
 # Get the input file from the argument
 input_file = sys.argv[1]
 
