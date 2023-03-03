@@ -34,7 +34,7 @@ def yaml_or_json(file_path):
     except yaml.YAMLError:
         pass
 
-    raise ValueError('[-] Invalid input format.')
+    raise ValueError('[-] py: Unable to detect the data format.')
 
 
 def key_exists(data, key):
@@ -107,10 +107,10 @@ def main(input_file):
                 with open(input_file, "r") as f:
                     data = json.load(f)
             else:
-                sys.exit("[-] Invalid data format. Only YAML and JSON are supported.")            
+                sys.exit("[-] py: Invalid data format. Only YAML and JSON are supported.")            
     except Exception as e:
         traceback.print_exc()
-        sys.exit(f"[-] Failed to load file: {e}")
+        sys.exit(f"[-] py: Failed to load data: {e}")
 
     # Get list of j2 files in template directory 
     template_dir = project_path / TEMPLATE_DIR
@@ -160,7 +160,7 @@ def main(input_file):
                     render_config_files(host, template_path.as_posix(), config_path)
                 except Exception as e:
                     traceback.print_exc()
-                    sys.exit(f"[-] Failed to render {template_name}: {e}")
+                    sys.exit(f"[-] py: Failed to render {template_name}: {e}")
 
                 # Append path to list of rendered files
                 rendered_configs.append('.' + config_path.rsplit(hostname)[1])

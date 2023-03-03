@@ -123,7 +123,7 @@ get_hostnames() {
             hostnames=$(jq -r '.hosts[].name' "$config_file")
             ;;
         *)
-            echo "[-] Invalid file format. Only YAML and JSON files are supported."
+            echo "[-] Invalid data format. Only YAML and JSON are supported."
             exit 1
             ;;
     esac
@@ -174,6 +174,9 @@ check_sops () {
         else
             return 1
         fi
+    else
+        echo "[-] Invalid data format while checking for encryption."
+        exit 1
     fi
 }
 
@@ -341,7 +344,7 @@ main() {
     
     # Check if config_file is set and exists
     if [[ ! -n "$config_file" && ! -e "$config_file" ]]; then
-        echo "[-] No given config file or piped data found."
+        echo "[-] No given configuration data found."
         exit 1
     fi
 
