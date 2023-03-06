@@ -1,41 +1,55 @@
 # Nixobolus - Automated creation of bootable NixOS images
 # https://github.com/ponkila/Nixobolus
 
-{#- Paths #}
-{%- set eth = data.services.ethereum %}
-{%- set prysm = eth.clients.prysm %}
-
-{#- Defaults #}
+{#- General -#}
+{%- set eth         = data.services.ethereum %}
+{%- set prysm       = eth.clients.prysm %}
 {%- set username    = data.user                         | default("validator") %}
 {%- set network     = prysm.network or eth.network      | default("mainnet") %}
 {%- set infra_ip    = prysm.infra_ip or eth.infra_ip    | default("127.0.0.1") %}
 
-{#- Options #}
+{#- Prysm -#}
 {%- set enable                          = prysm.enable                  | default(true) %}
 {%- set data_dir                        = prysm.data_dir                | default("/var/mnt/prysm") %}
+{%- set p2p_udp_port                    = prysm.p2p_udp_port            | default(12000) %}
+{%- set p2p_tcp_port                    = prysm.p2p_tcp_port            | default(13000) %}
+
+{#- Execution -#}
 {%- set exec_jwt_secret                 = prysm.exec_jwt_secret         | default(data_dir + "/jwt.hex") %}
 {%- set exec_port                       = prysm.exec_port               | default(8545) %}
 {%- set exec_endpoint                   = prysm.exec_port               | default(infra_ip) %}
-{%- set genesis_beacon_api_url          = prysm.genesis_beacon_api_url  | default(none) %}
-{%- set p2p_udp_port                    = prysm.p2p_udp_port            | default(12000) %}
-{%- set p2p_tcp_port                    = prysm.p2p_tcp_port            | default(13000) %}
-{%- set monitoring_disable              = prysm.monitoring_disable      | default(false) %}
-{%- set monitoring_host                 = prysm.monitoring_host         | default(infra_ip) %}
-{%- set monitoring_port                 = prysm.monitoring_port         | default(8080) %}
-{%- set grpc_gateway_disable            = prysm.grpc_gateway_disable    | default(false) %}
-{%- set grpc_gateway_host               = prysm.grpc_gateway_host       | default(infra_ip) %}
-{%- set grpc_gateway_port               = prysm.grpc_gateway_port       | default(3500) %}
+
+{#- RPC-Authentication -#}
 {%- set rpc_enable                      = prysm.rpc_enable              | default(false) %}
 {%- set rpc_host                        = prysm.rpc_host                | default(infra_ip) %}
 {%- set rpc_port                        = prysm.rpc_port                | default(4000) %}
+
+{#- gRPC-Gateway -#}
+{%- set grpc_gateway_disable            = prysm.grpc_gateway_disable    | default(false) %}
+{%- set grpc_gateway_host               = prysm.grpc_gateway_host       | default(infra_ip) %}
+{%- set grpc_gateway_port               = prysm.grpc_gateway_port       | default(3500) %}
+
+{#- Monitoring -#}
+{%- set monitoring_disable              = prysm.monitoring_disable      | default(false) %}
+{%- set monitoring_host                 = prysm.monitoring_host         | default(infra_ip) %}
+{%- set monitoring_port                 = prysm.monitoring_port         | default(8080) %}
+
+{#- pprof HTTP-Server -#}
 {%- set pprof_enable                    = prysm.pprof_enable            | default(false) %}
 {%- set pprof_addr                      = prysm.pprof_addr              | default(infra_ip) %}
 {%- set pprof_port                      = prysm.pprof_port              | default(6060) %}
+
+{#- Slasher -#}
 {%- set slasher_enable                  = prysm.slasher_enable          | default(false) %}
 {%- set slasher_history_enable          = prysm.slasher_history_enable  | default(false) %}
+
+{#- MEV-Boost -#}
 {%- set mev_enable                      = prysm.mev_enable              | default(false) %}
 {%- set mev_port                        = prysm.mev_port                | default(18550) %}
 {%- set mev_endpoint                    = prysm.mev_endpoint            | default(infra_ip) %}
+
+{#- Other -#}
+{%- set genesis_beacon_api_url          = prysm.genesis_beacon_api_url  | default(none) %}
 {%- set checkpoint_sync_url             = prysm.checkpoint_sync_url     | default(none) %}
 {%- set staking_contract_check_disable  = prysm.staking_contract_check_disable     | default(false) %}
 
@@ -69,39 +83,39 @@
         --p2p-udp-port {{ p2p_udp_port }} \
         --p2p-tcp-port {{ p2p_tcp_port }} \
 
-        {#- EXEC #}
+        {#- Execution -#}
         --execution-endpoint http://{{ exec_endpoint }}:{{ exec_port }} \
         --jwt-secret {{ exec_jwt_secret }} \
 
-        {#- RPC SERVER #}
+        {#- RPC-Authentication -#}
         {%- if rpc_enable %}
         --rpc \
         --rpc-host {{ rpc_host }} \
         --rpc-port {{ rpc_port }} \
         {%- endif %}
 
-        {#- GRPC GATEWAY #}
+        {#- gRPC-Gateway -#}
         {%- if not grpc_gateway_disable %}
         --disable-grpc-gateway \
         --grpc-gateway-host {{ grpc_gateway_host }} \
         --grpc-gateway-port {{ grpc_gateway_port }} \
         {%- endif %}
 
-        {#- MONITORING #}
+        {#- Monitoring -#}
         {%- if not monitoring_disable %}
         --disable-monitoring \
         --monitoring-host {{ monitoring_host }} \
         --monitoring-port {{ monitoring_port }} \
         {%- endif %}
 
-        {#- PPROF HTTP SERVER #}
+        {#- pprof HTTP-server -#}
         {%- if pprof_enable %}
         --pprof \
         --pprofaddr {{ pprof_addr }} \
         --pprofport {{ pprof_port }} \
         {%- endif %}
 
-        {#- SLASHER #}
+        {#- Slasher -#}
         {%- if slasher_enable %}
         --slasher \
         {%- if slasher_history_enable %}
@@ -109,20 +123,18 @@
         {%- endif %}
         {%- endif %}
 
-        {#- NON STAKE #}
+        {#- MEV-Boost -#}
+        {%- if mev_enable %}
+        --http-mev-relay http://{{ mev_endpoint }}:{{ mev_port }} \
+        {%- endif %}
+
+        {#- Other -#}
         {%- if checkpoint_sync_url %}
         --checkpoint-sync-url {{ checkpoint_sync_url }} \
         {%- endif %}
         {%- if not staking_contract_check_disable %}
         --disable-staking-contract-check \
         {%- endif %}
-
-        {#- MEV BOOST #}
-        {%- if mev_enable %}
-        --http-mev-relay http://{{ mev_endpoint }}:{{ mev_port }} \
-        {%- endif %}
-
-        {#- OTHER #}
         {%- if genesis_beacon_api_url %}
         --genesis-beacon-api-url {{ genesis_beacon_api_url }} \
         {%- endif %}

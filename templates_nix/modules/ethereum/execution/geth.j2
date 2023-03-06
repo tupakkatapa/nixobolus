@@ -1,19 +1,19 @@
 # Nixobolus - Automated creation of bootable NixOS images
 # https://github.com/ponkila/Nixobolus
 
-{#- Paths #}
-{%- set eth = data.services.ethereum %}
-{%- set geth = eth.clients.geth %}
+{#- General -#}
+{%- set eth         = data.services.ethereum %}
+{%- set geth        = eth.clients.geth %}
+{%- set username    = data.user                         | default("validator") %}
+{%- set network     = geth.network or eth.network       | default("mainnet") %}
+{%- set infra_ip    = geth.infra_ip or eth.infra_ip     | default("127.0.0.1") %}
 
-{#- Defaults #}
-{%- set username    = data.user                     | default("validator") %}
-{%- set network     = geth.network or eth.network   | default("mainnet") %}
-{%- set infra_ip    = geth.infra_ip or eth.infra_ip | default("127.0.0.1") %}
-
-{#- Options #}
+{#- Geth -#}
 {%- set enable              = geth.enable               | default(true) %}
 {%- set data_dir            = geth.data_dir             | default("/var/mnt/geth") %}
 {%- set port                = geth.port                 | default(30303) %}
+
+{#- HTTP-Server -#}
 {%- set http_enable         = geth.http_enable          | default(true) %}
 {%- set http_addr           = geth.http_addr            | default(infra_ip) %}
 {%- set http_port           = geth.http_port            | default(8545) %}
@@ -21,17 +21,25 @@
 {%- set http_corsdomain     = geth.http_corsdomain      | default(none) %}
 {%- set http_rpcprefix      = geth.http_rpcprefix       | default(none) %}
 {%- set http_vhosts         = geth.http_vhosts          | default(["localhost"]) %}
+
+{#- WebSocket (WS) -#}
 {%- set ws_enable           = geth.ws_enable            | default(true) %}
 {%- set ws_addr             = geth.ws_addr              | default(infra_ip) %}
 {%- set ws_port             = geth.ws_port              | default(8546) %}
 {%- set ws_api              = geth.ws_api               | default(none) %}
+
+{#- RPC-Authentication -#}
 {%- set authrpc_addr        = geth.authrpc_addr         | default(infra_ip) %}
 {%- set authrpc_port        = geth.authrpc_port         | default(8551) %}
 {%- set authrpc_vhosts      = geth.authrpc_vhosts       | default(["localhost"]) %}
 {%- set authrpc_jwtsecret   = geth.authrpc_jwtsecret    | default(data_dir + "/jwt.hex") %}
+
+{#- Metrics -#}
 {%- set metrics_enable      = geth.metrics_enable       | default(true) %}
 {%- set metrics_addr        = geth.metrics_addr         | default(infra_ip) %}
 {%- set metrics_port        = geth.metrics_port         | default(6060) %}
+
+{#- Other -#}
 {%- set syncmode            = geth.syncmode             | default("snap") %}
 {%- set gcmode              = geth.gcmode               | default("full") %}
 {%- set maxpeers            = geth.maxpeers             | default(50) %}
@@ -67,13 +75,7 @@
         --{{ network }} \
         --port {{ port }} \
 
-        {#- RPC AUTH #}
-        --authrpc.addr {{ authrpc_addr }} \
-        --authrpc.port {{ authrpc_port }} \
-        --authrpc.vhosts {{ authrpc_vhosts }} \
-        --authrpc.jwtsecret {{ authrpc_jwtsecret }} \
-
-        {#- HTTP #}
+        {#- HTTP-Server -#}
         {%- if http_enable %} \
         --http
         --http.addr {{ http_addr }} \
@@ -84,7 +86,7 @@
         --http.vhosts {{ http_vhosts }} \
         {%- endif%}
 
-        {#- WS #}   
+        {#- WebSocket (WS) -#}
         {%- if ws_enable %}
         --ws \
         --ws.addr {{ ws_addr }} \
@@ -92,14 +94,20 @@
         --ws.api {{ ws_api }} \
         {%- endif %}
 
-        {#- METRICS #}
+        {#- RPC-Authentication -#}
+        --authrpc.addr {{ authrpc_addr }} \
+        --authrpc.port {{ authrpc_port }} \
+        --authrpc.vhosts {{ authrpc_vhosts }} \
+        --authrpc.jwtsecret {{ authrpc_jwtsecret }} \
+
+        {#- Metrics -#}
         {%- if metrics_enable %}
         --metrics \
         --metrics.addr {{ metrics_addr }} \
         --metrics.port {{ metrics_port }} \
         {%- endif%}
 
-        {#- OTHER #}
+        {#- Other -#}
         --syncmode {{ syncmode }} \
         --gcmode {{ gcmode }} \
         --maxpeers {{ maxpeers }}
