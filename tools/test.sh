@@ -36,13 +36,13 @@ for test in "${tests[@]}"; do
     fi
 
     printf "\n[+] STDIN (%s%s) -> SCRIPT\n" "$ext" "$add"
-    cat "$test" | "$PARENT_DIR"/build.sh --keep-configs
+    cat "$test" | "$PARENT_DIR"/build.sh --keep-configs "$@"
     if $sops; then 
         check_enc
     fi
 
     printf "\n[+] ARG   (%s%s) -> SCRIPT\n" "$ext" "$add"
-    "$PARENT_DIR"/build.sh --keep-configs "$test"
+    "$PARENT_DIR"/build.sh --keep-configs "$test" "$@"
     if $sops; then 
         check_enc
     fi
