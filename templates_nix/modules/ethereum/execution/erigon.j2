@@ -1,22 +1,20 @@
 # Nixobolus - Automated creation of bootable NixOS images
 # https://github.com/ponkila/Nixobolus
 
-{#- Paths #}
-{%- set eth = data.services.ethereum %}
-{%- set erigon = eth.clients.erigon %}
+{#- General -#}
+{%- set eth         = data.services.ethereum %}
+{%- set erigon      = eth.clients.erigon %}
+{%- set username    = data.user                                 | default("validator") %}
+{%- set network     = erigon.network or eth.network             | default("mainnet") %}
+{%- set infra_ip    = erigon.infra_ip or eth.infra_ip           | default("127.0.0.1") %}
 
-{#- Defaults #}
-{%- set username    = data.user                         | default("validator") %}
-{%- set network     = erigon.network or eth.network     | default("mainnet") %}
-{%- set infra_ip    = erigon.infra_ip or eth.infra_ip   | default("127.0.0.1") %}
-
-{#- Options #}
+{#- Erigon -#}
 {%- set enable                  = erigon.enable                 | default(true) %}
 {%- set data_dir                = erigon.data_dir               | default("/var/mnt/erigon") %}
 {%- set port                    = erigon.port                   | default(30303) %}
-{%- set snapshots_enable        = erigon.snapshots_enable       | default(false) %}
-{%- set externalcl_enable       = erigon.externalcl_enable      | default(true) %}
 {%- set torrent_port            = erigon.torrent_port           | default(42069) %}
+
+{#- HTTP-Server -#}
 {%- set http_enable             = erigon.http_enable            | default(false) %}
 {%- set http_addr               = erigon.http_addr              | default(infra_ip) %}
 {%- set http_port               = erigon.http_port              | default(8545) %}
@@ -26,20 +24,35 @@
 {%- set http_vhosts             = erigon.http_vhosts            | default(["localhost"]) %}
 {%- set http_api                = erigon.http_api               | default(["eth,erigon,engine"]) %}
 {%- set http_trace_enable       = erigon.http_trace_enable      | default(true) %}
+
+{#- WebSocket (WS) -#}
 {%- set ws_enable               = erigon.ws_enable              | default(false) %}
 {%- set ws_addr                 = erigon.ws_addr                | default(infra_ip) %}
 {%- set ws_port                 = erigon.ws_port                | default(8551) %}
 {%- set ws_api                  = erigon.ws_api                 | default(none) %}
+
+{#- RPC-Authentication -#}
 {%- set authrpc_addr            = erigon.authrpc_addr           | default(infra_ip) %}
 {%- set authrpc_port            = erigon.authrpc_port           | default(8551) %}
 {%- set authrpc_vhosts          = erigon.authrpc_vhosts         | default(["localhost"]) %}
 {%- set authrpc_jwtsecret       = erigon.authrpc_jwtsecret      | default(data_dir + "/jwt.hex") %}
-{%- set private_api_addr        = erigon.private_api_addr       | default(infra_ip) %}
-{%- set private_api_port        = erigon.private_api_port       | default(9090) %}
-{%- set private_api_ratelimit   = erigon.private_api_ratelimit  | default(31872) %}
+
+{#- Metrics -#}
 {%- set metrics_enable          = erigon.metrics_enable         | default(false) %}
 {%- set metrics_addr            = erigon.metrics_addr           | default(infra_ip) %}
 {%- set metrics_port            = erigon.metrics_port           | default(6060) %}
+
+{#- Private API -#}
+{%- set private_api_addr        = erigon.private_api_addr       | default(infra_ip) %}
+{%- set private_api_port        = erigon.private_api_port       | default(9090) %}
+{%- set private_api_ratelimit   = erigon.private_api_ratelimit  | default(31872) %}
+
+{#- Other -#}
+{%- set externalcl_enable       = erigon.externalcl_enable      | default(true) %}
+{%- set snapshots_enable = 
+    (erigon.snapshots_enable is not none and erigon.snapshots_enable != false) 
+    and (network in ['goerli', 'bsc', 'mainnet'] or erigon.snapshots_enable == true) 
+%}
 
 { config, pkgs, ... }:
 
@@ -73,17 +86,7 @@
         --port={{ port }} \
         --torrent.port={{ torrent_port }}
 
-        {#- RPC AUTH #}
-        --authrpc.addr={{ authrpc_addr }} \
-        --authrpc.port={{ authrpc_port }} \
-        --authrpc.vhosts={{ authrpc_vhosts }} \
-        --authrpc.jwtsecret={{ authrpc_jwtsecret }} \
-
-        {#- PRIVATE API #}
-        --private.api.addr={{ private_api_addr }}:{{ private_api_port }} \
-        --private.api.ratelimit={{ private_api_ratelimit }} \
-
-        {#- HTTP #}
+        {#- HTTP-Server -#}
         {%- if http_enable %} \
         --http \
         --http.addr={{ http_addr }} \
@@ -100,7 +103,7 @@
         --http.api={{ http_api }} \
         {%- endif%}
 
-        {#- WS #}   
+        {#- WebSocket (WS) -#}
         {%- if ws_enable %}
         --ws \
         --ws.addr={{ ws_addr }} \
@@ -110,14 +113,24 @@
         {%- endif %}
         {%- endif %}
 
-        {#- METRICS #}
+        {#- RPC-Authentication -#}
+        --authrpc.addr={{ authrpc_addr }} \
+        --authrpc.port={{ authrpc_port }} \
+        --authrpc.vhosts={{ authrpc_vhosts }} \
+        --authrpc.jwtsecret={{ authrpc_jwtsecret }} \
+
+        {#- Metrics -#}
         {%- if metrics_enable %}
         --metrics \
         --metrics.addr={{ metrics_addr }} \
         --metrics.port={{ metrics_port }} \
         {%- endif %}
 
-        {#- OTHER #}
+        {#- Private API -#}
+        --private.api.addr={{ private_api_addr }}:{{ private_api_port }} \
+        --private.api.ratelimit={{ private_api_ratelimit }} \
+
+        {#- Other -#}
         {%- if externalcl_enable %}
         --externalcl \
         {%- endif %}
