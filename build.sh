@@ -108,14 +108,6 @@ parse_args() {
     done
 }
 
-# Read standard input
-get_stdin() {
-    # Read from stdin and store it in the temporary file
-    temp_file="$(mktemp)"
-    cat > "$temp_file"
-    config_file="$temp_file"
-}
-
 # Get filetype (yaml or json)
 get_filetype() {
     local file=$1
@@ -356,8 +348,12 @@ main() {
 
     # Check if stdin was piped
     if [[ ! -t 0 ]]; then
-        # Get stdin and save to temporary file (sets config_file)
-        get_stdin  
+
+        # Read from stdin and store it in the temporary file
+        temp_file="$(mktemp)"
+        cat > "$temp_file"
+        config_file="$temp_file"
+  
         if [[ ${prompt} == true ]]; then
             say "[-] Prompt needs to be disabled when data is piped to the script."
         fi
