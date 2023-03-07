@@ -54,6 +54,8 @@ def key_exists(data, key):
                 return True
     return False
 
+def raise_helper(msg):
+    raise Exception(msg)
 
 def render_config_files(data, template_path, output_path):
     '''
@@ -61,6 +63,7 @@ def render_config_files(data, template_path, output_path):
     '''
     # Create a Jinja2 environment and load the template
     env = Environment(loader=FileSystemLoader(os.path.dirname(template_path)))
+    env.globals['raise'] = raise_helper
 
     # Get template and render
     template = env.get_template(os.path.basename(template_path))
