@@ -10,8 +10,13 @@
 {%- set font     = data.font      | default("monospace") %}
 {%- set keymap   = data.keymap    | default("us") %}
 {%- set version  = data.version   | default("22.11") %}
+{#- System -#}
+{%- set system = data.system | default("x86_64-linux") -%}
+{%- if system not in ["i686-linux", "x86_64-linux", "aarch64-linux"] %}
+  {{ raise('Invalid value for system variable. Valid values are "i686-linux", "x86_64-linux", and "aarch64-linux".') }}
+{%- endif %}
 
-{ system ? "x86_64-linux"
+{ system ? "{{ system }}"
 , nixpkgs ? import <nixpkgs> { }
 , nixos ? import <nixpkgs/nixos> { }
 ,
