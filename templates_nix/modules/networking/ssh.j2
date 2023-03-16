@@ -7,7 +7,7 @@
 {#- Defaults #}
 {%- set enable             = ssh.enable             | default(true) %}
 {%- set permit_root_login  = ssh.permit_root_login  | default(false) %}
-{%- set password_auth      = ssh.password_auth      | default(true) %}
+{%- set password_auth      = ssh.password_auth      | default(false) %}
 {%- set username           = data.user              | default("validator") %}
 
 { config, pkgs, ... }:
