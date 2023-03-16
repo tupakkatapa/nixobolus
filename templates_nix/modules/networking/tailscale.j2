@@ -5,7 +5,7 @@
 {%- set ts = data.services.tailscale %}
 
 {#- Defaults #}
-{%- set enable          = ts.enable             | default(false) %}
+{%- set enable          = ts.enable             | default(true) %}
 {%- set port            = ts.port               | default(41641) %}
 {%- set interface       = ts.interface          | default("tailscale0") %}
 {%- set permit_cert_uid = ts.permit_cert_uid    | default(none) %}
