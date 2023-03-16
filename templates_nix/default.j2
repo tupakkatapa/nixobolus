@@ -2,14 +2,14 @@
 # https://github.com/ponkila/Nixobolus
 
 {#- Defaults #}
-{%- set username = data.user      | default("validator") %}
-{%- set hostname = data.name      | default("") %}
-{%- set shell    = data.shell     | default(null) %}
-{%- set mounts   = data.mounts    | default(null) %}
-{%- set timezone = data.timezone  | default("Europe/Lisbon") %}
-{%- set font     = data.font      | default("monospace") %}
-{%- set keymap   = data.keymap    | default("us") %}
-{%- set version  = data.version   | default("22.11") %}
+{%- set username        = data.user             | default("validator") %}
+{%- set hostname        = data.name             | default("") %}
+{%- set shell           = data.shell            | default(null) %}
+{%- set mounts          = data.mounts           | default(null) %}
+{%- set timezone        = data.timezone         | default("Europe/Lisbon") %}
+{%- set font            = data.font             | default("monospace") %}
+{%- set keymap          = data.keymap           | default("us") %}
+{%- set state_version   = data.state_version    | default("23.05") %}
 {#- System -#}
 {%- set system = data.system | default("x86_64-linux") -%}
 {%- if system not in ["i686-linux", "x86_64-linux", "aarch64-linux"] %}
@@ -139,18 +139,18 @@ let
         {%- if shell %}
         shell = pkgs.{{ shell }};
         {%- endif %}
-        ## Allow the graphical user to login without password
+        # Allow the graphical user to login without password
         initialHashedPassword = "";
       };
       users.users.root.initialHashedPassword = "";
 
-      # Allow passwordless sudo from nixos user
+      # Allow passwordless sudo from user
       security.sudo = {
         enable = mkDefault true;
         wheelNeedsPassword = mkForce false;
       };
       
-      system.stateVersion = "{{ version }}";
+      system.stateVersion = "{{ state_version }}";
     };
   };
 

@@ -5,9 +5,9 @@
 {%- set home = data.home_manager %}
 
 {#- Defaults #}
-{%- set username = data.user     | default("validator") %}
-{%- set version  = home.version  | default("22.11") %}
-{%- set enable   = home.enable   | default(true) %}
+{%- set username        = data.user           | default("validator") %}
+{%- set state_version   = home.state_version  | default("23.05") %}
+{%- set enable          = home.enable         | default(true) %}
 
 { config
 , pkgs
@@ -32,7 +32,7 @@
         home-manager.enable = {{ enable | lower }};
     };
 
-    home.stateVersion = "{{ version }}";
+    home.stateVersion = "{{ state_version }}";
   };
 
   home-manager.useUserPackages = true;
