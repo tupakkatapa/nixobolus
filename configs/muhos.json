@@ -1,4 +1,7 @@
 {
+	"variables": {
+		"var_1": "192.168.100.10"
+	},
 	"general": {
 		"user": "core",
 		"shell": "fish",
