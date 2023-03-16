@@ -137,8 +137,8 @@ get_filetype() {
     fi
 }
 
-# Get hostnames from config file
-get_hostnames() {
+# Get info from config file (hostnames, system architecture)
+get_values_from_config() {
     local config_file=$1
     local filetype=$2
 
@@ -148,16 +148,20 @@ get_hostnames() {
             if ! command -v yq >/dev/null 2>&1; then
                 say "[-] yq is not installed."
             fi
-            # Extract the names of the hosts from the YAML file
+            # Extract the hostnames
             hostnames=$(yq -r '.hosts[].name' "$config_file")
+            # Extract the system architecture
+            #system=$(yq -r '.hosts[].system' "$config_file")
             ;;
         json)
             # Check if jq is installed
             if ! command -v jq >/dev/null 2>&1; then
                 say "[-] jq is not installed."
             fi
-            # Extract the host names from the JSON file
+            # Extract the hostnames
             hostnames=$(jq -r '.hosts[].name' "$config_file")
+            # Extract the system architecture
+            #system=$(jq -r '.hosts[].system' "$config_file")
             ;;
         *)
             say "[-] Invalid data format. Only YAML and JSON are supported."
@@ -382,9 +386,9 @@ main() {
     # Get filetype (yaml or json)
     get_filetype "$config_file"
 
-    # Get hostnames from config file
-    get_hostnames "$config_file" "$filetype"
-    
+    # Get needed values from config file (hostnames, system architecture)
+    get_values_from_config "$config_file" "$filetype"
+
     # Create required directories if they don't exist
     directories=( "$output_dir" "$config_dir" )
     for dir in "${directories[@]}"; do
