@@ -22,7 +22,7 @@ To use this tool, you'll need to install the following dependencies:
 
 2. Generate
 
-    Run the `build.sh` script with the path to your configuration file as the argument. This will render the Nix configuration files from the Jinja2 templates and build the initrd and kernel for each configured machine using the `nix-build` command.
+    Run the `build.sh` script with the path to your configuration file as the argument. This will render the Nix configuration files from the Jinja2 templates and build the initrd, kernel and netboot.ipxe for each configured machine using the `nix-build` command.
 
     ```
     $ ./build.sh --help
