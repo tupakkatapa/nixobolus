@@ -12,7 +12,6 @@ hosts:
 
     home_manager:
       enable: true
-      version: "23.05"
       programs: [ vim, git ]
 
     services:
