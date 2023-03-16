@@ -31,11 +31,9 @@ general:
     timezone: "Europe/Lisbon"
     font: "monospace"
     keymap: "us"
-    version: "22.11"
 
     home_manager:
         enable: true
-        version: "23.05"
         nix_packages: [ file, tree, bind ]
         programs: [ tmux, htop, vim, git ]
 
@@ -215,6 +213,45 @@ hosts:
                     gcmode: "full"
                     maxpeers: 50
                     syncmode: "snap"
+
+                # Consensus
+                prysm:
+                    enable: true
+                    network: "mainnet"
+                    data_dir: "/var/mnt/prysm"
+                    p2p_udp_port: 12000
+                    p2p_tcp_port: 13000
+                    # Execution
+                    exec_jwt_secret: "/var/mnt/prysm/jwt.hex"
+                    exec_port: 8545
+                    exec_endpoint: *addr_2
+                    # RPC-Authentication
+                    rpc_enable: false
+                    rpc_host: *addr_2
+                    rpc_port: 4000
+                    # gRPC-Gateway
+                    grpc_gateway_disable: false
+                    grpc_gateway_host: *addr_2
+                    grpc_gateway_port: 3500
+                    # Monitoring
+                    monitoring_disable: false
+                    monitoring_host: *addr_2
+                    monitoring_port: 8080
+                    # pprof HTTP-Server
+                    pprof_enable: false
+                    pprof_addr: *addr_2
+                    pprof_port: 6060
+                    # Slasher
+                    slasher_enable: false
+                    slasher_history_enable: false
+                    # MEV-Boost
+                    mev_enable: false
+                    mev_port: 18550
+                    mev_endpoint: *addr_2
+                    # Other
+                    genesis_beacon_api_url: null
+                    checkpoint_sync_url: null
+                    staking_contract_check_disable: false
 
     # Builds even with no key-value pairs
     - name: "hostname_3"
