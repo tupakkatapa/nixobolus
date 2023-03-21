@@ -3,7 +3,7 @@
 set -e
 
 PARENT_DIR=$( cd -- "$( dirname -- "$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" )" &> /dev/null && pwd )
-test_configs="$PARENT_DIR"/tools/test_configs
+test_configs="$PARENT_DIR"/configs/test_configs
 
 check_enc () {
     if grep -qF "ssh-ed25519" "$PARENT_DIR"/configs/nix_configs/hosts/fungus/modules/networking/ssh.nix; then

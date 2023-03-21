@@ -90,7 +90,7 @@ def merge_dicts(dict1, dict2, overwrite=False):
 
 def main(input_file):
     # Define constants
-    TEMPLATE_DIR = Path("templates_nix/")
+    TEMPLATE_DIR = Path("templates/")
     CONFIG_DIR = Path("configs/nix_configs/hosts/")
 
     # Project path
@@ -150,7 +150,7 @@ def main(input_file):
             key = template_name.rsplit(".",1)[0]
 
             # Construct the config path
-            config_path = template_path.as_posix().replace("templates_nix/", f"configs/nix_configs/hosts/{hostname}/").replace(".j2", ".nix")
+            config_path = template_path.as_posix().replace("templates/", f"configs/nix_configs/hosts/{hostname}/").replace(".j2", ".nix")
             
             # Check if the host has the service
             if key_exists(host, key) or (key == "default" and key_exists(host, Path(config_path).parent.name)): 
