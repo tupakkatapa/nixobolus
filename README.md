@@ -51,28 +51,8 @@ To use this tool, you'll need to install the following dependencies:
 - [ ] Support for adding multiple users
 - [ ] Option to build images in Docker/Podman
 - [x] Divide Ethereum template into smaller parts
-- [ ] Proof of concept [WebUI](https://github.com/ponkila/HomestakerOS)
-
-## Roadmap
-
-- [ ] Stage 1
-    - Work on EL and CL client configurations
-    - Streamlined installation and configuration process for Nix package manager
-    - Documentation of tried and tested configs for initial users comparison and feedback
-
-- [ ] Stage 2
-    - Work on validator client configurations
-    - Support for ARM hardware (in addition to x86)
-    - Documentation for different options for secure key storage
-    - Mimic and test realistic UX for a new home-staker
-
-- [ ] Stage 3
-    - Further improvements
-    - Fine-tuning of documentation and overall UX
-    - WebUI
-
-- [ ] Stage 4
-    - Complete documentation stating any constraints
+- [x] Proof of concept [WebUI](https://github.com/ponkila/HomestakerOS)
+- [ ] Rewrite in rust
 
 ## Links
 
@@ -89,8 +69,3 @@ Here are some resources that i found helpful when learning to put this thing tog
 - SOPS
     - https://github.com/mozilla/sops
     - https://poweruser.blog/how-to-encrypt-secrets-in-config-files-1dbb794f7352
-
-- Other
-    - https://chat.openai.com/chat
-    - https://stackoverflow.com/
-    - https://en.wikipedia.org/wiki/Pilobolus
