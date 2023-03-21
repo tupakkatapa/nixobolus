@@ -1,28 +1,13 @@
-# Shell for bootstrapping flake-enabled nix and other tooling
-{ pkgs ? # If pkgs is not defined, instanciate nixpkgs from locked commit
-  let
-    lock = (builtins.fromJSON (builtins.readFile ./flake.lock)).nodes.nixpkgs.locked;
-    nixpkgs = fetchTarball {
-      url = "https://github.com/nixos/nixpkgs/archive/${lock.rev}.tar.gz";
-      sha256 = lock.narHash;
-    };
-  in
-  import nixpkgs { overlays = [ ]; }
-, ...
-}: {
-  default = pkgs.mkShell {
-    NIX_CONFIG = "extra-experimental-features = nix-command flakes repl-flake";
-    nativeBuildInputs = with pkgs; [
-      nix
-      home-manager
-      git
+# Nixobolus - Automated creation of bootable NixOS images
+# https://github.com/ponkila/Nixobolus
 
-      sops
-      yq
-      jq
-      j2cli
-      gnupg
-      age
-    ];
-  };
+### Usage
+# nix-build only: './build.sh ./configs/example.yml --nix-shell'
+# whole build.sh: 'nix-shell --run "./build.sh ./configs/example.yml"'
+
+{ pkgs ? import <nixpkgs> {} }:
+
+with pkgs; mkShell {
+  name = "nixobolus";
+  buildInputs = [ jq yq sops nix j2cli ];
 }
