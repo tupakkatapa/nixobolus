@@ -404,7 +404,7 @@ main() {
     fi
 
     # Render the Nix config files using the python script
-    if ! $python_cmd "$SCRIPT_DIR/configs/render_configs.py" "$config_file"; then
+    if ! $python_cmd "$SCRIPT_DIR/scripts/render_configs.py" "$config_file"; then
         say "[-] Rendering failed."
     fi
 
