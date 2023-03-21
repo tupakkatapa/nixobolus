@@ -267,7 +267,7 @@ build_images() {
         say "\n[+] Building images for $host [$counter/$total_hosts]"
         
         # Init build command
-        nix_build_cmd="nix-build -A pix.ipxe $config_dir/$host/default.nix -I nixpkgs=$NIXPKGS_REPO -I home-manager=$HM_REPO -o $output_dir/$host"
+        nix_build_cmd="nix build .#nixobolus --arg hostname $host -o $output_dir/$host"
 
         # Add nix-shell prefix if enabled
         if $nix_shell; then
