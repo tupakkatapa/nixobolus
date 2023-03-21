@@ -2,3 +2,4 @@ configs/nix_configs/hosts/*
 result/*
 *.old
 *decrypted*
+.direnv
