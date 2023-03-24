@@ -5,12 +5,9 @@ Automated creation of bootable NixOS images
 This repository is a work in progress and is subject to change at any time. Please note that the code and documentation may be incomplete, inaccurate, or contain bugs. Use at your own risk.
 
 ## Dependencies
-To use this tool, you'll need to install the following dependencies:
+To use this tool, you must have [Nix package manager](https://nixos.org/download.html) installed.
 
-- [Nix](https://nixos.org/download.html) package manager.
-- [Git](https://git-scm.com/downloads) for cloning this repository.
-- [Jinja2](https://jinja.palletsprojects.com/en/3.0.x/), [jq](https://stedolan.github.io/jq/), and [yq](https://kislyuk.github.io/yq/) for manipulating configuration files and generating templates.
-- [SOPS](https://github.com/mozilla/sops) (optional) for encrypting and decrypting configuration files.
+Optionally, you may also install [direnv](https://github.com/direnv/direnv#basic-installation) which will automatically run `nix develop` whenever you enter the directory.
 
 ## Usage
 
@@ -22,14 +19,14 @@ To use this tool, you'll need to install the following dependencies:
 
 2. Generate
 
-    Run the `build.sh` script with the path to your configuration file as the argument. This will render the Nix configuration files from the Jinja2 templates and build the initrd, kernel and netboot.ipxe for each configured machine using the `nix-build` command.
+    To get started, enter the build environment by running `nix develop`. Once inside the environment, use the `build.sh` script with the path to your configuration file as an argument. This will generate the Nix configuration files from the Jinja2 templates and build the initrd, kernel, and netboot.ipxe for each configured machine.
 
     ```
     $ ./build.sh --help
     Usage: ./build.sh [-p] [-k] [-o output_dir] [-v] [--nix-shell] [config_file]
 
     Options:
-    --nix-shell           Run nix-build command within a nix-shell development environment
+    --nix-shell           Run 'nix build' command within a nix-shell development environment
     -p, --prompt          Prompt before performing crucial actions (e.g. overwriting or deleting files)
     -k, --keep-configs    Keep nix configurations in './configs/nix_configs/<hostname>' after build
     -o, --output          Specify output directory (default: './result/<hostname>')
@@ -47,7 +44,7 @@ To use this tool, you'll need to install the following dependencies:
 
 - [x] Home-manager
 - [x] Secret management using SOPS
-- [ ] Flakes
+- [x] Flakes
 - [ ] Support for adding multiple users
 - [ ] Option to build images in Docker/Podman
 - [x] Divide Ethereum template into smaller parts
