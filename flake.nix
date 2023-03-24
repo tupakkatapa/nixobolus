@@ -36,7 +36,7 @@
       forEachPkgs = f: forEachSystem (sys: f nixpkgs.legacyPackages.${sys});
 
       # get hostnames from ./nix_configs/hosts
-      ls = builtins.readDir ./nix_configs/hosts;
+      ls = builtins.readDir ./configs/nix_configs/hosts;
       hostnames = builtins.filter
         (name: builtins.hasAttr name ls && (ls.${name} == "directory"))
         (builtins.attrNames ls);
@@ -49,7 +49,7 @@
       customFormats = {
         "kexecTree" = { 
           formatAttr = "kexecTree";
-          imports = [ ./nix_configs/common/netboot.nix ]; 
+          imports = [ ./configs/nix_configs/common/netboot.nix ]; 
         };
       };
     in {
@@ -62,7 +62,7 @@
         value = nixos-generators.nixosGenerate {
           inherit system pkgs;
           specialArgs = { inherit inputs outputs; };
-          modules = [ ./nix_configs/hosts/${hostname} ];
+          modules = [ ./configs/nix_configs/hosts/${hostname} ];
           customFormats = customFormats;
           format = "kexecTree";
         };
@@ -74,7 +74,7 @@
         value = nixpkgs.lib.nixosSystem {
           inherit system pkgs;
           specialArgs = { inherit inputs outputs; };
-          modules = [ ./nix_configs/hosts/${hostname} ];
+          modules = [ ./configs/nix_configs/hosts/${hostname} ];
         };
       }) hostnames);
     };
