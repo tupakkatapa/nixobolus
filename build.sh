@@ -19,7 +19,7 @@ help() {
     echo "Usage: ./build.sh [-p] [-k] [-o output_dir] [-v] [--nix-shell] [config_file]"
     echo ""
     echo "Options:"
-    echo "  --nix-shell           Run nix-build command within a nix-shell development environment"
+    echo "  --nix-shell           Run 'nix build' command within a nix-shell development environment"
     echo "  -p, --prompt          Prompt before performing crucial actions (e.g. overwriting or deleting files)"
     echo "  -k, --keep-configs    Keep nix configurations in './configs/nix_configs/<hostname>' after build"
     echo "  -o, --output          Specify output directory (default: './result/<hostname>')"
@@ -267,7 +267,7 @@ build_images() {
         say "\n[+] Building images for $host [$counter/$total_hosts]"
         
         # Init build command
-        nix_build_cmd="nix-build -A pix.ipxe $config_dir/$host/default.nix -I nixpkgs=$NIXPKGS_REPO -I home-manager=$HM_REPO -o $output_dir/$host"
+        nix_build_cmd="nix build .#$host"
 
         # Add nix-shell prefix if enabled
         if $nix_shell; then
