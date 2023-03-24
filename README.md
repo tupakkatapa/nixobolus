@@ -32,7 +32,7 @@ To use this tool, you'll need to install the following dependencies:
     --nix-shell           Run nix-build command within a nix-shell development environment
     -p, --prompt          Prompt before performing crucial actions (e.g. overwriting or deleting files)
     -k, --keep-configs    Keep nix configurations in './configs/nix_configs/<hostname>' after build
-    -o, --output          Specify output directory (default: './result')
+    -o, --output          Specify output directory (default: './result/<hostname>')
     -v, --verbose         Enable verbose mode
 
     If config_file is not specified, the script will read from standard input.
