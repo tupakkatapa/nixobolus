@@ -241,18 +241,6 @@ build_images() {
     local total_hosts
     total_hosts=$(echo "$hostnames" | wc -w)
 
-    # Check if output directory exists and prompt user if necessary
-    if [ -d "$output_dir" ] && [ "$(ls -A "$output_dir")" ]; then
-        if ! say "[?] Delete previous images and rebuild? (y/n)"; then
-            exit 0
-        fi
-        rm -rf "${output_dir:?}"/*
-    else
-        if ! say "[?] Proceed with building? (y/n)"; then
-            exit 0
-        fi
-    fi
-
     # Start the timer
     SECONDS=0
 
@@ -390,7 +378,7 @@ main() {
     get_values_from_config "$config_file" "$filetype"
 
     # Create required directories if they don't exist
-    directories=( "$output_dir" "$config_dir" )
+    directories=( "$config_dir" )
     for dir in "${directories[@]}"; do
         mkdir -p "$dir"
     done
