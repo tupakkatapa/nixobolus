@@ -12,12 +12,12 @@
 
 ### Adding custom templates
 #
-#   To add a custom template, create a new file in the "templates_nix" directory or any subdirectory under it.
-#   The rendering script dynamically imports any templates located under the "templates_nix" directory to default.nix file.
+#   To add a custom template, create a new file in the "templates" directory or any subdirectory under it.
+#   The rendering script dynamically imports any templates located under the "templates" directory to default.nix file.
 # 
-#   Note that the filename of the new template needs to match with a key name in this YAML file.
+#   Note that the filename of the new template needs to match with a key name in the this file.
 #   In a case where the template file is named "default.j2", the rendering script will check if the parent directory
-#   name matches with a key in this YAML file. If there's a match, it will import and render the template.
+#   name matches with a key in this file. If there's a match, it will import and render the template as module.
 
 # Store commonly used values to be referenced later.
 variables:
