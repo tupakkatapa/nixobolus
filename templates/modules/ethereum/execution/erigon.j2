@@ -1,153 +1,129 @@
 # Nixobolus - Automated creation of bootable NixOS images
 # https://github.com/ponkila/Nixobolus
 
-{#- General -#}
-{%- set eth         = data.services.ethereum %}
-{%- set erigon      = eth.clients.erigon %}
-{%- set username    = data.user                                 | default("validator") %}
-{%- set network     = erigon.network or eth.network             | default("mainnet") %}
-{%- set infra_ip    = erigon.infra_ip or eth.infra_ip           | default("127.0.0.1") %}
+{#- Paths #}
+{%- set eth = data.services.ethereum %}
+{%- set erigon = eth.clients.erigon %}
 
-{#- Erigon -#}
-{%- set enable                  = erigon.enable                 | default(true) %}
-{%- set data_dir                = erigon.data_dir               | default("/var/mnt/erigon") %}
-{%- set port                    = erigon.port                   | default(30303) %}
-{%- set torrent_port            = erigon.torrent_port           | default(42069) %}
+{#- General #}
+{%- set enable = erigon.enable | default(true) | lower %}
+{%- set extraArgs = erigon.extraArgs | default([]) %}
+{%- set network = erigon.network or eth.network | default("mainnet") %}
+{%- set openFirewall = erigon.openFirewall | default(true) | lower %}
+{%- set package = erigon.package | default("pkgs.erigon") %}
+{%- set subVolume = erigon.subVolume | default(true) | lower %}
 
-{#- HTTP-Server -#}
-{%- set http_enable             = erigon.http_enable            | default(false) %}
-{%- set http_addr               = erigon.http_addr              | default(infra_ip) %}
-{%- set http_port               = erigon.http_port              | default(8545) %}
-{%- set http_compression_enable = erigon.http_compression_enable| default(true) %}
-{%- set http_corsdomain         = erigon.http_corsdomain        | default(none) %}
-{%- set http_rpcprefix          = erigon.http_rpcprefix         | default(none) %}
-{%- set http_vhosts             = erigon.http_vhosts            | default(["localhost"]) %}
-{%- set http_api                = erigon.http_api               | default(["eth,erigon,engine"]) %}
-{%- set http_trace_enable       = erigon.http_trace_enable      | default(true) %}
+{#- Args #}
+{%- macro erigon_config(erigon) %}
+    {%- set items = {
+        'chain':        network               | default("mainnet"),
+        'datadir':      erigon.dataDir        | default(none),
+        'externalcl':   erigon.externalcl     | default(true),
+        'port':         erigon.port           | default(30303),
+        'snapshots':    erigon.snapshots      | default(true),
+        'torrent.port': erigon.torrent_port   | default(42069),
+    } %}
+    {{- filter_macro(items, items.keys()) }}
+{%- endmacro %}
 
-{#- WebSocket (WS) -#}
-{%- set ws_enable               = erigon.ws_enable              | default(false) %}
-{%- set ws_addr                 = erigon.ws_addr                | default(infra_ip) %}
-{%- set ws_port                 = erigon.ws_port                | default(8551) %}
-{%- set ws_api                  = erigon.ws_api                 | default(none) %}
+{#- HTTP-Server #}
+{%- set http = erigon.http | default({}) %}
+{%- macro http_config(http) %}
+    {%- set items = {
+        'addr':         http.addr           | default("127.0.0.1"),
+        'api':          http.api            | default(none),
+        'compression':  http.compression    | default(true),
+        'enable':       http.enable         | default(true),
+        'port':         http.port           | default(8545),
+        'trace':        http.corsdomain     | default(true),
+        'vhosts':       http.vhosts         | default(["localhost"]),
+    } %}
+    {{- filter_macro(items, items.keys()) }}
+{%- endmacro %}
 
-{#- RPC-Authentication -#}
-{%- set authrpc_addr            = erigon.authrpc_addr           | default(infra_ip) %}
-{%- set authrpc_port            = erigon.authrpc_port           | default(8551) %}
-{%- set authrpc_vhosts          = erigon.authrpc_vhosts         | default(["localhost"]) %}
-{%- set authrpc_jwtsecret       = erigon.authrpc_jwtsecret      | default(data_dir + "/jwt.hex") %}
+{#- Websocket #}
+{%- set ws = erigon.ws | default({}) %}
+{%- macro ws_config(ws) %}
+    {%- set items = {
+        'compression':  ws.compression     | default(false),
+        'enable':       ws.enable          | default(true),
+    } %}
+    {{- filter_macro(items, items.keys()) }}
+{%- endmacro %}
 
-{#- Metrics -#}
-{%- set metrics_enable          = erigon.metrics_enable         | default(false) %}
-{%- set metrics_addr            = erigon.metrics_addr           | default(infra_ip) %}
-{%- set metrics_port            = erigon.metrics_port           | default(6060) %}
+{#- RPC-Authentication #}
+{%- set authrpc = erigon.authrpc | default({}) -%}
+{%- macro authrpc_config(authrpc) -%}
+    {%- set items = {
+        'addr':         authrpc.addr        | default("127.0.0.1"),
+        'jwtsecret':    authrpc.jwtsecret   | default(none),
+        'port':         authrpc.port        | default(8551),
+        'vhosts':       authrpc.vhosts      | default(["localhost"]),
+    } %}
+    {{- filter_macro(items, items.keys()) }}
+{%- endmacro -%}
 
-{#- Private API -#}
-{%- set private_api_addr        = erigon.private_api_addr       | default(infra_ip) %}
-{%- set private_api_port        = erigon.private_api_port       | default(9090) %}
-{%- set private_api_ratelimit   = erigon.private_api_ratelimit  | default(31872) %}
+{#- Metrics #}
+{%- set metrics = erigon.metrics | default({}) %}
+{%- macro metrics_config(metrics) %}
+    {%- set items = {
+        'addr':     metrics.addr    | default("127.0.0.1"),
+        'enable':   metrics.enable  | default(true),
+        'port':     metrics.port    | default(6060),
+    } %}
+    {{- filter_macro(items, items.keys()) }}
+{%- endmacro %}
 
-{#- Other -#}
-{%- set externalcl_enable       = erigon.externalcl_enable      | default(true) %}
-{%- set snapshots_enable = 
-    (erigon.snapshots_enable is not none and erigon.snapshots_enable != false) 
-    and (network in ['goerli', 'bsc', 'mainnet'] or erigon.snapshots_enable == true) 
-%}
+{#- Private API #}
+{%- set private_api = erigon.private_api | default({}) %}
+{%- macro private_api_config(private_api) %}
+    {%- set items = {
+        'addr':         private_api.addr        | default("127.0.0.1:9090"),
+        'ratelimit':    private_api.ratelimit   | default(31872),
+    } %}
+    {{- filter_macro(items, items.keys()) }}
+{%- endmacro %}
 
-{ config, pkgs, ... }:
-
-{
-    # ERIGON
-    systemd.services.erigon = {
-        enable = {{ enable | lower }};
-
-        description = "execution, {{ network }}, alpha";
-        requires = [ "network-online.target" ];
-        after = [ 
-            "network-online.target" 
-            {%- for client in eth.clients %}
-            {%- if client in ["lighthouse", "teku", "nimbus", "prysm"] %}
-            "{{ client }}.service" 
+{#- Remove key-value pairs with value of 'none' #}
+{#- Also adds double quotes for strings #}
+{%- macro filter_macro(config, keys) %}
+    {%- for key in keys %}
+        {%- if config[key] is not none %}
+            {%- if config[key] in ["true", "false"] %}
+            {{ key }} = {{ config[key] | lower }};
+            {%- else %}
+            {{ key }} = {{ config[key] | tojson }};
             {%- endif %}
-            {%- endfor %}
-        ];
+        {%- endif %}
+    {%- endfor %}
+{%- endmacro %}
 
-        serviceConfig = {
-            Restart = "always";
-            RestartSec = "5s";
-            User = "{{ username }}";
-            Group = "{{ username }}";
-            Type = "simple";
+{# Erigon #}
+{ config, pkgs, ... }:
+{
+    services.ethereum.erigon.{{ network }} = {
+        enable = {{ enable }};
+        extraArgs = {{ extraArgs }};
+        openFirewall = {{ openFirewall }};
+        package = {{ package }};
+        subVolume = {{ subVolume }};
+        args = {
+            {{- erigon_config(erigon) }}
+            http = {
+                {{- http_config(http) | indent(4) }}
+            };
+            ws = {
+                {{- ws_config(ws) | indent(4) }}
+            };
+            authrpc = {
+                {{- authrpc_config(authrpc) | indent(4) }}
+            };
+            metrics = {
+                {{- metrics_config(metrics) | indent(4) }}
+            };
+            private.api = {
+                {{- private_api_config(private_api) | indent(4) }}
+            };
         };
-
-        script = ''${pkgs.erigon}/bin/erigon \
-        --datadir={{ data_dir }} \
-        --chain={{ network }} \
-        --port={{ port }} \
-        --torrent.port={{ torrent_port }}
-
-        {#- HTTP-Server -#}
-        {%- if http_enable %} \
-        --http \
-        --http.addr={{ http_addr }} \
-        --http.port={{ http_port }} \
-        --http.trace={{ http_trace_enable }} \
-        --http.compression={{ http_compression_enable }} \
-        {%- if http_corsdomain %}
-        --http.corsdomain={{ http_corsdomain }} \
-        {%- endif %}
-        {%- if http_rpcprefix %}
-        --http.rpcprefix={{ http_rpcprefix }} \
-        {%- endif %}
-        --http.vhosts={{ http_vhosts }} \
-        --http.api={{ http_api }} \
-        {%- endif%}
-
-        {#- WebSocket (WS) -#}
-        {%- if ws_enable %}
-        --ws \
-        --ws.addr={{ ws_addr }} \
-        --ws.port={{ ws_port }} \
-        {%- if ws_api %}
-        --ws.api={{ ws_api }} \
-        {%- endif %}
-        {%- endif %}
-
-        {#- RPC-Authentication -#}
-        --authrpc.addr={{ authrpc_addr }} \
-        --authrpc.port={{ authrpc_port }} \
-        --authrpc.vhosts={{ authrpc_vhosts }} \
-        --authrpc.jwtsecret={{ authrpc_jwtsecret }} \
-
-        {#- Metrics -#}
-        {%- if metrics_enable %}
-        --metrics \
-        --metrics.addr={{ metrics_addr }} \
-        --metrics.port={{ metrics_port }} \
-        {%- endif %}
-
-        {#- Private API -#}
-        --private.api.addr={{ private_api_addr }}:{{ private_api_port }} \
-        --private.api.ratelimit={{ private_api_ratelimit }} \
-
-        {#- Other -#}
-        {%- if externalcl_enable %}
-        --externalcl \
-        {%- endif %}
-        {%- if snapshots_enable %}
-        --snapshots \
-        {%- endif %}
-        '';
-
-        wantedBy = [ "multi-user.target" ];
-    };
-
-    # Firewall
-    networking.firewall = {
-        allowedTCPPorts = [ {{ port }} {{ torrent_port }} ];
-        allowedUDPPorts = [ {{ port }} {{ authrpc_port }} {{ torrent_port }}
-                            {%- if http_enable %} {{ http_port }} {%- endif %}
-                            {%- if ws_enable %} {{ ws_port }} {%- endif %}
-                            {%- if metrics_enable %} {{ metrics_port }} {%- endif %} ];
     };
 }
