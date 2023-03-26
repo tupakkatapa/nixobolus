@@ -9,13 +9,9 @@
 {%- set state_version   = home.state_version  | default("23.05") %}
 {%- set enable          = home.enable         | default(true) %}
 
-{ config
-, pkgs
-, lib
-, ...
-}:
+{ inputs, outputs, lib, pkgs, config, ... }: 
 {
-  imports = [ <home-manager/nixos> ];
+  imports = [ inputs.home-manager.nixosModules.home-manager ];
 
   home-manager.users.{{ username }} = { pkgs, ... }: {
 
