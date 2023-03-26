@@ -9,7 +9,7 @@
 {%- set timezone        = data.timezone         | default("Europe/Lisbon") %}
 {%- set font            = data.font             | default("monospace") %}
 {%- set keymap          = data.keymap           | default("us") %}
-{%- set state_version   = data.state_version    | default("23.05") %}
+{%- set state_version   = data.state_version    | default("22.11") %}
 {#- System -#}
 {%- set system = data.system | default("x86_64-linux") -%}
 {%- if system not in ["i686-linux", "x86_64-linux", "aarch64-linux"] %}
