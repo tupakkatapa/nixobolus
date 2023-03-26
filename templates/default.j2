@@ -29,11 +29,8 @@ let
     configuration = { config, pkgs, lib, ... }: with lib; {
 
       imports = [
-        ../../common/netboot.nix
         ../../common/ramdisk.nix
-        {%- for config in data.rendered_configs %}
-        {{ config }}
-        {%- endfor %}
+        {{ data.rendered_configs | join('\n') | indent(8) }}
       ];
 
       {%- if mounts %}
