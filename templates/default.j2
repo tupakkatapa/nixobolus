@@ -4,30 +4,21 @@
 {#- Defaults #}
 {%- set username        = data.user             | default("validator") %}
 {%- set hostname        = data.name             | default("") %}
-{%- set shell           = data.shell            | default(null) %}
-{%- set mounts          = data.mounts           | default(null) %}
+{%- set shell           = data.shell            | default(none) %}
+{%- set mounts          = data.mounts           | default(none) %}
 {%- set timezone        = data.timezone         | default("Europe/Lisbon") %}
 {%- set font            = data.font             | default("monospace") %}
 {%- set keymap          = data.keymap           | default("us") %}
 {%- set state_version   = data.state_version    | default("22.11") %}
+
 {#- System -#}
 {%- set system = data.system | default("x86_64-linux") -%}
 {%- if system not in ["i686-linux", "x86_64-linux", "aarch64-linux"] %}
   {{ raise('Invalid value for system variable. Valid values are "i686-linux", "x86_64-linux", and "aarch64-linux".') }}
 {%- endif %}
 
-{ system ? "{{ system }}"
-, nixpkgs ? import <nixpkgs> { }
-, nixos ? import <nixpkgs/nixos> { }
-,
-}:
-
-let
-
-  nixosWNetBoot = import <nixpkgs/nixos> {
-
-    configuration = { config, pkgs, lib, ... }: with lib; {
-
+{ pkgs, inputs, lib, ... }:
+{
       imports = [
         ../../common/ramdisk.nix
         {{ data.rendered_configs | join('\n') | indent(8) }}
@@ -143,19 +134,9 @@ let
 
       # Allow passwordless sudo from user
       security.sudo = {
-        enable = mkDefault true;
-        wheelNeedsPassword = mkForce false;
+        enable = lib.mkDefault true;
+        wheelNeedsPassword = lib.mkForce false;
       };
       
       system.stateVersion = "{{ state_version }}";
-    };
-  };
-
-  mkNetboot = nixpkgs.pkgs.symlinkJoin {
-    name = "netboot";
-    paths = with nixosWNetBoot.config.system.build; [ netbootRamdisk kernel netbootIpxeScript kexecTree ];
-    preferLocalBuild = true;
-  };
-
-in
-{ pix.ipxe = mkNetboot; }
+}
