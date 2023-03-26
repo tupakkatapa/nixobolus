@@ -61,7 +61,7 @@
         name = hostname;
         value = nixos-generators.nixosGenerate {
           inherit system pkgs;
-          specialArgs = { inherit inputs outputs; };
+          specialArgs = { inherit inputs; };
           modules = [ ./configs/nix_configs/hosts/${hostname} ];
           customFormats = customFormats;
           format = "kexecTree";
@@ -73,7 +73,7 @@
         name = hostname;
         value = nixpkgs.lib.nixosSystem {
           inherit system pkgs;
-          specialArgs = { inherit inputs outputs; };
+          specialArgs = { inherit inputs; };
           modules = [ ./configs/nix_configs/hosts/${hostname} ];
         };
       }) hostnames);
