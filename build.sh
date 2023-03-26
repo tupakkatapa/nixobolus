@@ -22,7 +22,7 @@ help() {
     echo "  --nix-shell           Run 'nix build' command within a nix-shell development environment"
     echo "  -p, --prompt          Prompt before performing crucial actions (e.g. overwriting or deleting files)"
     echo "  -k, --keep-configs    Keep nix configurations in './configs/nix_configs/<hostname>' after build"
-    echo "  -o, --output          Specify output directory (default: './result/<hostname>')"
+    echo "  -o, --output          Specify output directory (default: './result')"
     echo "  -v, --verbose         Enable verbose mode"
     echo ""
     echo "If config_file is not specified, the script will read from standard input."
