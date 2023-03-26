@@ -25,9 +25,10 @@
     {%- set mev_port    = consensus.mev_port                | default(18550) %}
 {%- endif %}
 
-{ config, pkgs, lib, ... }:
-
+{ config, pkgs, inputs, lib, ... }:
 {
+    imports = [ inputs.ethereum-nix.nixosModules.default ];
+
     # System packages
         environment.systemPackages = with pkgs; [
             {%- for client in eth.clients %}
