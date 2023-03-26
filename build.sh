@@ -8,7 +8,6 @@ NIXPKGS_REPO="https://github.com/NixOS/nixpkgs/archive/refs/heads/nixos-unstable
 HM_REPO="https://github.com/nix-community/home-manager/archive/master.tar.gz"
 config_dir="$SCRIPT_DIR/configs/nix_configs/hosts"
 output_dir="$SCRIPT_DIR/result"
-nix_shell=false
 #container=false
 verbose=false
 keep_configs=false
@@ -19,7 +18,6 @@ help() {
     echo "Usage: ./build.sh [-p] [-k] [-o output_dir] [-v] [--nix-shell] [config_file]"
     echo ""
     echo "Options:"
-    echo "  --nix-shell           Run 'nix build' command within a nix-shell development environment"
     echo "  -p, --prompt          Prompt before performing crucial actions (e.g. overwriting or deleting files)"
     echo "  -k, --keep-configs    Keep nix configurations in './configs/nix_configs/<hostname>' after build"
     echo "  -o, --output          Specify output directory (default: './result')"
@@ -92,7 +90,6 @@ parse_args() {
             -h|--help) help ;;
             #--docker) container=true; engine="docker" ;;
             #--podman) container=true; engine="podman" ;;
-            --nix-shell) nix_shell=true ;;
             -v|--verbose) verbose=true ;;
             -*) # Allows combining flags
                 for ((i=2; i<=${#1}; i++)); do
@@ -255,13 +252,7 @@ build_images() {
         say "\n[+] Building images for $host [$counter/$total_hosts]"
         
         # Init build command
-        nix_build_cmd="nix build .#$host"
-
-        # Add nix-shell prefix if enabled
-        if $nix_shell; then
-            nix_build_cmd="nix-shell --run '$nix_build_cmd'"
-        fi
-
+        
         # Add docker/podman prefix if enabled
         #if $container; then
         #    if ! command -v "$engine" >/dev/null 2>&1; then
