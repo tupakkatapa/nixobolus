@@ -20,9 +20,10 @@
 {%- endif %}
 
 {%- if consensus %}
-    {%- set network     = consensus.network or eth.network  | default("mainnet")%}
-    {%- set mev_enable  = consensus.mev_enable              | default(true) %}
-    {%- set mev_port    = consensus.mev_port                | default(18550) %}
+    {%- set network = consensus.network or eth.network | default("mainnet") %}
+    {%- set mev = consensus.mev | default({}) %}
+    {%- set mev_enable = mev.enable | default(true) %}
+    {%- set mev_port = mev.port | default(18550) %}
 {%- endif %}
 
 { config, pkgs, inputs, lib, ... }:
@@ -41,7 +42,7 @@
             {%- endfor %}
         ];
 
-    {%- if consensus and mev_enable %}
+    {%- if mev_enable %}
 
     # MEV-BOOST
     systemd.services.mev-boost = {
@@ -95,5 +96,5 @@
 
         wantedBy = [ "multi-user.target" ];
     };
-    {%- endif%}
+    {%- endif %}
 }
