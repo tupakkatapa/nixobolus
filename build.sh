@@ -73,12 +73,12 @@ check_deps() {
     elif command -v python >/dev/null 2>&1 ; then
         python_cmd="python"
     else
-        say "[-] Python is not installed."
+        say "[-] Python is not installed. Enter 'nix develop' to quickly set up necessary dependencies."
     fi
 
     # Check that python can import jinja2
     if ! $python_cmd -c "import jinja2" >/dev/null 2>&1; then
-        say "[-] Jinja2 is not installed."
+        say "[-] Jinja2 is not installed. Enter 'nix develop' to quickly set up necessary dependencies."
     fi
 }
 
@@ -146,7 +146,7 @@ get_values_from_config() {
         yaml|yml)
             # Check if yq is installed
             if ! command -v yq >/dev/null 2>&1; then
-                say "[-] yq is not installed."
+                say "[-] yq is not installed. Enter 'nix develop' to quickly set up necessary dependencies."
             fi
             # Extract the hostnames
             hostnames=$(yq -r '.hosts[].name' "$config_file")
@@ -156,7 +156,7 @@ get_values_from_config() {
         json)
             # Check if jq is installed
             if ! command -v jq >/dev/null 2>&1; then
-                say "[-] jq is not installed."
+                say "[-] jq is not installed. Enter 'nix develop' to quickly set up necessary dependencies."
             fi
             # Extract the hostnames
             hostnames=$(jq -r '.hosts[].name' "$config_file")
@@ -221,7 +221,7 @@ sops_decrypt() {
 
     # Check if sops is installed
     if ! command -v sops &> /dev/null; then
-        say "[-] Decryption failed, SOPS not installed."
+        say "[-] Decryption failed, SOPS not installed. Enter 'nix develop' to quickly set up necessary dependencies."
     fi
 
     # Create a temporary file for the decrypted output
