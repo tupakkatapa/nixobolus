@@ -22,12 +22,12 @@
 # Store commonly used values to be referenced later.
 variables:
     var_1: &example_1 192.168.1.111
-    var_2: &example_2 192.168.1.115
+    var_2: &example_2 192.168.1.112
 
 # General settings that apply to all machines.
 general:
     user: "admin"
-    system: "x86_64-linux" # ["i686-linux", "x86_64-linux", "aarch64-linux"]
+    system: "x86_64-linux" # Only 'x86_64-linux' available at the moment
     timezone: "Europe/Lisbon"
     font: "monospace"
     keymap: "us"
@@ -50,7 +50,6 @@ general:
 hosts:
     - name: "hostname_1"
       # Storing addr as variable to be referenced later
-      addr: &addr_1 192.168.1.111
       services:
 
         mounts:
@@ -81,77 +80,90 @@ hosts:
             # These values are included here only for the purpose of example 
             # and to help keep track of which options have been coded in.
 
-            network: "goerli"
             clients:
-                # Execution
-                erigon:
-                    enable: true
-                    data_dir: "/var/mnt/erigon"
-                    port: 30303
-                    # HTTP-Server
-                    http_enable: false
-                    http_addr: *addr_1
-                    http_port: 8545
-                    http_api: [ "eth", "erigon", "engine" ]
-                    http_compression_enable: true
-                    http_corsdomain: null
-                    http_rpcprefix: null
-                    http_trace_enable: true
-                    http_vhosts: [ "localhost" ]
-                    # WebSocket (WS)
-                    ws_addr: *addr_1
-                    ws_api: null
-                    ws_enable: true
-                    ws_port: 8551
-                    # RPC-Authentication
-                    authrpc_addr: *addr_1
-                    authrpc_port: 8551
-                    authrpc_jwtsecret: "/var/mnt/erigon/jwt.hex"
-                    authrpc_vhosts: [ "localhost" ]
-                    # Metrics
-                    metrics_enable: false
-                    metrics_addr: *addr_1
-                    metrics_port: 6060
-                    # Private API
-                    private_api_addr: *addr_1
-                    private_api_port: 9090
-                    private_api_ratelimit: 31872
-                    # Other
-                    externalcl_enable: true
-                    snapshots_enable: true
-                    torrent_port: 42069
+                # Execution Layer Clients
+                # ! bug on ethereum.nix/modules/erigon/default.nix !
+                # erigon:
+                #     # General
+                #     enable: true
+                #     extraArgs: []
+                #     openFirewall: true
+                #     package: "pkgs.erigon"
+                #     subVolume: true
 
-                # Consensus
+                #     # Args
+                #     datadir: null
+                #     port: 30303
+                #     network: "mainnet"
+                #     externalcl: true
+                #     snapshots: true
+                #     torrent_port: 42069
+
+                #     http: # HTTP-Server
+                #         enable: false
+                #         addr: "127.0.0.1"
+                #         port: 8545
+                #         api: null
+                #         compression: true
+                #         corsdomain: null
+                #         trace: true
+                #         vhosts: [ "localhost" ]
+
+                #     ws: # WebSocket (WS)
+                #         compression: flase
+                #         enable: true
+
+                #     authrpc: # RPC-Authentication
+                #         addr: "127.0.0.1"
+                #         port: 8551
+                #         jwtsecret: null
+                #         vhosts: [ "localhost" ]
+
+                #     metrics: # Metrics
+                #         enable: true
+                #         addr: "127.0.0.1"
+                #         port: 6060
+
+                #     private_api: # Private API
+                #         addr: "127.0.0.1:9090"
+                #         ratelimit: 31872
+
+                # Consensus Layer Clients
                 lighthouse:
+                    # General
                     enable: true
-                    data_dir: "/var/mnt/lighthouse"
-                    # Execution
-                    exec_jwt_secret: "/var/mnt/lighthouse/jwt.hex"
-                    exec_endpoint: *addr_1
-                    exec_port: 8551
-                    # HTTP-Server
-                    http_enable: true
-                    http_addr: *addr_1
-                    http_port: 5052
-                    # Metrics
-                    metrics_enable: true
-                    metrics_addr: *addr_1
-                    metrics_port: 5054
-                    # Slasher
-                    slasher_enable: false
-                    slasher_history_length: 4096
-                    slasher_max_db_size: 256
-                    # MEV-Boost
-                    mev_enable: false
-                    mev_endpoint: *addr_1
-                    mev_port: 18550
-                    # Other
+                    openFirewall: true
+
+                    # Args
+                    datadir:
+                    exec_jwtsecret:
+                    exec_addr:
+                    exec_port:
+                    deposit_contract_sync_disable: false
                     checkpoint_sync_url: null
                     prune_payloads_enable: true
-                    deposit_contract_sync_disable: false
+                    
+                    http: # HTTP-Server
+                        enable: true
+                        addr: "127.0.0.1"
+                        port: 5042
+
+                    metrics: # Metrics
+                        enable: true
+                        addr: "127.0.0.1"
+                        port: 5054
+
+                    slasher: # Slasher
+                        enable: false
+                        history_lenght: 4096
+                        max_db_size: 256
+
+                    mev: # MEV-Boost
+                        enable: true
+                        port: 18550
+                        endpoint: "127.0.0.1"
 
     - name: "hostname_2"
-      addr: &addr_2 192.168.1.115
 
       mounts:
         - source: "/dev/disk/by-label/geth"
@@ -181,77 +193,95 @@ hosts:
 
         ethereum:
             clients:
-                # Execution
+                # Execution Layer Clients
                 geth:
+                    # General
                     enable: true
-                    network: "mainnet"
-                    data_dir: "/var/mnt/geth"
-                    port: 30303
-                    # HTTP-Server
-                    http_enable: true
-                    http_addr: *addr_2
-                    http_port: 8545
-                    http_api: null
-                    http_corsdomain: null
-                    http_rpcprefix: null
-                    http_vhosts: [ "localhost" ]
-                    # WebSocket (WS)
-                    ws_enable: true
-                    ws_addr: *addr_2
-                    ws_port: 8546
-                    ws_api: null
-                    # RPC-Authentication
-                    authrpc_addr: *addr_2
-                    authrpc_port: 8551
-                    authrpc_jwtsecret: "/var/mnt/geth/jwt.hex"
-                    authrpc_vhosts: [ "localhost" ]
-                    # Metrics
-                    metrics_enable: true
-                    metrics_addr: *addr_2
-                    metrics_port: 6060
-                    # Other
+                    extraArgs: []
+                    openFirewall: true
+                    package: "pkgs.geth"
+
+                    # Args
+                    bootnodes: null
+                    datadir: null
                     gcmode: "full"
                     maxpeers: 50
-                    syncmode: "snap"
-
-                # Consensus
-                prysm:
-                    enable: true
+                    netrestrict: null
                     network: "mainnet"
-                    data_dir: "/var/mnt/prysm"
-                    p2p_udp_port: 12000
-                    p2p_tcp_port: 13000
-                    # Execution
-                    exec_jwt_secret: "/var/mnt/prysm/jwt.hex"
-                    exec_port: 8545
-                    exec_endpoint: *addr_2
-                    # RPC-Authentication
-                    rpc_enable: false
-                    rpc_host: *addr_2
-                    rpc_port: 4000
-                    # gRPC-Gateway
-                    grpc_gateway_disable: false
-                    grpc_gateway_host: *addr_2
-                    grpc_gateway_port: 3500
-                    # Monitoring
-                    monitoring_disable: false
-                    monitoring_host: *addr_2
-                    monitoring_port: 8080
-                    # pprof HTTP-Server
-                    pprof_enable: false
-                    pprof_addr: *addr_2
-                    pprof_port: 6060
-                    # Slasher
-                    slasher_enable: false
-                    slasher_history_enable: false
-                    # MEV-Boost
-                    mev_enable: false
-                    mev_port: 18550
-                    mev_endpoint: *addr_2
-                    # Other
-                    genesis_beacon_api_url: null
-                    checkpoint_sync_url: null
-                    staking_contract_check_disable: false
+                    networkid: 1
+                    nodiscover: false
+                    port: 30303
+                    syncmode: "snap"
+                    verbosity: 3
+
+                    http: # HTTP-Server
+                        enable: true
+                        addr: "127.0.0.1"
+                        port: 8545
+                        api: null
+                        corsdomain: null
+                        rpcprefix: null
+                        vhosts: [ "localhost" ]
+
+                    ws: # WebSocket (WS)
+                        enable: true
+                        addr: "127.0.0.1"
+                        port: 8546
+                        api: null
+
+                    authrpc: # RPC-Authentication
+                        addr: "127.0.0.1"
+                        port: 8551
+                        jwtsecret: null
+                        vhosts: [ "localhost" ]
+
+                    metrics: # Metrics
+                        enable: true
+                        addr: "127.0.0.1"
+                        port: 6060
+
+                # Consensus Layer Clients
+                # ! error on build: https://github.com/prysmaticlabs/prysm/pull/12084 !
+                # prysm:
+                #     # General
+                #     enable: true
+                #     extraArgs: []
+                #     openFirewall: true
+                #     package: "pkgs.prysm"
+
+                #     # Args
+                #     network: "mainnet"
+                #     datadir: null
+                #     p2p_udp_port: 12000
+                #     p2p_tcp_port: 13000
+                #     jwtsecret: ""
+                #     datadir: null
+                #     checkpoint_sync_url: null
+                #     genesis_beacon_api_url: null
+
+                #     authrpc: # RPC-Authentication
+                #         addr: "127.0.0.1"
+                #         port: 4000
+                     
+                #     grpc_gateway: # gRPC-Gateway
+                #         enable: true
+                #         addr: "127.0.0.1"
+                #         port: 3500
+
+                #     monitoring: # Monitoring
+                #         enable: true
+                #         addr: "127.0.0.1"
+                #         port: 8080
+
+                #     pprof: # pprof HTTP-Server
+                #         enable: false
+                #         addr: "127.0.0.1"
+                #         port: 6060
+
+                #     mev: # MEV-Boost
+                #         enable: true
+                #         endpoint: "127.0.0.1"
+                #         port: 18550
 
     # Builds even with no key-value pairs
     - name: "hostname_3"
