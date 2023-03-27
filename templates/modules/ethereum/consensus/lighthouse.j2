@@ -115,10 +115,8 @@
 
     # Firewall
     networking.firewall = {
-        allowedTCPPorts = [ {{ p2p_udp_port }} ];
-        allowedUDPPorts = [ {{ p2p_tcp_port }} {{ rpc_port }}
-                            {%- if not monitoring_disable %} {{ monitoring_port }} {%- endif %}
-                            {%- if not grpc_gateway_disable %} {{ grpc_gateway_port }} {%- endif %}
-                            {%- if pprof %} {{ pprof_port }} {%- endif %} ];
+        allowedTCPPorts = [ ];
+        allowedUDPPorts = [ {%- if metrics_enable %} {{ metrics_port }} {%- endif %}
+                            {%- if http_enable %} {{ http_port }} {%- endif %} ];
     };
 }
