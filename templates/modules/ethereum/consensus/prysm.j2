@@ -32,7 +32,6 @@
     ("--http-mev-relay=http://" ~ mev_endpoint ~ ":" ~ mev_port, mev_enable),
     ("--slasher", slasher_enable ),
     ("--historical-slasher-node", slasher_history)
-    ("--execution-endpoint http://{{ exec_endpoint }}:{{ exec_port }}", args.) \
 ] %}
 {#- Append #}
 {%- for flag in extraFlags %}
