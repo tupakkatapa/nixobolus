@@ -26,7 +26,6 @@ Optionally, you may also install [direnv](https://github.com/direnv/direnv#basic
     Usage: ./build.sh [-p] [-k] [-o output_dir] [-v] [--nix-shell] [config_file]
 
     Options:
-    --nix-shell           Run 'nix build' command within a nix-shell development environment
     -p, --prompt          Prompt before performing crucial actions (e.g. overwriting or deleting files)
     -k, --keep-configs    Keep nix configurations in './configs/nix_configs/<hostname>' after build
     -o, --output          Specify output directory (default: './result')
