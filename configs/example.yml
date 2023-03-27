@@ -241,7 +241,7 @@ hosts:
                         port: 6060
 
                 # Consensus Layer Clients
-                # ! error on build: https://github.com/prysmaticlabs/prysm/pull/12084 !
+                # ! build error: https://github.com/prysmaticlabs/prysm/pull/12084 !
                 # prysm:
                 #     # General
                 #     enable: true
