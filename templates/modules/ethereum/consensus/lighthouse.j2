@@ -1,51 +1,53 @@
 # Nixobolus - Automated creation of bootable NixOS images
 # https://github.com/ponkila/Nixobolus
 
-{#- General -#}
-{%- set eth         = data.services.ethereum %}
-{%- set lh          = eth.clients.lighthouse %}
-{%- set username    = data.user                     | default("validator") %}
-{%- set network     = lh.network or eth.network     | default("mainnet") %}
-{%- set infra_ip    = lh.infra_ip or eth.infra_ip   | default("127.0.0.1") %}
+{#- Paths -#}
+{%- set eth = data.services.ethereum %}
+{%- set lighthouse = eth.clients.lighthouse %}
 
-{#- Lighthouse -#}
-{%- set enable                          = lh.enable                         | default(true) %}
-{%- set data_dir                        = lh.data_dir                       | default("/var/mnt/lighthouse") %}
+{#- General #}
+{%- set username     = data.user                             | default("validator") %}
+{%- set network      = lighthouse.network or eth.network     | default("mainnet") %}
+{%- set enable       = lighthouse.enable                     | default(true) %}
+{%- set openFirewall = lighthouse.openFirewall               | default(true) %}
+{%- set infra_ip     = lighthouse.infra_ip or eth.infra_ip   | default("127.0.0.1") %}
 
-{#- Execution -#}
-{%- set exec_jwt_secret                 = lh.exec_jwt_secret                | default(data_dir + "/jwt.hex") %}
-{%- set exec_port                       = lh.exec_port                      | default(8545) %}
-{%- set exec_endpoint                   = lh.exec_endpoint                  | default(infra_ip) %}
+{#- Args -#}
+{%- set data_dir                        = lighthouse.datadir                        | default("") %}
+{%- set exec_jwt_secret                 = lighthouse.exec_jwtsecret                 | default("") %}
+{%- set exec_port                       = lighthouse.exec_port                      | default(8545) %}
+{%- set exec_endpoint                   = lighthouse.exec_addr                      | default(infra_ip) %}
+{%- set deposit_contract_sync_disable   = lighthouse.deposit_contract_sync_disable  | default(false) | lower %}
+{%- set checkpoint_sync_url             = lighthouse.checkpoint_sync_url            | default(none) %}
+{%- set prune_payloads_enable           = lighthouse.prune_payloads_enable          | default(true)  | lower %}
 
 {#- HTTP-Server -#}
-{%- set http_enable                     = lh.http_enable                    | default(true) %}
-{%- set http_addr                       = lh.http_addr                      | default(infra_ip) %}
-{%- set http_port                       = lh.http_port                      | default(5052) %}
+{%- set http        = lighthouse.http   | default({}) %}
+{%- set http_enable = http.enable       | default(true) | lower %}
+{%- set http_addr   = http.addr         | default(infra_ip) %}
+{%- set http_port   = http.port         | default(5052) %}
 
 {#- Metrics -#}
-{%- set metrics_enable                  = lh.metrics_enable                 | default(true) %}
-{%- set metrics_addr                    = lh.metrics_addr                   | default(infra_ip) %}
-{%- set metrics_port                    = lh.metrics_port                   | default(5054) %}
+{%- set metrics         = lighthouse.metrics    | default({}) %}
+{%- set metrics_enable  = metrics.enable        | default(true) | lower %}
+{%- set metrics_addr    = metrics.addr          | default(infra_ip) %}
+{%- set metrics_port    = metrics.port          | default(5054) %}
 
 {#- Slasher -#}
-{%- set slasher_enable                  = lh.slasher_enable                 | default(false) %}
-{%- set slasher_history_length          = lh.slasher_history_length         | default(4096) %}
-{%- set slasher_max_db_size             = lh.slasher_max_db_size            | default(256) %}
+{%- set slasher                 = lighthouse.slasher        | default({}) %}
+{%- set slasher_enable          = slasher.enable            | default(false) | lower %}
+{%- set slasher_history_length  = slasher.history_length    | default(4096) %}
+{%- set slasher_max_db_size     = slasher.max_db_size       | default(256) %}
 
 {#- MEV-Boost -#}
-{%- set mev_enable                      = lh.mev_enable                     | default(false) %}
-{%- set mev_port                        = lh.mev_port                       | default(18550) %}
-{%- set mev_endpoint                    = lh.mev_endpoint                   | default(infra_ip) %}
+{%- set mev             = lighthouse.mev    | default({}) %}
+{%- set mev_enable      = mev.enable        | default(true) | lower %}
+{%- set mev_port        = mev.port          | default(18550) %}
+{%- set mev_endpoint    = mev.endpoint      | default(infra_ip) %}
 
-{#- Other -#}
-{%- set deposit_contract_sync_disable   = lh.deposit_contract_sync_disable  | default(false) %}
-{%- set checkpoint_sync_url             = lh.checkpoint_sync_url            | default(none) %}
-{%- set prune_payloads_enable           = lh.prune_payloads_enable          | default(true) %}
-
+{# Lighthouse Beacon #}
 { config, pkgs, ... }:
-
 {
-    # LIGHTHOUSE
     systemd.services.lighthouse = {
         enable = {{ enable | lower }};
 
@@ -114,9 +116,11 @@
     };
 
     # Firewall
+    {%- if openFirewall %}
     networking.firewall = {
         allowedTCPPorts = [ ];
         allowedUDPPorts = [ {%- if metrics_enable %} {{ metrics_port }} {%- endif %}
                             {%- if http_enable %} {{ http_port }} {%- endif %} ];
     };
+    {%- endif %}
 }
