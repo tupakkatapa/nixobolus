@@ -31,7 +31,7 @@
 {%- macro http_config(http) %}
     {%- set items = {
         'addr':         http.addr           | default("127.0.0.1"),
-        'api':          http.api            | default(none),
+        'api':          http.api            | default([]),
         'compression':  http.compression    | default(true),
         'enable':       http.enable         | default(true),
         'port':         http.port           | default(8545),
@@ -41,7 +41,7 @@
     {{- filter_macro(items, items.keys()) }}
 {%- endmacro %}
 
-{#- Websocket #}
+{#- Websocket (port: 8546) #}
 {%- set ws = erigon.ws | default({}) %}
 {%- macro ws_config(ws) %}
     {%- set items = {
