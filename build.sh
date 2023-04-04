@@ -252,7 +252,7 @@ build_images() {
         say "\n[+] Building images for $host [$counter/$total_hosts]"
         
         # Init build command
-        nix_build_cmd="nix build .#$host -o $output_dir/$host --show-trace"
+        nix_build_cmd="nix build path:.#$host -o $output_dir/$host --show-trace"
         
         # Add docker/podman prefix if enabled
         #if $container; then
