@@ -34,6 +34,7 @@
       system = "x86_64-linux";
       forEachSystem = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
       forEachPkgs = f: forEachSystem (sys: f nixpkgs.legacyPackages.${sys});
+      packages = forEachPkgs (pkgs: import ./configs/nix_configs/pkgs { inherit pkgs; });
 
       # get hostnames from ./nix_configs/hosts
       ls = builtins.readDir ./configs/nix_configs/hosts;
