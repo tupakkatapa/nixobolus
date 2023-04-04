@@ -122,6 +122,7 @@
     # User
     services.getty.autologinUser = "{{ username }}";
     users.users.{{ username }} = {
+        group = "{{ username }}";
         isNormalUser = true;
         extraGroups = [ "wheel" ];
         {%- if shell %}
@@ -130,6 +131,7 @@
         # Allow the graphical user to login without password
         initialHashedPassword = "";
     };
+    users.groups.{{ username }} = { };
     users.users.root.initialHashedPassword = "";
 
     # Allow passwordless sudo from user
