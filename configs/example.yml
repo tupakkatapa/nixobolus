@@ -72,7 +72,7 @@ hosts:
                   endpoint: "<end.point.com:51820>"
                   persistent_keepalive: 25
 
-        ethereum:
+        # ethereum:
 
             # In this section, all of the key-value pairs have values that are 
             # the same as the defaults set in the corresponding Jinja2 template.
@@ -80,9 +80,9 @@ hosts:
             # These values are included here only for the purpose of example 
             # and to help keep track of which options have been coded in.
 
-            clients:
+            # clients:
                 # Execution Layer Clients
-                # ! bug on ethereum.nix/modules/erigon/default.nix !
+                # # ! bug -> error: attribute 'scripts' missing ! 
                 # erigon:
                 #     # General
                 #     enable: true
@@ -103,14 +103,15 @@ hosts:
                 #         enable: false
                 #         addr: "127.0.0.1"
                 #         port: 8545
-                #         api: null
+                #         api: []
                 #         compression: true
                 #         corsdomain: null
                 #         trace: true
                 #         vhosts: [ "localhost" ]
-
+                
+                #     # ! bug -> requires ws.port but option does not exists !
                 #     ws: # WebSocket (WS)
-                #         compression: flase
+                #         compression: false
                 #         enable: true
 
                 #     authrpc: # RPC-Authentication
@@ -129,39 +130,40 @@ hosts:
                 #         ratelimit: 31872
 
                 # Consensus Layer Clients
-                lighthouse:
-                    # General
-                    enable: true
-                    openFirewall: true
+                # ! error -> ERROR: The Cargo.lock contains git dependencies
+                # lighthouse:
+                #     # General
+                #     enable: true
+                #     openFirewall: true
 
-                    # Args
-                    datadir:
-                    exec_jwtsecret:
-                    exec_addr:
-                    exec_port:
-                    deposit_contract_sync_disable: false
-                    checkpoint_sync_url: null
-                    prune_payloads_enable: true
+                #     # Args
+                #     datadir: ""
+                #     exec_jwtsecret: ""
+                #     exec_addr: "127.0.0.1"
+                #     exec_port: 8545
+                #     deposit_contract_sync_disable: false
+                #     checkpoint_sync_url: null
+                #     prune_payloads_enable: true
                     
-                    http: # HTTP-Server
-                        enable: true
-                        addr: "127.0.0.1"
-                        port: 5042
+                #     http: # HTTP-Server
+                #         enable: true
+                #         addr: "127.0.0.1"
+                #         port: 5042
 
-                    metrics: # Metrics
-                        enable: true
-                        addr: "127.0.0.1"
-                        port: 5054
+                #     metrics: # Metrics
+                #         enable: true
+                #         addr: "127.0.0.1"
+                #         port: 5054
 
-                    slasher: # Slasher
-                        enable: false
-                        history_lenght: 4096
-                        max_db_size: 256
+                #     slasher: # Slasher
+                #         enable: false
+                #         history_lenght: 4096
+                #         max_db_size: 256
 
-                    mev: # MEV-Boost
-                        enable: true
-                        port: 18550
-                        endpoint: "127.0.0.1"
+                #     mev: # MEV-Boost
+                #         enable: true
+                #         port: 18550
+                #         endpoint: "127.0.0.1"
 
     - name: "hostname_2"
 
@@ -282,6 +284,10 @@ hosts:
                 #         enable: true
                 #         endpoint: "127.0.0.1"
                 #         port: 18550
+                
+                #     slasher: # Slasher
+                #         enable: true
+                #         history: true
 
     # Builds even with no key-value pairs
     - name: "hostname_3"
