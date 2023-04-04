@@ -21,6 +21,14 @@
         {%- endfor %}
     ];
 
+    nixpkgs = {
+      config = {
+        allowUnfree = true;
+        # Workaround for https://github.com/nix-community/home-manager/issues/2942
+        allowUnfreePredicate = (_: true);
+      };
+    };
+
     programs = {
         {%- for program in home.programs %}
         {{ program }}.enable = true;
