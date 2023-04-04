@@ -20,6 +20,7 @@
 { pkgs, inputs, lib, ... }:
 {
     imports = [
+        ../../common/channels.nix
         ../../common/ramdisk.nix
         {{ data.rendered_configs | join('\n') | indent(8) }}
     ];
