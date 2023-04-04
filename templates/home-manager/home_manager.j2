@@ -29,6 +29,14 @@
       };
     };
 
+    nix = {
+      package = lib.mkDefault pkgs.nix;
+        settings = {
+          experimental-features = [ "nix-command" "flakes" "repl-flake" ];
+          warn-dirty = false;
+        };
+    };
+
     programs = {
         {%- for program in home.programs %}
         {{ program }}.enable = true;
