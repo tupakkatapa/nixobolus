@@ -10,6 +10,7 @@
 {%- set font            = data.font             | default("monospace") %}
 {%- set keymap          = data.keymap           | default("us") %}
 {%- set state_version   = data.state_version    | default("22.11") %}
+{%- set remote_builder  = data.remote_builder   | default(false) %}
 
 {#- System -#}
 {%- set system = data.system | default("x86_64-linux") -%}
@@ -67,6 +68,18 @@
         fuse-overlayfs
         lm_sensors
     ];
+
+    {%- if remote_builder %}
+    # Allows this server to be used as a remote builder
+    nix.settings.trusted-users = [
+        "root"
+        "@wheel"
+    ];
+
+    boot.binfmt.emulatedSystems = [
+        "aarch64-linux"
+    ];
+    {%- endif %}
 
     # Localization
     networking.hostName = "{{ hostname }}";
