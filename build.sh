@@ -233,7 +233,7 @@ sops_decrypt() {
     fi
 }
 
-# Build images using nix-build command
+# Build images using flake
 build_images() {
     local total_hosts
     total_hosts=$(echo "$hostnames" | wc -w)
@@ -401,7 +401,7 @@ main() {
         done
     done
 
-    # Check if previous build files exists
+    # Build images using flake
     build_images
 }
 
