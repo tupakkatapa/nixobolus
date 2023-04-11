@@ -32,6 +32,9 @@
     let
       inherit (self) outputs;
       system = "x86_64-linux";
+
+      # custom packages
+      # acessible through 'nix build', 'nix shell', etc
       forEachSystem = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
       forEachPkgs = f: forEachSystem (sys: f nixpkgs.legacyPackages.${sys});
       packages = forEachPkgs (pkgs: import ./configs/nix_configs/pkgs { inherit pkgs; });
@@ -47,6 +50,7 @@
       pkgs = import nixpkgs { inherit system overlays; };
 
       # custom formats for nixos-generators
+      # other available formats can be found at: https://github.com/nix-community/nixos-generators/tree/master/formats
       customFormats = {
         "kexecTree" = { 
           formatAttr = "kexecTree";
@@ -55,14 +59,16 @@
       };
     in {
       # devshell for bootstrapping
+      # acessible through 'nix develop' or 'nix-shell' (legacy)
       devShells = forEachPkgs (pkgs: import ./shell.nix { inherit pkgs; });
 
       # nixos-generators
+      # available through 'nix-build .#your-hostname'
       packages.${system} = builtins.listToAttrs (map (hostname: {
         name = hostname;
         value = nixos-generators.nixosGenerate {
           inherit system pkgs;
-          specialArgs = { inherit inputs; };
+          specialArgs = { inherit inputs outputs; };
           modules = [ ./configs/nix_configs/hosts/${hostname} ];
           customFormats = customFormats;
           format = "kexecTree";
@@ -70,11 +76,12 @@
       }) hostnames);
 
       # nixos configuration entrypoints
+      # available through 'nix-build .#your-hostname'
       nixosConfigurations = builtins.listToAttrs (map (hostname: {
         name = hostname;
         value = nixpkgs.lib.nixosSystem {
           inherit system pkgs;
-          specialArgs = { inherit inputs; };
+          specialArgs = { inherit inputs outputs; };
           modules = [ ./configs/nix_configs/hosts/${hostname} ];
         };
       }) hostnames);
