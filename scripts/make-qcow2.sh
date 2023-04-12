@@ -50,6 +50,7 @@ sudo virt-install -n $VM_NAME --vcpus $VCPUS -r $RAM \
   --network bridge=virbr0 \
   --disk $QCOW2_FILE,format=qcow2,bus=virtio \
   --install kernel=${BZIMAGE_FILE},initrd=${INITRD_FILE},kernel_args_overwrite=yes,kernel_args="${KERNEL_ARGS}" \
+  --wait -1 \
   --noautoconsole \
   #--debug
 
