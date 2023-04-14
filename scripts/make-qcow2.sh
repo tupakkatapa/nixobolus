@@ -41,7 +41,6 @@ sudo virsh destroy $VM_NAME >/dev/null 2>&1
 sudo virsh undefine $VM_NAME >/dev/null 2>&1
 
 # Create state disk
-echo -e "\n[+] Creating image.."
 sudo qemu-img create -f qcow2 -o preallocation=metadata $QCOW2_FILE ${DISK_SIZE}G
 
 # Create new server
@@ -50,11 +49,4 @@ sudo virt-install -n $VM_NAME --vcpus $VCPUS -r $RAM \
   --network bridge=virbr0 \
   --disk $QCOW2_FILE,format=qcow2,bus=virtio \
   --install kernel=${BZIMAGE_FILE},initrd=${INITRD_FILE},kernel_args_overwrite=yes,kernel_args="${KERNEL_ARGS}" \
-  --wait -1 \
-  --noautoconsole \
-  #--debug
-
-# Start in qemu
-echo -e "\n[+] Staring in qemu.." 
-sudo chmod 777 $QCOW2_FILE
-qemu-system-x86_64 -hda $QCOW2_FILE
+  --noautoconsole
