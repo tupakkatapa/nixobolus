@@ -12,13 +12,7 @@
 {%- set state_version   = data.state_version    | default("22.11") %}
 {%- set remote_builder  = data.remote_builder   | default(false) %}
 
-{#- System -#}
-{%- set system = data.system | default("x86_64-linux") -%}
-{%- if system not in ["i686-linux", "x86_64-linux", "aarch64-linux"] %}
-    {{ raise('Invalid value for system variable. Valid values are "i686-linux", "x86_64-linux", and "aarch64-linux".') }}
-{%- endif %}
-
-{ pkgs, inputs, lib, ... }:
+{ pkgs, inputs, config, lib, ... }:
 {
     imports = [
         ../../common/channels.nix
@@ -26,23 +20,72 @@
         {{ data.rendered_configs | join('\n') | indent(8) }}
     ];
 
-    {%- if mounts %}
-    # Mounts
-    systemd.mounts = [
-    {%- for mount in mounts %}
-        {
-            enable = true;
-            description = "{{ mount.desc or mount.source + "to" + mount.target }}";
-            what = "{{ mount.source }}";
-            where = "{{ mount.target }}";
-            options = "{%- for opt in mount.options %}{{ opt }} {%- endfor %}";
-            type = "btrfs";
+    # Localization
+    networking.hostName = "{{ hostname }}";
+    time.timeZone = "{{ timezone }}";
+    console = {
+        font = "{{ font }}";
+        keyMap = "{{ keymap }}";
+    };
 
-            wantedBy = [ "multi-user.target" ];
-        }
-    {%- endfor %}
+    # User
+    services.getty.autologinUser = "{{ username }}";
+    users.users.{{ username }} = {
+        group = "{{ username }}";
+        isNormalUser = true;
+        extraGroups = [ "wheel" ];
+        {%- if shell %}
+        shell = pkgs.{{ shell }};
+        {%- endif %}
+        # Allow the graphical user to login without password
+        initialHashedPassword = "";
+    };
+    users.groups.{{ username }} = { };
+    users.users.root.initialHashedPassword = "";
+
+    # Allow passwordless sudo from wheel group
+    security.sudo = {
+        enable = lib.mkDefault true;
+        wheelNeedsPassword = lib.mkForce false;
+    };
+    
+    nix = {
+        # This will add each flake input as a registry
+        # To make nix3 commands consistent with your flake
+        registry = lib.mapAttrs (_: value: { flake = value; }) inputs;
+
+        # This will additionally add your inputs to the system's legacy channels
+        # Making legacy nix commands consistent as well, awesome!
+        nixPath = lib.mapAttrsToList (key: value: "${key}=${value.to.path}") config.nix.registry;
+
+        settings = {
+            # Enable flakes and new 'nix' command
+            experimental-features = "nix-command flakes";
+            # Deduplicate and optimize nix store
+            auto-optimise-store = true;
+            {%- if remote_builder %}
+            # Allows this server to be used as a remote builder
+            trusted-users = [
+                "root"
+                "@wheel"
+            ];
+            {%- endif %}
+        };
+        package = pkgs.nix;
+    };
+
+    {%- if remote_builder %}
+    # Allows this server to be used as a remote builder
+    nix.settings.trusted-users = [
+        "root"
+        "@wheel"
     ];
     {%- endif %}
+
+    # Allow emulated systems for cross compile
+    boot.binfmt.emulatedSystems = [
+        "aarch64-linux"
+    ];
 
     # Boot
     boot.kernelParams = [
@@ -68,27 +111,25 @@
         fuse-overlayfs
         lm_sensors
     ];
+    
+    {%- if mounts %}
+    # Mounts
+    systemd.mounts = [
+    {%- for mount in mounts %}
+        {
+            enable = true;
+            description = "{{ mount.desc or mount.source + "to" + mount.target }}";
+            what = "{{ mount.source }}";
+            where = "{{ mount.target }}";
+            options = "{%- for opt in mount.options %}{{ opt }} {%- endfor %}";
+            type = "btrfs";
 
-    {%- if remote_builder %}
-    # Allows this server to be used as a remote builder
-    nix.settings.trusted-users = [
-        "root"
-        "@wheel"
-    ];
-
-    boot.binfmt.emulatedSystems = [
-        "aarch64-linux"
+            wantedBy = [ "multi-user.target" ];
+        }
+    {%- endfor %}
     ];
     {%- endif %}
 
-    # Localization
-    networking.hostName = "{{ hostname }}";
-    time.timeZone = "{{ timezone }}";
-    console = {
-        font = "{{ font }}";
-        keyMap = "{{ keymap }}";
-    };
-    
     # Linger
     systemd.services.linger = {
         enable = true;
@@ -105,13 +146,9 @@
         wantedBy = [ "multi-user.target" ];
     };
 
-    # Podman
-    virtualisation.podman.enable = true;
-    # dnsname allows containers to use ${name}.dns.podman to reach each other
-    # on the same host instead of using hard-coded IPs.
-    # NOTE: --net must be the same on the containers, and not eq "host"
-    # TODO: extend this with flannel ontop of wireguard for cross-node comms
-    virtualisation.podman.defaultNetwork.settings.dns_enabled = true;
+    # Watchdog
+    systemd.watchdog.device = "/dev/watchdog";
+    systemd.watchdog.runtimeTime = "30s";
 
     # Chrony
     services.timesyncd.enable = false;
@@ -125,34 +162,11 @@
     };
 
     # Zram swap
-    #zramSwap.enable = true;
-    #zramSwap.algorithm = "zstd";
-    #zramSwap.memoryPercent = 100;
-
-    # Watchdog
-    systemd.watchdog.device = "/dev/watchdog";
-    systemd.watchdog.runtimeTime = "30s";
-    
-    # User
-    services.getty.autologinUser = "{{ username }}";
-    users.users.{{ username }} = {
-        group = "{{ username }}";
-        isNormalUser = true;
-        extraGroups = [ "wheel" ];
-        {%- if shell %}
-        shell = pkgs.{{ shell }};
-        {%- endif %}
-        # Allow the graphical user to login without password
-        initialHashedPassword = "";
+    zramSwap = {
+        enable = false;
+        algorithm = "zstd";
+        memoryPercent = 100;
     };
-    users.groups.{{ username }} = { };
-    users.users.root.initialHashedPassword = "";
 
-    # Allow passwordless sudo from user
-    security.sudo = {
-        enable = lib.mkDefault true;
-        wheelNeedsPassword = lib.mkForce false;
-    };
-    
     system.stateVersion = "{{ state_version }}";
 }
