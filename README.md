@@ -46,7 +46,6 @@ To use this tool, you must have [Nix package manager](https://nixos.org/download
 - [ ] Option to build images in Docker/Podman
 - [x] Divide Ethereum template into smaller parts
 - [x] Proof of concept [WebUI](https://github.com/ponkila/HomestakerOS)
-- [ ] Rewrite in rust
 
 ## Links
 
