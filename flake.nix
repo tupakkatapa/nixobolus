@@ -33,14 +33,21 @@
       inherit (self) outputs;
       system = "x86_64-linux";
 
+      forEachSystem = nixpkgs.lib.genAttrs [ 
+        "aarch64-darwin"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "x86_64-linux"
+      ];
+
       # custom packages
       # acessible through 'nix build', 'nix shell', etc
-      forEachSystem = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
       forEachPkgs = f: forEachSystem (sys: f nixpkgs.legacyPackages.${sys});
-      packages = forEachPkgs (pkgs: import ./configs/nix_configs/pkgs { inherit pkgs; });
+      packages = forEachPkgs (pkgs: import ./pkgs { inherit pkgs; });
+      formatter = forEachPkgs (pkgs: pkgs.nixpkgs-fmt);
 
       # get hostnames from ./nix_configs/hosts
-      ls = builtins.readDir ./configs/nix_configs/hosts;
+      ls = builtins.readDir ./hosts;
       hostnames = builtins.filter
         (name: builtins.hasAttr name ls && (ls.${name} == "directory"))
         (builtins.attrNames ls);
@@ -54,7 +61,7 @@
       customFormats = {
         "kexecTree" = { 
           formatAttr = "kexecTree";
-          imports = [ ./configs/nix_configs/common/netboot.nix ]; 
+          imports = [ ./system/netboot.nix ]; 
         };
       };
     in {
@@ -63,26 +70,26 @@
       devShells = forEachPkgs (pkgs: import ./shell.nix { inherit pkgs; });
 
       # nixos-generators
-      # available through 'nix-build .#your-hostname'
+      # available through 'nix build .#your-hostname'
       packages.${system} = builtins.listToAttrs (map (hostname: {
         name = hostname;
         value = nixos-generators.nixosGenerate {
           inherit system pkgs;
           specialArgs = { inherit inputs outputs; };
-          modules = [ ./configs/nix_configs/hosts/${hostname} ];
+          modules = [ ./hosts/${hostname} ];
           customFormats = customFormats;
           format = "kexecTree";
         };
       }) hostnames);
 
       # nixos configuration entrypoints
-      # available through 'nix-build .#your-hostname'
+      # available through 'nix build .#your-hostname'
       nixosConfigurations = builtins.listToAttrs (map (hostname: {
         name = hostname;
         value = nixpkgs.lib.nixosSystem {
           inherit system pkgs;
           specialArgs = { inherit inputs outputs; };
-          modules = [ ./configs/nix_configs/hosts/${hostname} ];
+          modules = [ ./hosts/${hostname} ];
         };
       }) hostnames);
     };
