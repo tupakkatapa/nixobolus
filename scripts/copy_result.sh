@@ -1,7 +1,7 @@
 #!/bin/bash
-# Nixobolus - Automated creation of bootable NixOS images
-# https://github.com/ponkila/Nixobolus
-# Example: ./scripts/copy_result.sh <hostname> /mnt/sftp/netboot
+# deps: none
+# desc: simple script for copying result to target directory
+# usage: ./scripts/copy_result.sh <target_dir>
 
 PARENT_DIR=$( cd -- "$( dirname -- "$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" )" &> /dev/null && pwd )
 HOST="$1"

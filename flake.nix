@@ -1,6 +1,3 @@
-# Nixobolus - Automated creation of bootable NixOS images
-# https://github.com/ponkila/Nixobolus
-
 {
   description = "Nixobolus flake";
 
