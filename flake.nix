@@ -73,8 +73,7 @@
         (builtins.attrNames ls);
 
       # overlays
-      overlays = [ ethereum-nix.overlays.default ];
-      pkgs = import nixpkgs { inherit system overlays; };
+      overlays = import ./overlays { inherit inputs; };
 
       # custom formats for nixos-generators
       # other available formats can be found at: https://github.com/nix-community/nixos-generators/tree/master/formats
@@ -104,9 +103,13 @@
         (hostname: {
           name = hostname;
           value = nixos-generators.nixosGenerate {
-            inherit system pkgs;
+            inherit system;
             specialArgs = { inherit inputs outputs; };
-            modules = [ ./hosts/${hostname} ];
+              {
+                nixpkgs.overlays = [
+                  ethereum-nix.overlays.default
+                ];
+              }
             customFormats = customFormats;
             format = "netboot-kexec";
           };
