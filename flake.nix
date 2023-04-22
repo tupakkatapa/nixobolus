@@ -112,18 +112,5 @@
           };
         })
         hostnames);
-
-      # nixos configuration entrypoints
-      # available through 'nix build .#your-hostname'
-      nixosConfigurations = builtins.listToAttrs (map
-        (hostname: {
-          name = hostname;
-          value = nixpkgs.lib.nixosSystem {
-            inherit system pkgs;
-            specialArgs = { inherit inputs outputs; };
-            modules = [ ./hosts/${hostname} ];
-          };
-        })
-        hostnames);
     };
 }
