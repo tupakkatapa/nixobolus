@@ -8,7 +8,6 @@ in
   imports = [
     ../../modules/eth
     ../../system
-    ../../system/ramdisk.nix # do not import with copytoram-iso format
     ../../system/channels.nix
     ../../home-manager/core.nix
   ];
