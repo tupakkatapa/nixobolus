@@ -5,8 +5,6 @@ let
 in
 {
 
-  imports = [ inputs.home-manager.nixosModules.home-manager ];
-
   options.user = {
     authorizedKeys = mkOption {
       type = types.listOf types.str;
