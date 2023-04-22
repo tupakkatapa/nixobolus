@@ -18,9 +18,6 @@
       git
 
       sops
-      yq
-      jq
-      j2cli
       gnupg
       age
     ];
