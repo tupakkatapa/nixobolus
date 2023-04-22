@@ -1,20 +1,21 @@
-
 { pkgs, config, inputs, lib, ... }:
 with lib;
 let
   cfg = config.user;
-in {
+in
+{
 
   imports = [ inputs.home-manager.nixosModules.home-manager ];
 
   options.user = {
     authorizedKeys = mkOption {
-      type =  types.listOf types.str;
-      default = [];
+      type = types.listOf types.str;
+      default = [ ];
     };
   };
 
   config = {
+    services.getty.autologinUser = "core";
     users.users.core = {
       isNormalUser = true;
       group = "core";
@@ -25,7 +26,7 @@ in {
     users.groups.core = { };
     environment.shells = [ pkgs.fish ];
     programs.fish.enable = true;
-    
+
     home-manager.users.core = { pkgs, ... }: {
 
       home.packages = with pkgs; [
