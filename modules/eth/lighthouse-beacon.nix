@@ -1,29 +1,29 @@
-
 { pkgs, config, lib, ... }:
 with lib;
 let
   cfg = config.lighthouse;
-in {
+in
+{
   options.lighthouse = {
     enable = mkOption {
       type = types.bool;
       default = true;
     };
-    endpoint = mkOption { 
-      type = types.str; 
+    endpoint = mkOption {
+      type = types.str;
     };
-    exec.endpoint = mkOption { 
-      type = types.str; 
+    exec.endpoint = mkOption {
+      type = types.str;
     };
     slasher = {
-      enable = mkOption { 
+      enable = mkOption {
         type = types.bool;
       };
-      history-lenght = mkOption { 
+      history-length = mkOption {
         type = types.int;
-        default = 4096; 
+        default = 4096;
       };
-      max-db-size = mkOption { 
+      max-db-size = mkOption {
         type = types.int;
         default = 256;
       };
@@ -33,12 +33,13 @@ in {
         type = types.str;
       };
     };
-    datadir = mkOption { 
+    datadir = mkOption {
       type = types.str;
     };
     mount = {
       source = mkOption { type = types.str; };
       target = mkOption { type = types.str; };
+      type = mkOption { type = types.str; };
     };
   };
 
@@ -48,7 +49,6 @@ in {
       lighthouse
     ];
 
-    # mount
     systemd.mounts = [
       {
         enable = true;
@@ -57,8 +57,8 @@ in {
 
         what = cfg.mount.source;
         where = cfg.mount.target;
-        options = "noatime";
-        type = "btrfs";
+        options = lib.mkDefault "noatime";
+        type = cfg.mount.type;
 
         wantedBy = [ "multi-user.target" ];
       }
@@ -90,8 +90,8 @@ in {
         --prune-payloads false \
         --metrics \
         ${if cfg.slasher.enable then
-          "--slasher " 
-          + " --slasher-history-length " + (toString cfg.slasher.history-lenght)
+          "--slasher "
+          + " --slasher-history-length " + (toString cfg.slasher.history-length)
           + " --slasher-max-db-size " + (toString cfg.slasher.max-db-size)
         else "" }
       '';
