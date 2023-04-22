@@ -602,8 +602,9 @@
         "type": "github"
       },
       "original": {
-        "id": "sops-nix",
-        "type": "indirect"
+        "owner": "Mic92",
+        "repo": "sops-nix",
+        "type": "github"
       }
     },
     "treefmt-nix": {
