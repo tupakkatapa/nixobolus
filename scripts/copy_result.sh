@@ -4,8 +4,7 @@
 # usage: ./scripts/copy_result.sh <target_dir>
 
 PARENT_DIR=$( cd -- "$( dirname -- "$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" )" &> /dev/null && pwd )
-HOST="$1"
-TARGET_DIR="$2"
+TARGET_DIR="$1"
 
 # create target directory if it doesn't exist
 mkdir -p "$TARGET_DIR"
@@ -19,5 +18,5 @@ files=( "bzImage"
 # loop through the array and copy each file to target directory
 for file in "${files[@]}"
 do
-    cp -f "$PARENT_DIR/result/$HOST/$file" "$TARGET_DIR"
+    cp -f "$PARENT_DIR/result/$file" "$TARGET_DIR"
 done
