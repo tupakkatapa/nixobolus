@@ -60,7 +60,7 @@
         "x86_64-linux"
       ];
       system = "x86_64-linux";
-
+      
       # custom packages
       # acessible through 'nix build', 'nix shell', etc
       forEachPkgs = f: forEachSystem (sys: f nixpkgs.legacyPackages.${sys});
@@ -105,11 +105,21 @@
           value = nixos-generators.nixosGenerate {
             inherit system;
             specialArgs = { inherit inputs outputs; };
+            modules = [ 
+              ./hosts/${hostname}
+              inputs.sops-nix.nixosModules.sops
+              inputs.home-manager.nixosModules.home-manager
               {
                 nixpkgs.overlays = [
                   ethereum-nix.overlays.default
                 ];
               }
+              {
+                home-manager.sharedModules = [
+                  sops-nix.homeManagerModules.sops
+                ];
+              }
+            ];
             customFormats = customFormats;
             format = "netboot-kexec";
           };
