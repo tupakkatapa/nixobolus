@@ -7,7 +7,7 @@
       sha256 = lock.narHash;
     };
   in
-  import nixpkgs { overlays = [ ]; }
+  import nixpkgs { overlays = [ (import ./overlays) ]; }
 , ...
 }: {
   default = pkgs.mkShell {
