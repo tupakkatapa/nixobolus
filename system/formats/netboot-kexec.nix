@@ -1,8 +1,7 @@
-# Nixobolus - Automated creation of bootable NixOS images
-# https://github.com/ponkila/Nixobolus
-
 { config, pkgs, modulesPath, ... }:
 {
+  imports = [ ../ramdisk.nix ];
+
   system.build = rec {
     # Create the squashfs image that contains the Nix store.
     squashfsStore = pkgs.callPackage "${toString modulesPath}/../lib/make-squashfs.nix" {
@@ -22,30 +21,30 @@
     };
 
     # Create ipxe script
-    netbootIpxeScript = pkgs.writeText "netboot.ipxe" 
+    netbootIpxeScript = pkgs.writeText "netboot.ipxe"
       ''
-      #!ipxe
-      # Use the cmdline variable to allow the user to specify custom kernel params
-      # when chainloading this script from other iPXE scripts like netboot.xyz
-      kernel ${pkgs.stdenv.hostPlatform.linux-kernel.target} init=${config.system.build.toplevel}/init initrd=initrd ${toString config.boot.kernelParams} ''${cmdline}
-      initrd initrd
-      boot
+        #!ipxe
+        # Use the cmdline variable to allow the user to specify custom kernel params
+        # when chainloading this script from other iPXE scripts like netboot.xyz
+        kernel ${pkgs.stdenv.hostPlatform.linux-kernel.target} init=${config.system.build.toplevel}/init initrd=initrd ${toString config.boot.kernelParams} ''${cmdline}
+        initrd initrd
+        boot
       '';
 
     # A script invoking kexec on ./bzImage and ./initrd.gz.
     # Usually used through system.build.kexecTree, but exposed here for composability.
-    kexecScript = pkgs.writeScript "kexec-boot" 
+    kexecScript = pkgs.writeScript "kexec-boot"
       ''
-      #!/usr/bin/env bash
-      if ! kexec -v >/dev/null 2>&1; then
-        echo "kexec not found: please install kexec-tools" 2>&1
-        exit 1
-      fi
-      SCRIPT_DIR=$( cd -- "$( dirname -- "''${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-      kexec --load ''${SCRIPT_DIR}/bzImage \
-        --initrd=''${SCRIPT_DIR}/initrd.gz \
-        --command-line "init=${config.system.build.toplevel}/init ${toString config.boot.kernelParams}"
-      systemctl kexec
+        #!/usr/bin/env bash
+        if ! kexec -v >/dev/null 2>&1; then
+          echo "kexec not found: please install kexec-tools" 2>&1
+          exit 1
+        fi
+        SCRIPT_DIR=$( cd -- "$( dirname -- "''${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+        kexec --load ''${SCRIPT_DIR}/bzImage \
+          --initrd=''${SCRIPT_DIR}/initrd.gz \
+          --command-line "init=${config.system.build.toplevel}/init ${toString config.boot.kernelParams}"
+        systemctl kexec
       '';
 
     # A tree containing initrd.gz, bzImage, ipxe and a kexec-boot script.
