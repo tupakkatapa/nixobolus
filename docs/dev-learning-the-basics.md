@@ -2,7 +2,7 @@
 
 I had limited or no information about the topics of this project. This is my documentation how I've started to get familiar with these things. So far, the project has been ongoing for 6 weeks. ~ Jesse K.
 
-It all started here: https://github.com/jhvst/nix-config
+It all started [here](https://github.com/jhvst/nix-config/tree/ced51d52d8b64cbae5ef089ac9ef4f489169199b).
 
 ## PXE & Kexec
 
