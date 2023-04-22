@@ -1,4 +1,4 @@
 { pkgs ? import <nixpkgs> { } }:
 {
-    # example = pkgs.callPackage ./example { };
+  # example = pkgs.callPackage ./example { };
 }
