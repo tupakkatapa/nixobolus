@@ -59,21 +59,11 @@
         "x86_64-darwin"
         "x86_64-linux"
       ];
-      system = "x86_64-linux";
-      
+
       # custom packages
       # acessible through 'nix build', 'nix shell', etc
       forEachPkgs = f: forEachSystem (sys: f nixpkgs.legacyPackages.${sys});
       packages = forEachPkgs (pkgs: import ./pkgs { inherit pkgs; });
-
-      # get hostnames from ./nix_configs/hosts
-      ls = builtins.readDir ./hosts;
-      hostnames = builtins.filter
-        (name: builtins.hasAttr name ls && (ls.${name} == "directory"))
-        (builtins.attrNames ls);
-
-      # overlays
-      overlays = import ./overlays { inherit inputs; };
 
       # custom formats for nixos-generators
       # other available formats can be found at: https://github.com/nix-community/nixos-generators/tree/master/formats
@@ -94,36 +84,39 @@
       # acessible through 'nix develop' or 'nix-shell' (legacy)
       devShells = forEachPkgs (pkgs: import ./shell.nix { inherit pkgs; });
 
+      # overlays
+      overlays = import ./overlays { inherit inputs; };
+
       # nix fmt
       formatter = forEachPkgs (pkgs: pkgs.nixpkgs-fmt);
 
-      # nixos-generators
-      # available through 'nix build .#your-hostname'
-      packages.${system} = builtins.listToAttrs (map
-        (hostname: {
-          name = hostname;
-          value = nixos-generators.nixosGenerate {
-            inherit system;
-            specialArgs = { inherit inputs outputs; };
-            modules = [ 
-              ./hosts/${hostname}
-              inputs.sops-nix.nixosModules.sops
-              inputs.home-manager.nixosModules.home-manager
-              {
-                nixpkgs.overlays = [
-                  ethereum-nix.overlays.default
-                ];
-              }
-              {
-                home-manager.sharedModules = [
-                  sops-nix.homeManagerModules.sops
-                ];
-              }
+      # nixos configuration entrypoints
+      # available through 'nix-build .#<hostname>'
+      "homestaker_x86-64" = nixos-generators.nixosGenerate {
+        system = "x86_64-linux";
+        specialArgs = { inherit inputs outputs; };
+        modules = [
+          ./hosts/homestaker_x86-64
+          ./modules/eth
+          ./system
+          ./home-manager/core.nix
+          home-manager.nixosModules.home-manager
+          disko.nixosModules.disko
+          {
+            nixpkgs.overlays = [
+              ethereum-nix.overlays.default
+              outputs.overlays.additions
+              outputs.overlays.modifications
             ];
-            customFormats = customFormats;
-            format = "netboot-kexec";
-          };
-        })
-        hostnames);
+          }
+          {
+            home-manager.sharedModules = [
+              sops-nix.homeManagerModules.sops
+            ];
+          }
+        ];
+        customFormats = customFormats;
+        format = "netboot-kexec";
+      };
     };
 }
