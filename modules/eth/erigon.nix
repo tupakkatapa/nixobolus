@@ -2,7 +2,6 @@
 let
   options = {
     enable = false;
-    user = "";
     endpoint = "";
     datadir = "";
   };
@@ -15,7 +14,7 @@ in
     ];
 
     # service
-    systemd.services.erigon = {
+    systemd.user.services.erigon = {
       enable = true;
 
       description = "execution, mainnet";
@@ -25,8 +24,6 @@ in
       serviceConfig = {
         Restart = "always";
         RestartSec = "5s";
-        User = options.user;
-        Group = options.user;
         Type = "simple";
       };
 
