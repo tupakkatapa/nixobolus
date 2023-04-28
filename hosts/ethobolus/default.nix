@@ -22,24 +22,24 @@ let
   time.timeZone = "Europe/Helsinki";
   console.keyMap = "fi";
 
-  # Erigon options
-  erigon = rec {
-    endpoint = infra.ip;
-    datadir = "/var/mnt/erigon";
-  };
+  # # Erigon options
+  # erigon = rec {
+  #   endpoint = infra.ip;
+  #   datadir = "/var/mnt/erigon";
+  # };
 
-  # Lighthouse options
-  lighthouse = rec {
-    endpoint = infra.ip;
-    datadir = "/var/mnt/lighthouse";
-    exec.endpoint = "http://${infra.ip}:8551";
-    mev-boost.endpoint = "http://${infra.ip}:18550";
-    slasher = {
-      enable = false;
-      history-length = 256;
-      max-db-size = 16;
-    };
-  };
+  # # Lighthouse options
+  # lighthouse = rec {
+  #   endpoint = infra.ip;
+  #   datadir = "/var/mnt/lighthouse";
+  #   exec.endpoint = "http://${infra.ip}:8551";
+  #   mev-boost.endpoint = "http://${infra.ip}:18550";
+  #   slasher = {
+  #     enable = false;
+  #     history-length = 256;
+  #     max-db-size = 16;
+  #   };
+  # };
 in
 {
   # Secrets
@@ -67,32 +67,32 @@ in
       before = [ "sshd.service" ];
       wantedBy = [ "multi-user.target" ];
     }
-    # Erigon
-    {
-      enable = true;
+    # # Erigon
+    # {
+    #   enable = true;
 
-      description = "erigon storage";
+    #   description = "erigon storage";
 
-      what = "/dev/disk/by-label/erigon";
-      where = erigon.datadir;
-      options = lib.mkDefault "noatime";
-      type = "btrfs";
+    #   what = "/dev/disk/by-label/erigon";
+    #   where = erigon.datadir;
+    #   options = lib.mkDefault "noatime";
+    #   type = "btrfs";
 
-      wantedBy = [ "multi-user.target" ];
-    }
-    # Lighthouse
-    {
-      enable = true;
+    #   wantedBy = [ "multi-user.target" ];
+    # }
+    # # Lighthouse
+    # {
+    #   enable = true;
 
-      description = "lighthouse storage";
+    #   description = "lighthouse storage";
 
-      what = "/dev/disk/by-label/lighthouse";
-      where = lighthouse.datadir;
-      options = lib.mkDefault "noatime";
-      type = "btrfs";
+    #   what = "/dev/disk/by-label/lighthouse";
+    #   where = lighthouse.datadir;
+    #   options = lib.mkDefault "noatime";
+    #   type = "btrfs";
 
-      wantedBy = [ "multi-user.target" ];
-    }
+    #   wantedBy = [ "multi-user.target" ];
+    # }
   ];
 
   system.stateVersion = "23.05";
