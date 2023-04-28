@@ -1,23 +1,44 @@
 { pkgs, config, lib, ... }:
+with lib;
 let
-  options = {
-    enable = false;
-    endpoint = "";
-    datadir = "";
-    exec.endpoint = "";
-    slasher = {
-      enable = false;
-      history-length = 4096;
-      max-db-size = 256;
-    };
-    mev-boost = {
-      endpoint = "";
-    };
-  };
+  cfg = config.lighthouse;
 in
 {
+  options.lighthouse = {
+    enable = mkOption {
+      type = types.bool;
+      default = true;
+    };
+    endpoint = mkOption {
+      type = types.str;
+    };
+    exec.endpoint = mkOption {
+      type = types.str;
+    };
+    slasher = {
+      enable = mkOption {
+        type = types.bool;
+      };
+      history-length = mkOption {
+        type = types.int;
+        default = 4096;
+      };
+      max-db-size = mkOption {
+        type = types.int;
+        default = 256;
+      };
+    };
+    mev-boost = {
+      endpoint = mkOption {
+        type = types.str;
+      };
+    };
+    datadir = mkOption {
+      type = types.str;
+    };
+  };
 
-  config = lib.mkIf options.enable {
+  config = mkIf cfg.enable {
     # package
     environment.systemPackages = with pkgs; [
       lighthouse
@@ -38,18 +59,18 @@ in
       };
 
       script = ''${pkgs.lighthouse}/bin/lighthouse bn \
-        --datadir ${options.datadir} \
+        --datadir ${cfg.datadir} \
         --network mainnet \
-        --http --http-address ${options.endpoint} \
-        --execution-endpoint ${options.exec.endpoint} \
-        --execution-jwt ${options.datadir}/jwt.hex \
-        --builder ${options.mev-boost.endpoint} \
+        --http --http-address ${cfg.endpoint} \
+        --execution-endpoint ${cfg.exec.endpoint} \
+        --execution-jwt ${cfg.datadir}/jwt.hex \
+        --builder ${cfg.mev-boost.endpoint} \
         --prune-payloads false \
         --metrics \
-        ${if options.slasher.enable then
+        ${if cfg.slasher.enable then
           "--slasher "
-          + " --slasher-history-length " + (toString options.slasher.history-length)
-          + " --slasher-max-db-size " + (toString options.slasher.max-db-size)
+          + " --slasher-history-length " + (toString cfg.slasher.history-length)
+          + " --slasher-max-db-size " + (toString cfg.slasher.max-db-size)
         else "" }
       '';
       wantedBy = [ "multi-user.target" ];
@@ -65,4 +86,3 @@ in
     };
   };
 }
-
