@@ -2,7 +2,6 @@
 let
   options = {
     enable = false;
-    user = "";
     endpoint = "";
     datadir = "";
     exec.endpoint = "";
@@ -25,7 +24,7 @@ in
     ];
 
     # service
-    systemd.services.lighthouse = {
+    systemd.user.services.lighthouse = {
       enable = true;
 
       description = "beacon, mainnet";
@@ -35,8 +34,6 @@ in
       serviceConfig = {
         Restart = "always";
         RestartSec = "5s";
-        User = options.user;
-        Group = options.user;
         Type = "simple";
       };
 
