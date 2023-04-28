@@ -158,7 +158,7 @@
         };
       };
 
-      # Erigon
+      # Lighthouse
       # TODO -- import
       lighthouse = rec {
 
@@ -312,7 +312,7 @@
         systems);
 
       # nixos configuration entrypoints (needed for accessing options through eval)
-      # TODO -- only maps cuurent system arch at the moment 
+      # TODO -- only maps "x86_64-linux" at the moment 
       nixosConfigurations = builtins.listToAttrs (map
         (hostname: {
           name = hostname;
@@ -331,12 +331,13 @@
         mev-boost = mev-boost;
       };
 
-      nixosModules.erigon = { config, lib, pkgs, ... }: erigon;
-      nixosModules.lighthouse = { config, lib, pkgs, ... }: lighthouse;
-      nixosModules.mev-boost = { config, lib, pkgs, ... }: mev-boost;
+      nixosModules.erigon = { config, lib, pkgs, ... }: exports.erigon;
+      nixosModules.lighthouse = { config, lib, pkgs, ... }: exports.lighthouse;
+      nixosModules.mev-boost = { config, lib, pkgs, ... }: exports.mev-boost;
 
-      # generate nixosModules from exports dynamically
-      # usage -- https://github.com/ponkila/homestaking-infra/commit/574382212cf817dbb75657e9fef9cdb223e9823b
+      # # generate nixosModules from exports dynamically
+      # # simple -- nixosModules.<name> = { config, lib, pkgs, ... }: <name>;
+      # # usage -- https://github.com/ponkila/homestaking-infra/commit/574382212cf817dbb75657e9fef9cdb223e9823b
       # nixosModules = builtins.mapAttrs
       #   (name: module: { config, lib, pkgs, ... }:
       #     { inherit module; }
