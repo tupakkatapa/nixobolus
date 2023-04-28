@@ -125,7 +125,7 @@
           ];
 
           # service
-          systemd.services.erigon = {
+          systemd.user.services.erigon = {
             enable = true;
 
             description = "execution, mainnet";
@@ -135,8 +135,6 @@
             serviceConfig = {
               Restart = "always";
               RestartSec = "5s";
-              User = options.user;
-              Group = options.user;
               Type = "simple";
             };
 
@@ -167,7 +165,6 @@
 
         options = {
           enable = false;
-          user = "";
           endpoint = "";
           datadir = "";
           exec.endpoint = "";
@@ -188,7 +185,7 @@
           ];
 
           # service
-          systemd.services.lighthouse = {
+          systemd.user.services.lighthouse = {
             enable = true;
 
             description = "beacon, mainnet";
@@ -198,8 +195,6 @@
             serviceConfig = {
               Restart = "always";
               RestartSec = "5s";
-              User = options.user;
-              Group = options.user;
               Type = "simple";
             };
 
@@ -249,7 +244,7 @@
           # TODO: extend this with flannel ontop of wireguard for cross-node comms
           virtualisation.podman.defaultNetwork.settings.dns_enabled = true;
 
-          systemd.services.mev-boost = {
+          systemd.user.services.mev-boost = {
             path = [ "/run/wrappers" ];
             enable = true;
 
@@ -260,8 +255,6 @@
             serviceConfig = {
               Restart = "always";
               RestartSec = "5s";
-              User = options.user;
-              Group = options.user;
               Type = "simple";
             };
 
@@ -334,11 +327,11 @@
         hostnames);
 
       # option extraction -- accessible through 'nix eval .#exports.<name>.options'
-      # exports = {
-      #   erigon = erigon;
-      #   lighthouse = lighthouse;
-      #   mev-boost = mev-boost;
-      # };
+      exports = {
+        erigon = erigon;
+        lighthouse = lighthouse;
+        mev-boost = mev-boost;
+      };
 
       nixosModules.erigon = { config, lib, pkgs, ... }: erigon;
       nixosModules.lighthouse = { config, lib, pkgs, ... }: lighthouse;
