@@ -53,17 +53,24 @@
 
     let
       inherit (self) outputs;
-      forEachSystem = nixpkgs.lib.genAttrs [
+      systems = [
         "aarch64-darwin"
         "aarch64-linux"
         "x86_64-darwin"
         "x86_64-linux"
       ];
-
-      # custom packages
-      # acessible through 'nix build', 'nix shell', etc
+      forEachSystem = nixpkgs.lib.genAttrs systems;
       forEachPkgs = f: forEachSystem (sys: f nixpkgs.legacyPackages.${sys});
+
+      # custom packages -- accessible through 'nix build', 'nix shell', etc
+      # TODO -- check that this actually works
       packages = forEachPkgs (pkgs: import ./pkgs { inherit pkgs; });
+
+      # list hostnames from ./hosts
+      ls = builtins.readDir ./hosts;
+      hostnames = builtins.filter
+        (name: builtins.hasAttr name ls && (ls.${name} == "directory"))
+        (builtins.attrNames ls);
 
       # custom formats for nixos-generators
       # other available formats can be found at: https://github.com/nix-community/nixos-generators/tree/master/formats
@@ -78,11 +85,26 @@
           filename = "*.iso";
         };
       };
-    in
-    {
-      # devshell for bootstrapping
-      # acessible through 'nix develop' or 'nix-shell' (legacy)
-      devShells = forEachPkgs (pkgs: import ./shell.nix { inherit pkgs; });
+
+      # modules that are used regardless of the host
+      sharedModules = [
+        # TODO -- lot of these "modules" should be at host config
+        ./home-manager/staker.nix
+        ./modules/eth
+        ./system
+        home-manager.nixosModules.home-manager
+        disko.nixosModules.disko
+        {
+          nixpkgs.overlays = [
+            ethereum-nix.overlays.default
+            outputs.overlays.additions
+            outputs.overlays.modifications
+          ];
+          home-manager.sharedModules = [
+            sops-nix.homeManagerModules.sops
+          ];
+        }
+      ];
 
       # Erigon
       # TODO -- import
@@ -267,6 +289,36 @@
           };
         };
       };
+    in
+    rec {
+      # devshell -- accessible through 'nix develop' or 'nix-shell' (legacy)
+      devShells = forEachPkgs (pkgs: import ./shell.nix { inherit pkgs; });
+
+      # custom packages and modifications, exported as overlays
+      overlays = import ./overlays { inherit inputs; };
+
+      # nix fmt
+      formatter = forEachPkgs (pkgs: pkgs.nixpkgs-fmt);
+
+      # nixos-generators attributes for each system and hostname combination
+      # available through 'nix build .#nixobolus.<system_arch>.<hostname>'
+      packages = builtins.listToAttrs (map
+        (system: {
+          name = system;
+          value = builtins.listToAttrs (map
+            (hostname: {
+              name = hostname;
+              value = nixos-generators.nixosGenerate {
+                inherit sharedModules system customFormats;
+                specialArgs = { inherit inputs outputs; };
+                modules = [ ./hosts/${hostname} ] ++ sharedModules;
+                format = "kexecTree";
+              };
+            })
+            hostnames);
+        })
+        systems);
+
       # nixos configuration entrypoints (needed for accessing options through eval)
       # available through 'nix-build .#your-hostname'
       # TODO -- only maps x86_64-linux at the moment 
