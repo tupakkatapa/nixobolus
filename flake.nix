@@ -334,18 +334,22 @@
         hostnames);
 
       # option extraction -- accessible through 'nix eval .#exports.<name>.options'
-      exports = {
-        erigon = erigon;
-        lighthouse = lighthouse;
-        mev-boost = mev-boost;
-      };
+      # exports = {
+      #   erigon = erigon;
+      #   lighthouse = lighthouse;
+      #   mev-boost = mev-boost;
+      # };
+
+      nixosModules.erigon = { config, lib, pkgs, ... }: erigon;
+      nixosModules.lighthouse = { config, lib, pkgs, ... }: lighthouse;
+      nixosModules.mev-boost = { config, lib, pkgs, ... }: mev-boost;
 
       # generate nixosModules from exports dynamically
       # usage -- https://github.com/ponkila/homestaking-infra/commit/574382212cf817dbb75657e9fef9cdb223e9823b
-      nixosModules = builtins.mapAttrs
-        (name: module: { config, lib, pkgs, ... }:
-          { inherit module; }
-        )
-        exports;
+      # nixosModules = builtins.mapAttrs
+      #   (name: module: { config, lib, pkgs, ... }:
+      #     { inherit module; }
+      #   )
+      #   exports;
     };
 }
