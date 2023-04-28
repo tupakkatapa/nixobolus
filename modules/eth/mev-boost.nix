@@ -1,38 +1,38 @@
 { pkgs, lib, ... }:
+let
+  options = {
+    enable = false;
+    user = "";
+  };
+in
 {
-  mev-boost = rec {
 
-    options = {
-      enable = false;
-      user = "";
-    };
+  config = lib.mkIf options.enable {
+    virtualisation.podman.enable = true;
+    # dnsname allows containers to use ${name}.dns.podman to reach each other
+    # on the same host instead of using hard-coded IPs.
+    # NOTE: --net must be the same on the containers, and not eq "host"
+    # TODO: extend this with flannel ontop of wireguard for cross-node comms
+    virtualisation.podman.defaultNetwork.settings.dns_enabled = true;
 
-    config = lib.mkIf options.enable {
-      virtualisation.podman.enable = true;
-      # dnsname allows containers to use ${name}.dns.podman to reach each other
-      # on the same host instead of using hard-coded IPs.
-      # NOTE: --net must be the same on the containers, and not eq "host"
-      # TODO: extend this with flannel ontop of wireguard for cross-node comms
-      virtualisation.podman.defaultNetwork.settings.dns_enabled = true;
+    systemd.services.mev-boost = {
+      path = [ "/run/wrappers" ];
+      enable = true;
 
-      systemd.services.mev-boost = {
-        path = [ "/run/wrappers" ];
-        enable = true;
+      description = "MEV-boost allows proof-of-stake Ethereum consensus clients to outsource block construction";
+      requires = [ "wg0.service" ];
+      after = [ "wg0.service" ];
 
-        description = "MEV-boost allows proof-of-stake Ethereum consensus clients to outsource block construction";
-        requires = [ "wg0.service" ];
-        after = [ "wg0.service" ];
+      serviceConfig = {
+        Restart = "always";
+        RestartSec = "5s";
+        User = options.user;
+        Group = options.user;
+        Type = "simple";
+      };
 
-        serviceConfig = {
-          Restart = "always";
-          RestartSec = "5s";
-          User = options.user;
-          Group = options.user;
-          Type = "simple";
-        };
-
-        preStart = "${pkgs.podman}/bin/podman stop mev-boost || true";
-        script = ''${pkgs.podman}/bin/podman \
+      preStart = "${pkgs.podman}/bin/podman stop mev-boost || true";
+      script = ''${pkgs.podman}/bin/podman \
           --storage-opt "overlay.mount_program=${pkgs.fuse-overlayfs}/bin/fuse-overlayfs" run \
           --replace --rmi \
           --name mev-boost \
@@ -52,8 +52,8 @@
           -addr 0.0.0.0:18550
       '';
 
-        wantedBy = [ "multi-user.target" ];
-      };
+      wantedBy = [ "multi-user.target" ];
     };
   };
 }
+
