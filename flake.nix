@@ -113,7 +113,6 @@
 
         options = {
           enable = false;
-          user = "";
           endpoint = "";
           datadir = "";
         };
@@ -233,7 +232,6 @@
 
         options = {
           enable = false;
-          user = "";
         };
 
         config = nixpkgs.lib.mkIf options.enable {
