@@ -92,6 +92,7 @@
         ./home-manager/staker.nix
         ./modules/eth
         ./system
+        ./system/ramdisk.nix
         home-manager.nixosModules.home-manager
         disko.nixosModules.disko
         {
