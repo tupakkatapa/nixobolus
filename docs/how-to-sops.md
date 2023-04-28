@@ -1,4 +1,4 @@
-# How to Use SOPS to Encrypt the Configuration File
+# How to Use SOPS to Encrypt the Configuration File (**outdated**)
 
 Sometimes configuration files contain sensitive data, such as passwords or private keys. To protect this data, you can use SOPS to encrypt the file. SOPS encrypts the sensitive data using PGP encryption, which can only be decrypted by those who have the secret key. Here are the steps to use SOPS to encrypt a configuration file:
 
