@@ -1,6 +1,5 @@
 { config, pkgs, modulesPath, ... }:
 {
-  imports = [ ../ramdisk.nix ];
 
   system.build = rec {
     # Create the squashfs image that contains the Nix store.
