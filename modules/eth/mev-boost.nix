@@ -2,7 +2,6 @@
 let
   options = {
     enable = false;
-    user = "";
   };
 in
 {
@@ -15,7 +14,7 @@ in
     # TODO: extend this with flannel ontop of wireguard for cross-node comms
     virtualisation.podman.defaultNetwork.settings.dns_enabled = true;
 
-    systemd.services.mev-boost = {
+    systemd.user.services.mev-boost = {
       path = [ "/run/wrappers" ];
       enable = true;
 
@@ -26,8 +25,6 @@ in
       serviceConfig = {
         Restart = "always";
         RestartSec = "5s";
-        User = options.user;
-        Group = options.user;
         Type = "simple";
       };
 
