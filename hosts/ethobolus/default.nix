@@ -1,20 +1,22 @@
 { pkgs, config, inputs, lib, ... }:
-
 let
   # General
   infra.ip = "192.168.100.10";
-
-  # User Options
-  user = {
-    authorizedKeys = [
-      # ssh-ed25519 ...
-    ];
-  };
+  erigon.datadir = "/var/mnt/erigon";
+  lighthouse.datadir = "/var/mnt/lighthouse";
 
   # SSH options
   ssh = {
     enable = true;
     privateKeyPath = "/var/mnt/secrets/ssh/id_ed25519"; # automatically generated
+  };
+in
+{
+  # User Options
+  user = {
+    authorizedKeys = [
+      # ssh-ed25519 ...
+    ];
   };
 
   # Localization
@@ -25,13 +27,13 @@ let
   # Erigon options
   erigon = rec {
     endpoint = infra.ip;
-    datadir = "/var/mnt/erigon";
+    datadir = erigon.datadir;
   };
 
   # Lighthouse options
   lighthouse = rec {
     endpoint = infra.ip;
-    datadir = "/var/mnt/lighthouse";
+    datadir = lighthouse.datadir;
     exec.endpoint = "http://${infra.ip}:8551";
     mev-boost.endpoint = "http://${infra.ip}:18550";
     slasher = {
@@ -40,8 +42,7 @@ let
       max-db-size = 16;
     };
   };
-in
-{
+
   # Secrets
   home-manager.users.staker = { pkgs, ... }: {
     sops = {
