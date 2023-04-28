@@ -303,17 +303,17 @@
 
       # nixos-generators attributes for each system and hostname combination
       # available through 'nix build .#nixobolus.<system_arch>.<hostname>'
-      packages = builtins.listToAttrs (map
+      nixobolus = builtins.listToAttrs (map
         (system: {
           name = system;
           value = builtins.listToAttrs (map
             (hostname: {
               name = hostname;
               value = nixos-generators.nixosGenerate {
-                inherit sharedModules system customFormats;
+                inherit system customFormats;
                 specialArgs = { inherit inputs outputs; };
                 modules = [ ./hosts/${hostname} ] ++ sharedModules;
-                format = "kexecTree";
+                format = "netboot-kexec";
               };
             })
             hostnames);
@@ -321,14 +321,12 @@
         systems);
 
       # nixos configuration entrypoints (needed for accessing options through eval)
-      # available through 'nix-build .#your-hostname'
-      # TODO -- only maps x86_64-linux at the moment 
+      # TODO -- only maps cuurent system arch at the moment 
       nixosConfigurations = builtins.listToAttrs (map
         (hostname: {
           name = hostname;
           value = nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
-            inherit sharedModules;
             specialArgs = { inherit inputs outputs; };
             modules = [ ./hosts/${hostname} ] ++ sharedModules;
           };
@@ -342,7 +340,7 @@
         mev-boost = mev-boost;
       };
 
-      # generate nixosModules exports dynamically
+      # generate nixosModules from exports dynamically
       # usage -- https://github.com/ponkila/homestaking-infra/commit/574382212cf817dbb75657e9fef9cdb223e9823b
       nixosModules = builtins.mapAttrs
         (name: module: { config, lib, pkgs, ... }:
