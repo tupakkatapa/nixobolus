@@ -10,7 +10,7 @@ Tested on Ubuntu 22.04.2 LTS aarch64, 5.15.0-69-generic
 - Within [Docker](https://docs.docker.com/desktop/install/linux-install/) / [Podman](https://podman.io/getting-started/installation)
 
     ```
-    podman build . --tag nix-builder --build-arg hostname=<hostname>
+    podman build . --tag nix-builder --build-arg hostname=<hostname> --build-arg system=<system_arch>
     ```
 
     ```
@@ -62,5 +62,5 @@ Tested on Ubuntu 22.04.2 LTS aarch64, 5.15.0-69-generic
     ```
 
     ```
-    nix --extra-experimental-features "nix-command flakes" build .#<hostname>
+    nix --extra-experimental-features "nix-command flakes" build .#nixobolus.<system_arch>.<hostname>
     ```
