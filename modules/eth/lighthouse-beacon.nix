@@ -1,46 +1,46 @@
 { pkgs, config, lib, ... }:
-{
-  lighthouse = rec {
-
-    options = {
+let
+  options = {
+    enable = false;
+    user = "";
+    endpoint = "";
+    datadir = "";
+    exec.endpoint = "";
+    slasher = {
       enable = false;
-      user = "";
-      endpoint = "";
-      datadir = "";
-      exec.endpoint = "";
-      slasher = {
-        enable = false;
-        history-length = 4096;
-        max-db-size = 256;
-      };
-      mev-boost = {
-        endpoint = "";
-      };
+      history-length = 4096;
+      max-db-size = 256;
     };
+    mev-boost = {
+      endpoint = "";
+    };
+  };
+in
+{
 
-    config = lib.mkIf options.enable {
-      # package
-      environment.systemPackages = with pkgs; [
-        lighthouse
-      ];
+  config = lib.mkIf options.enable {
+    # package
+    environment.systemPackages = with pkgs; [
+      lighthouse
+    ];
 
-      # service
-      systemd.services.lighthouse = {
-        enable = true;
+    # service
+    systemd.services.lighthouse = {
+      enable = true;
 
-        description = "beacon, mainnet";
-        requires = [ "wg0.service" ];
-        after = [ "wg0.service" "mev-boost.service" ];
+      description = "beacon, mainnet";
+      requires = [ "wg0.service" ];
+      after = [ "wg0.service" "mev-boost.service" ];
 
-        serviceConfig = {
-          Restart = "always";
-          RestartSec = "5s";
-          User = options.user;
-          Group = options.user;
-          Type = "simple";
-        };
+      serviceConfig = {
+        Restart = "always";
+        RestartSec = "5s";
+        User = options.user;
+        Group = options.user;
+        Type = "simple";
+      };
 
-        script = ''${pkgs.lighthouse}/bin/lighthouse bn \
+      script = ''${pkgs.lighthouse}/bin/lighthouse bn \
         --datadir ${options.datadir} \
         --network mainnet \
         --http --http-address ${options.endpoint} \
@@ -55,17 +55,17 @@
           + " --slasher-max-db-size " + (toString options.slasher.max-db-size)
         else "" }
       '';
-        wantedBy = [ "multi-user.target" ];
-      };
+      wantedBy = [ "multi-user.target" ];
+    };
 
-      # firewall
-      networking.firewall = {
-        allowedTCPPorts = [ 9000 ];
-        allowedUDPPorts = [ 9000 ];
-        interfaces."wg0".allowedTCPPorts = [
-          5052 # lighthouse
-        ];
-      };
+    # firewall
+    networking.firewall = {
+      allowedTCPPorts = [ 9000 ];
+      allowedUDPPorts = [ 9000 ];
+      interfaces."wg0".allowedTCPPorts = [
+        5052 # lighthouse
+      ];
     };
   };
 }
+
