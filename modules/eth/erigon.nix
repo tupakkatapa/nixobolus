@@ -1,13 +1,23 @@
 { pkgs, config, lib, ... }:
+with lib;
 let
-  options = {
-    enable = false;
-    endpoint = "";
-    datadir = "";
-  };
+  cfg = config.erigon;
 in
 {
-  config = lib.mkIf options.enable {
+  options.erigon = {
+    enable = mkOption {
+      type = types.bool;
+      default = true;
+    };
+    endpoint = mkOption {
+      type = types.str;
+    };
+    datadir = mkOption {
+      type = types.str;
+    };
+  };
+
+  config = mkIf cfg.enable {
     # package
     environment.systemPackages = with pkgs; [
       erigon
@@ -24,15 +34,17 @@ in
       serviceConfig = {
         Restart = "always";
         RestartSec = "5s";
+        User = "core";
+        Group = "core";
         Type = "simple";
       };
 
       script = ''${pkgs.erigon}/bin/erigon \
-        --datadir=${options.datadir} \
+        --datadir=${cfg.datadir} \
         --chain mainnet \
         --authrpc.vhosts="*" \
-        --authrpc.addr ${options.endpoint} \
-        --authrpc.jwtsecret=${options.datadir}/jwt.hex \
+        --authrpc.addr ${cfg.endpoint} \
+        --authrpc.jwtsecret=${cfg.datadir}/jwt.hex \
         --metrics \
         --externalcl
       '';
@@ -47,4 +59,3 @@ in
     };
   };
 }
-
