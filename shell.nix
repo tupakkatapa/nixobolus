@@ -1,6 +1,3 @@
-# Nixobolus - Automated creation of bootable NixOS images
-# https://github.com/ponkila/Nixobolus
-
 # Shell for bootstrapping flake-enabled nix and other tooling
 { pkgs ? # If pkgs is not defined, instanciate nixpkgs from locked commit
   let
@@ -21,9 +18,7 @@
       git
 
       sops
-      yq
-      jq
-      j2cli
+      rsync
       gnupg
       age
     ];
