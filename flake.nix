@@ -1,6 +1,3 @@
-# Nixobolus - Automated creation of bootable NixOS images
-# https://github.com/ponkila/Nixobolus
-
 {
   description = "Nixobolus flake";
 
@@ -59,29 +56,61 @@
     }@inputs:
     let
       inherit (self) outputs;
-      system = "x86_64-linux";
-
-      # custom packages
-      # acessible through 'nix build', 'nix shell', etc
-      forEachSystem = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ];
+      lib = nixpkgs.lib;
+      systems = [
+        "aarch64-darwin"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "x86_64-linux"
+      ];
+      forEachSystem = lib.genAttrs systems;
       forEachPkgs = f: forEachSystem (sys: f nixpkgs.legacyPackages.${sys});
-      packages = forEachPkgs (pkgs: import ./configs/nix_configs/pkgs { inherit pkgs; });
 
-      # get hostnames from ./nix_configs/hosts
-      ls = builtins.readDir ./configs/nix_configs/hosts;
+      # custom packages -- accessible through 'nix build', 'nix shell', etc
+      # TODO -- check that this actually works
+      packages = forEachPkgs (pkgs: import ./pkgs { inherit pkgs; });
+
+      # list hostnames from ./hosts
+      ls = builtins.readDir ./hosts;
       hostnames = builtins.filter
         (name: builtins.hasAttr name ls && (ls.${name} == "directory"))
         (builtins.attrNames ls);
 
-      # overlays
-      overlays = [ ethereum-nix.overlays.default ];
-      pkgs = import nixpkgs { inherit system overlays; };
-
       # custom formats for nixos-generators
       # other available formats can be found at: https://github.com/nix-community/nixos-generators/tree/master/formats
       customFormats = {
-        "kexecTree" = { 
+        "netboot-kexec" = {
           formatAttr = "kexecTree";
+          imports = [ ./system/formats/netboot-kexec.nix ];
+        };
+        "copytoram-iso" = {
+          formatAttr = "isoImage";
+          imports = [ ./system/formats/copytoram-iso.nix ];
+          filename = "*.iso";
+        };
+      };
+
+      modules = [
+        #./hosts/test
+        ./system
+        ./system/ramdisk.nix
+        home-manager.nixosModules.home-manager
+        disko.nixosModules.disko
+        {
+          nixpkgs.overlays = [
+            ethereum-nix.overlays.default
+            outputs.overlays.additions
+            outputs.overlays.modifications
+          ];
+          home-manager.sharedModules = [
+            sops-nix.homeManagerModules.sops
+          ];
+        }
+        {
+          system.stateVersion = "23.05";
+        }
+      ];
+
       ### OPTIONS AND SERVICES --- START
 
       #################################################################### LOCALIZATION
@@ -461,20 +490,47 @@
         ];
       };
       ### OPTIONS AND SERVICES --- END
+    in
+    rec {
+      # devshell -- accessible through 'nix develop' or 'nix-shell' (legacy)
       devShells = forEachPkgs (pkgs: import ./shell.nix { inherit pkgs; });
 
-      # nixos-generators
-      # available through 'nix-build .#your-hostname'
-      packages.${system} = builtins.listToAttrs (map (hostname: {
-        name = hostname;
-        value = nixos-generators.nixosGenerate {
-          inherit system pkgs;
-          specialArgs = { inherit inputs outputs; };
-          modules = [ ./configs/nix_configs/hosts/${hostname} ];
-          customFormats = customFormats;
-          format = "kexecTree";
-        };
-      }) hostnames);
+      # custom packages and modifications, exported as overlays
+      overlays = import ./overlays { inherit inputs; };
+
+      # nix fmt
+      formatter = forEachPkgs (pkgs: pkgs.nixpkgs-fmt);
+
+      # nixos-generators attributes for each system and hostname combination
+      # available through 'nix build .#nixobolus.<system_arch>.<hostname>'
+      nixobolus = builtins.listToAttrs (map
+        (system: {
+          name = system;
+          value = builtins.listToAttrs (map
+            (hostname: {
+              name = hostname;
+              value = nixos-generators.nixosGenerate {
+                inherit modules system customFormats;
+                specialArgs = { inherit inputs outputs; };
+                format = "netboot-kexec";
+              };
+            })
+            hostnames);
+        })
+        systems);
+
+      # nixos configuration entrypoints (needed for accessing options through eval)
+      # TODO -- only maps "x86_64-linux" at the moment 
+      nixosConfigurations = builtins.listToAttrs (map
+        (hostname: {
+          name = hostname;
+          value = lib.nixosSystem {
+            system = "x86_64-linux";
+            inherit modules;
+            specialArgs = { inherit inputs outputs; };
+          };
+        })
+        hostnames);
 
       # To access:
       # $ nix eval --json .#exports.erigon.options
