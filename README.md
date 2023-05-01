@@ -4,61 +4,63 @@ Automated creation of bootable NixOS images
 ## Work in Progress
 This repository is a work in progress and is subject to change at any time. Please note that the code and documentation may be incomplete, inaccurate, or contain bugs. Use at your own risk.
 
-## Dependencies
-To use this tool, you must have [Nix package manager](https://nixos.org/download.html) installed. Optionally, you may also install [direnv](https://github.com/direnv/direnv#basic-installation) which will automatically run `nix develop` whenever you enter the directory.
+## Building (no cross-compile)
+Tested on Ubuntu 22.04.2 LTS aarch64, 5.15.0-69-generic
 
-## Usage
-
-1. Configure
-
-    Simply edit the example.yml file or create your own to define the settings for your deployment. Each machine is represented as a list item with key-value pairs for various settings.
-
-    Settings declared in the "general" section apply to all hosts and will be overwritten by the values in host section if they are the same. Any settings not explicitly defined in the configuration file section will default to the values specified in the corresponding Jinja2 templates, which can be found under the templates folder.
-
-2. Generate
-
-    To get started, enter the build environment by running `nix develop`. Once inside the environment, use the `build.sh` script with the path to your configuration file as an argument. This will generate the Nix configuration files from the Jinja2 templates and build the initrd, kernel, and netboot.ipxe for each configured machine.
+- Within [Docker](https://docs.docker.com/desktop/install/linux-install/) / [Podman](https://podman.io/getting-started/installation)
 
     ```
-    $ ./build.sh --help
-    Usage: ./build.sh [-p] [-k] [-o output_dir] [-v] [--nix-shell] [config_file]
-
-    Options:
-    -p, --prompt          Prompt before performing crucial actions (e.g. overwriting or deleting files)
-    -k, --keep-configs    Keep nix configurations in './configs/nix_configs/<hostname>' after build
-    -o, --output          Specify output directory (default: './result')
-    -v, --verbose         Enable verbose mode
-
-    If config_file is not specified, the script will read from standard input.
-    Config files should be in YAML or JSON format and be formatted correctly.
+    podman build . --tag nix-builder --build-arg hostname=<hostname> --build-arg system=<system_arch>
     ```
 
-3. Deploy
-    
-    Once you have generated your images, you can use [kexec](https://wiki.archlinux.org/title/Kexec) or [iPXE](https://ipxe.org/start) to boot the desired image.
+    ```
+    podman run -v "$PWD:$PWD":z -w "$PWD" nix-builder
+    ```
 
-## TODO
+    <details>
+    <summary>Debug notes</summary>
 
-- [x] Home-manager
-- [x] Secret management using SOPS
-- [x] Flakes
-- [ ] Support for adding multiple users
-- [ ] Option to build images in Docker/Podman
-- [x] Divide Ethereum template into smaller parts
-- [x] Proof of concept [WebUI](https://github.com/ponkila/HomestakerOS)
+      This error occurs when `programs.fish.enable` is set to `true`
+      ...
+      building '/nix/store/dgy59sxqj2wq2418f82n14z9cljzjin4-man-cache.drv'...
+      error: builder for '/nix/store/dgy59sxqj2wq2418f82n14z9cljzjin4-man-cache.drv' failed with exit code 2
+      error: 1 dependencies of derivation '/nix/store/p6lx3x6fxbl7hhch5nnsrxxlcsnw524d-etc-man_db.conf.drv' failed to build
+      error: 1 dependencies of derivation '/nix/store/m341zgn4qz0na8pvf3vkv44im3m9i8q0-etc.drv' failed to build
+      building '/nix/store/yp47gm038kyizbzl1m8y52jq6brkw0da-system-path.drv'...
+      error: 1 dependencies of derivation '/nix/store/31h7aqrpzn2ykbv57xfbyj51zb6pz4fi-nixos-system-ponkila-ephemeral-beta-23.05.20230417.f00994e.drv' failed to build
+      error: 1 dependencies of derivation '/nix/store/as1q3nzf9kpxxcsr08n5y4zdsijj80qw-closure-info.drv' failed to build
+      error: 1 dependencies of derivation '/nix/store/qzl3krxf1z8viz9z3bxi6h0afhyk4s4y-kexec-boot.drv' failed to build
+      error: 1 dependencies of derivation '/nix/store/0ys7pxf0l529gmjpayb9ny37kc68bawf-kexec-tree.drv' failed to build
+    </details>
 
-## Links
+- With Nix package manager
 
-Here are some resources that i found helpful when learning to put this thing together
+    Let root run the nix installer (**optional**)
 
-- NixOS
-    - https://zero-to-nix.com/
-    - https://youtu.be/AGVXJ-TIv3Y
+    ```
+    mkdir -p /etc/nix
+    ```
 
-- Ethereum
-    - https://ethereum.org/en/learn/
-    - https://docs.prylabs.network/docs/concepts/nodes-networks
+    ```
+    echo "build-users-group =" > /etc/nix/nix.conf
+    ```
 
-- SOPS
-    - https://github.com/mozilla/sops
-    - https://poweruser.blog/how-to-encrypt-secrets-in-config-files-1dbb794f7352
+    Install Nix in single-user mode
+
+    ```
+    curl -L https://nixos.org/nix/install | sh
+    ```
+
+    ```
+    . $HOME/.nix-profile/etc/profile.d/nix.sh
+    ```
+
+    Install nix-command and build
+
+    ```
+    nix-env -iA nixpkgs.nix
+    ```
+
+    ```
+    nix --extra-experimental-features "nix-command flakes" build .#nixobolus.<system_arch>.<hostname>
+    ```
