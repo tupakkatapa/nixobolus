@@ -535,6 +535,11 @@
       # To access:
       # $ nix eval --json .#exports.erigon.options
       exports = {
+        # General
+        localization = options.localization;
+        user = options.user;
+        ssh = options.ssh;
+        # Ethereum
         erigon = options.erigon;
         lighthouse = options.lighthouse;
         mev-boost = options.mev-boost;
