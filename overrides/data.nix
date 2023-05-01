@@ -1,0 +1,4 @@
+{ lib, pkgs, config, ... }:
+{
+  config = { };
+}
