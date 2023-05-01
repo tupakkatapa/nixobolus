@@ -197,7 +197,7 @@
         };
       };
 
-      #################################################################### USER (cote)
+      #################################################################### USER (core)
       options.user = {
         authorizedKeys = lib.mkOption {
           type = lib.types.listOf lib.types.str;
