@@ -186,7 +186,7 @@
         };
       };
 
-      ssh.config = {
+      config.ssh = {
         services.openssh = {
           enable = true;
           settings.PasswordAuthentication = false;
@@ -498,7 +498,7 @@
       # custom packages and modifications, exported as overlays
       overlays = import ./overlays { inherit inputs; };
 
-      # nix fmt
+      # nix fmt -- accessible through 'nix fmt'
       formatter = forEachPkgs (pkgs: pkgs.nixpkgs-fmt);
 
       # nixos-generators attributes for each system and hostname combination
