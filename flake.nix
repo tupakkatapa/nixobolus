@@ -7,7 +7,10 @@
   inputs = {
     # nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    
+
+    # sops-nix
+    sops-nix.url = "github:Mic92/sops-nix";
+
     # home-manager
     home-manager = {
       url = "github:nix-community/home-manager";
@@ -25,10 +28,35 @@
       url = "github:nix-community/nixos-generators";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # disko
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # darwin
+    darwin = {
+      url = "github:lnl7/nix-darwin";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # overrides
+    overrides.url = "path:./overrides";
   };
 
-  outputs = { self, nixpkgs, home-manager, nixos-generators, ethereum-nix, ... }@inputs:
-
+  # add the inputs declared above to the argument attribute set
+  outputs =
+    { self
+    , darwin
+    , disko
+    , ethereum-nix
+    , home-manager
+    , nixos-generators
+    , nixpkgs
+    , sops-nix
+    , overrides
+    }@inputs:
     let
       inherit (self) outputs;
       system = "x86_64-linux";
