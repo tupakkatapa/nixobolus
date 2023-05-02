@@ -149,7 +149,7 @@
             where = mount.where;
             type = mount.type or "ext4";
             options = mount.options or "defaults";
-            before = mount.before;
+            before = lib.mkDefault mount.before;
             wantedBy = mount.wantedBy or [ "multi-user.target" ];
           })
           options.mounts);
@@ -524,7 +524,7 @@
           options = options.localization;
           config = config.localization;
         };
-        mounts = { config, ... }: {
+        mounts = { pkgs, config, lib, ... }: {
           options = options.mounts;
           config = config.mounts;
         };
