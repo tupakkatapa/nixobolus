@@ -4,40 +4,6 @@
   inputs = {
     # nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-
-    # sops-nix
-    sops-nix.url = "github:Mic92/sops-nix";
-
-    # home-manager
-    home-manager = {
-      url = "github:nix-community/home-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # ethereum.nix
-    ethereum-nix = {
-      url = "github:nix-community/ethereum.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # nixos-generators
-    nixos-generators = {
-      url = "github:nix-community/nixos-generators";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # disko
-    disko = {
-      url = "github:nix-community/disko";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # darwin
-    darwin = {
-      url = "github:lnl7/nix-darwin";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     # overrides
     overrides.url = "path:./overrides";
   };
@@ -45,382 +11,137 @@
   # add the inputs declared above to the argument attribute set
   outputs =
     { self
-    , darwin
-    , disko
-    , ethereum-nix
-    , home-manager
-    , nixos-generators
     , nixpkgs
-    , sops-nix
     , overrides
     }@inputs:
     let
       inherit (self) outputs;
-      lib = nixpkgs.lib;
       systems = [
         "aarch64-darwin"
         "aarch64-linux"
         "x86_64-darwin"
         "x86_64-linux"
       ];
-      forEachSystem = lib.genAttrs systems;
+      forEachSystem = nixpkgs.lib.genAttrs systems;
       forEachPkgs = f: forEachSystem (sys: f nixpkgs.legacyPackages.${sys});
-
-      # custom packages -- accessible through 'nix build', 'nix shell', etc
-      # TODO -- check that this actually works
-      packages = forEachPkgs (pkgs: import ./pkgs { inherit pkgs; });
-
-      # list hostnames from ./hosts
-      ls = builtins.readDir ./hosts;
-      hostnames = builtins.filter
-        (name: builtins.hasAttr name ls && (ls.${name} == "directory"))
-        (builtins.attrNames ls);
-
-      # custom formats for nixos-generators
-      # other available formats can be found at: https://github.com/nix-community/nixos-generators/tree/master/formats
-      customFormats = {
-        "netboot-kexec" = {
-          formatAttr = "kexecTree";
-          imports = [ ./system/formats/netboot-kexec.nix ];
-        };
-        "copytoram-iso" = {
-          formatAttr = "isoImage";
-          imports = [ ./system/formats/copytoram-iso.nix ];
-          filename = "*.iso";
-        };
-      };
-
-      modules = [
-        #./hosts/test
-        ./system
-        ./system/ramdisk.nix
-        home-manager.nixosModules.home-manager
-        disko.nixosModules.disko
-        {
-          nixpkgs.overlays = [
-            ethereum-nix.overlays.default
-            outputs.overlays.additions
-            outputs.overlays.modifications
-          ];
-          home-manager.sharedModules = [
-            sops-nix.homeManagerModules.sops
-          ];
-        }
-        {
-          system.stateVersion = "23.05";
-        }
-      ];
 
       ### OPTIONS AND SERVICES --- START
 
       #################################################################### LOCALIZATION
-      options.localization = {
-        hostname = lib.mkOption {
-          type = lib.types.str;
-          default = "homestaker";
+      options = {
+
+        localization = {
+          hostname = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
+            default = "homestaker";
+          };
+          timezone = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
+            default = "Europe/Helsinki";
+          };
+          keymap = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
+            default = "us";
+          };
         };
-        timezone = lib.mkOption {
-          type = lib.types.str;
-          default = "Europe/Helsinki";
+
+        ssh = {
+          privateKeyPath = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.path;
+            default = "/var/mnt/secrets/ssh/id_ed25519";
+          };
         };
-        keymap = lib.mkOption {
-          type = lib.types.str;
-          default = "us";
+
+        user = {
+          authorizedKeys = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.listOf nixpkgs.lib.types.str;
+            default = [ ];
+          };
         };
-      };
 
-      config.localization = {
-        networking.hostName = self.options.localization.hostname;
-        time.timeZone = self.options.localization.timezone;
-        console.keyMap = self.options.localization.keymap;
-      };
-
-      #################################################################### MOUNTS (no options)
-
-      systemd.mounts = [
-        # Secrets
-        {
-          enable = true;
-
-          description = "secrets storage";
-
-          what = "/dev/disk/by-label/secrets";
-          where = "/var/mnt/secrets";
-          type = "btrfs";
-
-          before = [ "sshd.service" ];
-          wantedBy = [ "multi-user.target" ];
-        }
-        # Erigon
-        {
-          enable = true;
-
-          description = "erigon storage";
-
-          what = "/dev/disk/by-label/erigon";
-          where = self.options.erigon.datadir;
-          options = lib.mkDefault "noatime";
-          type = "btrfs";
-
-          wantedBy = [ "multi-user.target" ];
-        }
-        # Lighthouse
-        {
-          enable = true;
-
-          description = "lighthouse storage";
-
-          what = "/dev/disk/by-label/lighthouse";
-          where = self.options.lighthouse.datadir;
-          options = lib.mkDefault "noatime";
-          type = "btrfs";
-
-          wantedBy = [ "multi-user.target" ];
-        }
-      ];
-
-      #################################################################### SSH (system level)
-      options.ssh = {
-        privateKeyPath = lib.mkOption {
-          type = lib.types.path;
-          default = "/var/mnt/secrets/ssh/id_ed25519";
+        erigon = {
+          enable = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.bool;
+            default = false;
+          };
+          endpoint = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
+          };
+          datadir = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
+          };
         };
-      };
 
-      config.ssh = {
-        services.openssh = {
-          enable = true;
-          settings.PasswordAuthentication = false;
-          hostKeys = [{
-            path = self.options.ssh.privateKeyPath;
-            type = "ed25519";
-          }];
-        };
-      };
-
-      #################################################################### USER (core)
-      options.user = {
-        authorizedKeys = lib.mkOption {
-          type = lib.types.listOf lib.types.str;
-          default = [ ];
-        };
-      };
-
-      config.user = {
-        services.getty.autologinUser = "core";
-        users.users.core = {
-          isNormalUser = true;
-          group = "core";
-          extraGroups = [ "wheel" ];
-          openssh.authorizedKeys.keys = self.options.user.authorizedKeys;
-          shell = nixpkgs.fish;
-        };
-        users.groups.core = { };
-        environment.shells = [ nixpkgs.fish ];
-        programs.fish.enable = true;
-
-        home-manager.users.core = { nixpkgs, ... }: {
-
-          sops = {
-            defaultSopsFile = ./secrets/default.yaml;
-            secrets."wireguard/wg0" = {
-              path = "%r/wireguard/wg0.conf";
+        lighthouse = {
+          enable = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.bool;
+            default = false;
+          };
+          endpoint = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
+          };
+          exec.endpoint = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
+          };
+          slasher = {
+            enable = nixpkgs.lib.mkOption {
+              type = nixpkgs.lib.types.bool;
             };
-            age.sshKeyPaths = [ self.ssh.options.privateKeyPath ];
+            history-length = nixpkgs.lib.mkOption {
+              type = nixpkgs.lib.types.int;
+              default = 4096;
+            };
+            max-db-size = nixpkgs.lib.mkOption {
+              type = nixpkgs.lib.types.int;
+              default = 256;
+            };
           };
-
-          home.packages = with nixpkgs; [
-            file
-            tree
-            bind # nslookup
-          ];
-
-          programs = {
-            tmux.enable = true;
-            htop.enable = true;
-            vim.enable = true;
-            git.enable = true;
-            fish.enable = true;
-            fish.loginShellInit = "fish_add_path --move --prepend --path $HOME/.nix-profile/bin /run/wrappers/bin /etc/profiles/per-user/$USER/bin /run/current-system/sw/bin /nix/var/nix/profiles/default/bin";
-
-            home-manager.enable = true;
+          mev-boost = {
+            endpoint = nixpkgs.lib.mkOption {
+              type = nixpkgs.lib.types.str;
+            };
           };
-
-          home.stateVersion = "23.05";
-        };
-      };
-
-      #################################################################### ERIGON
-      options.erigon = {
-        enable = lib.mkOption {
-          type = lib.types.bool;
-          default = false;
-        };
-        endpoint = lib.mkOption {
-          type = lib.types.str;
-        };
-        datadir = lib.mkOption {
-          type = lib.types.str;
-        };
-      };
-      config.erigon = lib.mkIf self.options.erigon.enable {
-        # package
-        environment.systemPackages = with nixpkgs; [
-          erigon
-        ];
-
-        # service
-        systemd.user.services.erigon = {
-          enable = true;
-
-          description = "execution, mainnet";
-          requires = [ "wg0.service" ];
-          after = [ "wg0.service" "lighthouse.service" ];
-
-          serviceConfig = {
-            Restart = "always";
-            RestartSec = "5s";
-            Type = "simple";
-          };
-
-          script = ''${nixpkgs.erigon}/bin/erigon \
-            --datadir=${self.options.erigon.datadir} \
-            --chain mainnet \
-            --authrpc.vhosts="*" \
-            --authrpc.addr ${self.options.erigon.endpoint} \
-            --authrpc.jwtsecret=${self.options.erigon.datadir}/jwt.hex \
-            --metrics \
-            --externalcl
-          '';
-
-          wantedBy = [ "multi-user.target" ];
-        };
-
-        # firewall
-        networking.firewall = {
-          allowedTCPPorts = [ 30303 30304 42069 ];
-          allowedUDPPorts = [ 30303 30304 42069 ];
-        };
-      };
-
-      #################################################################### LIGHTHOUSE
-
-      options.lighthouse = {
-        enable = lib.mkOption {
-          type = lib.types.bool;
-          default = false;
-        };
-        endpoint = lib.mkOption {
-          type = lib.types.str;
-        };
-        exec.endpoint = lib.mkOption {
-          type = lib.types.str;
-        };
-        slasher = {
-          enable = lib.mkOption {
-            type = lib.types.bool;
-          };
-          history-length = lib.mkOption {
-            type = lib.types.int;
-            default = 4096;
-          };
-          max-db-size = lib.mkOption {
-            type = lib.types.int;
-            default = 256;
+          datadir = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
           };
         };
+
         mev-boost = {
-          endpoint = lib.mkOption {
-            type = lib.types.str;
+          enable = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.bool;
+            default = false;
           };
         };
-        datadir = lib.mkOption {
-          type = lib.types.str;
-        };
+
       };
 
-      config.lighthouse = lib.mkIf self.options.lighthouse.enable {
-        # package
-        environment.systemPackages = with nixpkgs; [
-          lighthouse
-        ];
+      cfg = {
 
-        # service
-        systemd.user.services.lighthouse = {
-          enable = true;
+        mev-boost = nixpkgs.lib.mkIf options.mev-boost.enable {
+          virtualisation.podman.enable = true;
+          # dnsname allows containers to use ${name}.dns.podman to reach each other
+          # on the same host instead of using hard-coded IPs.
+          # NOTE: --net must be the same on the containers, and not eq "host"
+          # TODO: extend this with flannel ontop of wireguard for cross-node comms
+          virtualisation.podman.defaultNetwork.settings.dns_enabled = true;
 
-          description = "beacon, mainnet";
-          requires = [ "wg0.service" ];
-          after = [ "wg0.service" "mev-boost.service" ];
+          systemd.user.services.mev-boost = {
+            enable = true;
 
-          serviceConfig = {
-            Restart = "always";
-            RestartSec = "5s";
-            Type = "simple";
-          };
+            description = "MEV-boost allows proof-of-stake Ethereum consensus clients to outsource block construction";
+            requires = [ "wg0.service" ];
+            after = [ "wg0.service" ];
 
-          script = ''${nixpkgs.lighthouse}/bin/lighthouse bn \
-            --datadir ${self.options.lighthouse.datadir} \
-            --network mainnet \
-            --http --http-address ${self.options.lighthouse.endpoint} \
-            --execution-endpoint ${self.options.lighthouse.exec.endpoint} \
-            --execution-jwt ${self.options.lighthouse.datadir}/jwt.hex \
-            --builder ${self.options.lighthouse.mev-boost.endpoint} \
-            --prune-payloads false \
-            --metrics \
-            ${if self.options.lighthouse.slasher.enable then
-              "--slasher "
-              + " --slasher-history-length " + (toString self.options.lighthouse.slasher.history-length)
-              + " --slasher-max-db-size " + (toString self.options.lighthouse.slasher.max-db-size)
-            else "" }
-          '';
-          wantedBy = [ "multi-user.target" ];
-        };
+            serviceConfig = {
+              Restart = "always";
+              RestartSec = "5s";
+              Type = "simple";
+            };
 
-        # firewall
-        networking.firewall = {
-          allowedTCPPorts = [ 9000 ];
-          allowedUDPPorts = [ 9000 ];
-          interfaces."wg0".allowedTCPPorts = [
-            5052 # lighthouse
-          ];
-        };
-      };
-
-      #################################################################### MEV-BOOST
-
-      options.mev-boost = {
-        enable = lib.mkOption {
-          type = lib.types.bool;
-          default = false;
-        };
-      };
-
-      config.mev-boost = lib.mkIf self.options.mev-boost.enable {
-        virtualisation.podman.enable = true;
-        # dnsname allows containers to use ${name}.dns.podman to reach each other
-        # on the same host instead of using hard-coded IPs.
-        # NOTE: --net must be the same on the containers, and not eq "host"
-        # TODO: extend this with flannel ontop of wireguard for cross-node comms
-        virtualisation.podman.defaultNetwork.settings.dns_enabled = true;
-
-        systemd.user.services.mev-boost = {
-          enable = true;
-
-          description = "MEV-boost allows proof-of-stake Ethereum consensus clients to outsource block construction";
-          requires = [ "wg0.service" ];
-          after = [ "wg0.service" ];
-
-          serviceConfig = {
-            Restart = "always";
-            RestartSec = "5s";
-            Type = "simple";
-          };
-
-          script = ''${nixpkgs.mev-boost}/bin/mev-boost \
+            script = ''${nixpkgs.mev-boost}/bin/mev-boost \
             -mainnet \
             -relay-check \
-            -relays ${lib.concatStringsSep "," [
+            -relays ${nixpkgs.lib.concatStringsSep "," [
               "https://0xac6e77dfe25ecd6110b8e780608cce0dab71fdd5ebea22a16c0205200f2f8e2e3ad3b71d3499c54ad14d6c21b41a37ae@boost-relay.flashbots.net"
               "https://0xad0a8bb54565c2211cee576363f3a347089d2f07cf72679d16911d740262694cadb62d7fd7483f27afd714ca0f1b9118@bloxroute.ethical.blxrbdn.com"
               "https://0x9000009807ed12c1f08bf4e81c6da3ba8e3fc3d953898ce0102433094e5f22f21102ec057841fcb81978ed1ea0fa8246@builder-relay-mainnet.blocknative.com"
@@ -432,111 +153,175 @@
             -addr 0.0.0.0:18550
         '';
 
-          wantedBy = [ "multi-user.target" ];
-        };
-      };
-
-      #################################################################### WIREGUARD (no options)
-      systemd.services.wg0 = {
-        enable = true;
-
-        description = "wireguard interface for cross-node communication";
-        requires = [ "network-online.target" ];
-        after = [ "network-online.target" ];
-
-        serviceConfig = {
-          Type = "oneshot";
-        };
-
-        script = ''${nixpkgs.wireguard-tools}/bin/wg-quick \
-        up /run/user/1000/wireguard/wg0.conf
-        '';
-
-        wantedBy = [ "multi-user.target" ];
-      };
-
-      #################################################################### PROMETHEUS (no options)
-      services.prometheus = {
-        enable = false;
-        port = 9001;
-        exporters = {
-          node = {
-            enable = false;
-            enabledCollectors = [ "systemd" ];
-            port = 9002;
+            wantedBy = [ "multi-user.target" ];
           };
         };
-        scrapeConfigs = [
-          {
-            job_name = config.networking.hostName;
-            static_configs = [{
-              targets = [ "127.0.0.1:${toString config.services.prometheus.exporters.node.port}" ];
+
+        lighthouse = nixpkgs.lib.mkIf options.lighthouse.enable {
+          # package
+          environment.systemPackages = with nixpkgs; [
+            lighthouse
+          ];
+
+          # service
+          systemd.user.services.lighthouse = {
+            enable = true;
+
+            description = "beacon, mainnet";
+            requires = [ "wg0.service" ];
+            after = [ "wg0.service" "mev-boost.service" ];
+
+            serviceConfig = {
+              Restart = "always";
+              RestartSec = "5s";
+              Type = "simple";
+            };
+
+            script = ''${nixpkgs.lighthouse}/bin/lighthouse bn \
+            --datadir ${options.lighthouse.datadir} \
+            --network mainnet \
+            --http --http-address ${options.lighthouse.endpoint} \
+            --execution-endpoint ${options.lighthouse.exec.endpoint} \
+            --execution-jwt ${options.lighthouse.datadir}/jwt.hex \
+            --builder ${options.lighthouse.mev-boost.endpoint} \
+            --prune-payloads false \
+            --metrics \
+            ${if options.lighthouse.slasher.enable then
+              "--slasher "
+              + " --slasher-history-length " + (toString options.lighthouse.slasher.history-length)
+              + " --slasher-max-db-size " + (toString options.lighthouse.slasher.max-db-size)
+            else "" }
+          '';
+            wantedBy = [ "multi-user.target" ];
+          };
+
+          # firewall
+          networking.firewall = {
+            allowedTCPPorts = [ 9000 ];
+            allowedUDPPorts = [ 9000 ];
+            interfaces."wg0".allowedTCPPorts = [
+              5052 # lighthouse
+            ];
+          };
+        };
+
+        erigon = nixpkgs.lib.mkIf options.erigon.enable {
+          # package
+          environment.systemPackages = with nixpkgs; [
+            erigon
+          ];
+
+          # service
+          systemd.user.services.erigon = {
+            enable = true;
+
+            description = "execution, mainnet";
+            requires = [ "wg0.service" ];
+            after = [ "wg0.service" "lighthouse.service" ];
+
+            serviceConfig = {
+              Restart = "always";
+              RestartSec = "5s";
+              Type = "simple";
+            };
+
+            script = ''${nixpkgs.erigon}/bin/erigon \
+            --datadir=${options.erigon.datadir} \
+            --chain mainnet \
+            --authrpc.vhosts="*" \
+            --authrpc.addr ${options.erigon.endpoint} \
+            --authrpc.jwtsecret=${options.erigon.datadir}/jwt.hex \
+            --metrics \
+            --externalcl
+          '';
+
+            wantedBy = [ "multi-user.target" ];
+          };
+
+          # firewall
+          networking.firewall = {
+            allowedTCPPorts = [ 30303 30304 42069 ];
+            allowedUDPPorts = [ 30303 30304 42069 ];
+          };
+        };
+
+        localization = {
+          networking.hostName = options.localization.hostname;
+          time.timeZone = options.localization.timezone;
+          console.keyMap = options.localization.keymap;
+        };
+
+        ssh = {
+          services.openssh = {
+            enable = true;
+            settings.PasswordAuthentication = false;
+            hostKeys = [{
+              path = options.ssh.privateKeyPath;
+              type = "ed25519";
             }];
-          }
-          {
-            job_name = "erigon";
-            metrics_path = "/debug/metrics/prometheus";
-            scheme = "http";
-            static_configs = [{
-              targets = [ "127.0.0.1:6060" "127.0.0.1:6061" "127.0.0.1:6062" ];
-            }];
-          }
-          {
-            job_name = "lighthouse";
-            scrape_interval = "5s";
-            static_configs = [{
-              targets = [ "127.0.0.1:5054" "127.0.0.1:5064" ];
-            }];
-          }
-        ];
+          };
+        };
+
+        user = {
+          services.getty.autologinUser = "core";
+          users.users.core = {
+            isNormalUser = true;
+            group = "core";
+            extraGroups = [ "wheel" ];
+            openssh.authorizedKeys.keys = options.user.authorizedKeys;
+            shell = nixpkgs.fish;
+          };
+          users.groups.core = { };
+          environment.shells = [ nixpkgs.fish ];
+          programs.fish.enable = true;
+
+          home-manager.users.core = { nixpkgs, ... }: {
+
+            sops = {
+              defaultSopsFile = ./secrets/default.yaml;
+              secrets."wireguard/wg0" = {
+                path = "%r/wireguard/wg0.conf";
+              };
+              age.sshKeyPaths = [ options.ssh.privateKeyPath ];
+            };
+
+            home.packages = with nixpkgs; [
+              file
+              tree
+              bind # nslookup
+            ];
+
+            programs = {
+              tmux.enable = true;
+              htop.enable = true;
+              vim.enable = true;
+              git.enable = true;
+              fish.enable = true;
+              fish.loginShellInit = "fish_add_path --move --prepend --path $HOME/.nix-profile/bin /run/wrappers/bin /etc/profiles/per-user/$USER/bin /run/current-system/sw/bin /nix/var/nix/profiles/default/bin";
+
+              home-manager.enable = true;
+            };
+
+            home.stateVersion = "23.05";
+          };
+        };
+
       };
+
+
       ### OPTIONS AND SERVICES --- END
     in
-    rec {
+    {
       # devshell -- accessible through 'nix develop' or 'nix-shell' (legacy)
       devShells = forEachPkgs (pkgs: import ./shell.nix { inherit pkgs; });
-
-      # custom packages and modifications, exported as overlays
-      overlays = import ./overlays { inherit inputs; };
 
       # nix fmt -- accessible through 'nix fmt'
       formatter = forEachPkgs (pkgs: pkgs.nixpkgs-fmt);
 
-      # nixos-generators attributes for each system and hostname combination
-      # available through 'nix build .#nixobolus.<system_arch>.<hostname>'
-      nixobolus = builtins.listToAttrs (map
-        (system: {
-          name = system;
-          value = builtins.listToAttrs (map
-            (hostname: {
-              name = hostname;
-              value = nixos-generators.nixosGenerate {
-                inherit modules system customFormats;
-                specialArgs = { inherit inputs outputs; };
-                format = "netboot-kexec";
-              };
-            })
-            hostnames);
-        })
-        systems);
-
-      # nixos configuration entrypoints (needed for accessing options through eval)
-      # TODO -- only maps "x86_64-linux" at the moment 
-      nixosConfigurations = builtins.listToAttrs (map
-        (hostname: {
-          name = hostname;
-          value = lib.nixosSystem {
-            system = "x86_64-linux";
-            inherit modules;
-            specialArgs = { inherit inputs outputs; };
-          };
-        })
-        hostnames);
-
       # filters options recursively
       # available through -- 'nix eval --json .#exports'
-      exports = lib.attrsets.mapAttrsRecursiveCond
-        (v: ! lib.options.isOption v)
+      exports = nixpkgs.lib.attrsets.mapAttrsRecursiveCond
+        (v: ! nixpkgs.lib.options.isOption v)
         (k: v: v.type.name)
         options;
 
@@ -545,28 +330,28 @@
         # General
         localization = { config, ... }: {
           options = options.localization;
-          config = config.localization;
+          config = cfg.localization;
         };
-        user = { pkgs, config, inputs, lib, ... }: {
+        user = { pkgs, config, ... }: {
           options = options.user;
-          config = config.user;
+          config = cfg.user;
         };
-        ssh = { config, lib, pkgs, ... }: {
+        ssh = { config, pkgs, ... }: {
           options = options.ssh;
-          config = config.ssh;
+          config = cfg.ssh;
         };
         # Ethereum
-        erigon = { config, lib, pkgs, ... }: {
+        erigon = { config, pkgs, ... }: {
           options = options.erigon;
-          config = config.erigon;
+          config = cfg.erigon;
         };
-        lighthouse = { config, lib, pkgs, ... }: {
+        lighthouse = { config, pkgs, ... }: {
           options = options.lighthouse;
-          config = config.lighthouse;
+          config = cfg.lighthouse;
         };
-        mev-boost = { config, lib, pkgs, ... }: {
+        mev-boost = { config, pkgs, ... }: {
           options = options.mev-boost;
-          config = config.mev-boost;
+          config = cfg.mev-boost;
         };
       };
 
