@@ -83,17 +83,10 @@
       };
 
       modules = [
-        #./hosts/test
         ./system
         ./system/ramdisk.nix
         home-manager.nixosModules.home-manager
         disko.nixosModules.disko
-        nixobolus.nixosModules.erigon
-        nixobolus.nixosModules.lighthouse
-        nixobolus.nixosModules.mounts
-        nixobolus.nixosModules.localization
-        nixobolus.nixosModules.user
-        nixobolus.nixosModules.mev-boost
         {
           nixpkgs.overlays = [
             ethereum-nix.overlays.default
@@ -470,7 +463,7 @@
         ### OPTIONS AND CONFIGS --- END
       };
     in
-    rec {
+    {
       # devshell -- accessible through 'nix develop' or 'nix-shell' (legacy)
       devShells = forEachPkgs (pkgs: import ./shell.nix { inherit pkgs; });
 
