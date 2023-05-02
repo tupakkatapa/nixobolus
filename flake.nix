@@ -191,7 +191,7 @@
           enable = true;
           settings.PasswordAuthentication = false;
           hostKeys = [{
-            path = ssh.privateKeyPath;
+            path = self.options.ssh.privateKeyPath;
             type = "ed25519";
           }];
         };
@@ -532,17 +532,24 @@
         })
         hostnames);
 
+      # filters a set of options recursively
+      filterOptions = options:
+        lib.attrsets.mapAttrsRecursiveCond
+          (v: ! lib.options.isOption v)
+          (k: v: v.type.name)
+          options;
+
       # To access:
-      # $ nix eval --json .#exports.erigon.options
+      # $ nix eval --json .#exports.erigon
       exports = {
         # General
-        localization = options.localization;
-        user = options.user;
-        ssh = options.ssh;
+        localization = filterOptions options.localization;
+        user = filterOptions options.user;
+        ssh = filterOptions options.ssh;
         # Ethereum
-        erigon = options.erigon;
-        lighthouse = options.lighthouse;
-        mev-boost = options.mev-boost;
+        erigon = filterOptions options.erigon;
+        lighthouse = filterOptions options.lighthouse;
+        mev-boost = filterOptions options.mev-boost;
       };
       # To use, see: https://github.com/ponkila/homestaking-infra/commit/574382212cf817dbb75657e9fef9cdb223e9823b
       nixosModules = {
