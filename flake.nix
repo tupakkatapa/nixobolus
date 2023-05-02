@@ -2,43 +2,35 @@
   description = "Nixobolus flake";
 
   inputs = {
-    # nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     nixobolus.url = "github:ponkila/nixobolus/jesse/options-extractions";
     sops-nix.url = "github:Mic92/sops-nix";
+    overrides.url = "path:./overrides";
 
-    # home-manager
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # ethereum.nix
     ethereum-nix = {
       url = "github:nix-community/ethereum.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # nixos-generators
     nixos-generators = {
       url = "github:nix-community/nixos-generators";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # disko
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # darwin
     darwin = {
       url = "github:lnl7/nix-darwin";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    # overrides
-    overrides.url = "path:./overrides";
   };
 
   # add the inputs declared above to the argument attribute set
@@ -117,9 +109,10 @@
         }
       ];
 
-      ### OPTIONS AND SERVICES --- START
+      ### OPTIONS AND CONFIGS --- START
 
       #################################################################### LOCALIZATION
+
       options.localization = {
         hostname = lib.mkOption {
           type = lib.types.str;
@@ -141,49 +134,26 @@
         console.keyMap = self.options.localization.keymap;
       };
 
-      #################################################################### MOUNTS (no options)
+      #################################################################### MOUNTS
 
-      systemd.mounts = [
-        # Secrets
-        {
-          enable = true;
+      options.mounts = lib.mkOption {
+        type = lib.types.attrsOf lib.types.string;
+      };
 
-          description = "secrets storage";
-
-          what = "/dev/disk/by-label/secrets";
-          where = "/var/mnt/secrets";
-          type = "btrfs";
-
-          before = [ "sshd.service" ];
-          wantedBy = [ "multi-user.target" ];
-        }
-        # Erigon
-        {
-          enable = true;
-
-          description = "erigon storage";
-
-          what = "/dev/disk/by-label/erigon";
-          where = self.options.erigon.datadir;
-          options = lib.mkDefault "noatime";
-          type = "btrfs";
-
-          wantedBy = [ "multi-user.target" ];
-        }
-        # Lighthouse
-        {
-          enable = true;
-
-          description = "lighthouse storage";
-
-          what = "/dev/disk/by-label/lighthouse";
-          where = self.options.lighthouse.datadir;
-          options = lib.mkDefault "noatime";
-          type = "btrfs";
-
-          wantedBy = [ "multi-user.target" ];
-        }
-      ];
+      config.mounts = {
+        systemd.mounts = builtins.listToAttrs (map
+          (mount: {
+            enable = true;
+            description = mount.description or "Unnamed mount point";
+            what = mount.what;
+            where = mount.where;
+            type = mount.type or "ext4";
+            options = mount.options or "defaults";
+            before = mount.before;
+            wantedBy = mount.wantedBy or [ "multi-user.target" ];
+          })
+          options.mounts);
+      };
 
       #################################################################### SSH (system level)
       options.ssh = {
@@ -496,7 +466,7 @@
           }
         ];
       };
-      ### OPTIONS AND SERVICES --- END
+      ### OPTIONS AND CONFIGS --- END
     in
     rec {
       # devshell -- accessible through 'nix develop' or 'nix-shell' (legacy)
@@ -505,7 +475,7 @@
       # custom packages and modifications, exported as overlays
       overlays = import ./overlays { inherit inputs; };
 
-      # nix fmt -- accessible through 'nix fmt'
+      # nix code formatter -- accessible through 'nix fmt'
       formatter = forEachPkgs (pkgs: pkgs.nixpkgs-fmt);
 
       # nixos-generators attributes for each system and hostname combination
@@ -540,18 +510,23 @@
         hostnames);
 
       # filters options recursively
-      # available through -- 'nix eval --json .#exports'
+      # option exports -- available through'nix eval --json .#exports'
       exports = lib.attrsets.mapAttrsRecursiveCond
         (v: ! lib.options.isOption v)
         (k: v: v.type.name)
         options;
 
       # To use, see: https://github.com/ponkila/homestaking-infra/commit/574382212cf817dbb75657e9fef9cdb223e9823b
+      # TODO --  infinite recursion on clients side 
       nixosModules = {
         # General
         localization = { config, ... }: {
           options = options.localization;
           config = config.localization;
+        };
+        mounts = { config, ... }: {
+          options = options.mounts;
+          config = config.mounts;
         };
         user = { pkgs, config, inputs, lib, ... }: {
           options = options.user;
