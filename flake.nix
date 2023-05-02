@@ -4,8 +4,7 @@
   inputs = {
     # nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-
-    # sops-nix
+    nixobolus.url = "github:ponkila/nixobolus/jesse/options-extractions";
     sops-nix.url = "github:Mic92/sops-nix";
 
     # home-manager
@@ -51,6 +50,7 @@
     , home-manager
     , nixos-generators
     , nixpkgs
+    , nixobolus
     , sops-nix
     , overrides
     }@inputs:
@@ -96,6 +96,12 @@
         ./system/ramdisk.nix
         home-manager.nixosModules.home-manager
         disko.nixosModules.disko
+        nixobolus.nixosModules.erigon
+        nixobolus.nixosModules.lighthouse
+        nixobolus.nixosModules.mounts
+        nixobolus.nixosModules.localization
+        nixobolus.nixosModules.user
+        nixobolus.nixosModules.mev-boost
         {
           nixpkgs.overlays = [
             ethereum-nix.overlays.default
