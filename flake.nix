@@ -136,6 +136,7 @@
       };
 
       #################################################################### MOUNTS (no options)
+
       systemd.mounts = [
         # Secrets
         {
@@ -532,25 +533,13 @@
         })
         hostnames);
 
-      # filters a set of options recursively
-      filterOptions = options:
-        lib.attrsets.mapAttrsRecursiveCond
-          (v: ! lib.options.isOption v)
-          (k: v: v.type.name)
-          options;
+      # filters options recursively
+      # available through -- 'nix eval --json .#exports'
+      exports = lib.attrsets.mapAttrsRecursiveCond
+        (v: ! lib.options.isOption v)
+        (k: v: v.type.name)
+        options;
 
-      # To access:
-      # $ nix eval --json .#exports.erigon
-      exports = {
-        # General
-        localization = filterOptions options.localization;
-        user = filterOptions options.user;
-        ssh = filterOptions options.ssh;
-        # Ethereum
-        erigon = filterOptions options.erigon;
-        lighthouse = filterOptions options.lighthouse;
-        mev-boost = filterOptions options.mev-boost;
-      };
       # To use, see: https://github.com/ponkila/homestaking-infra/commit/574382212cf817dbb75657e9fef9cdb223e9823b
       nixosModules = {
         # General
