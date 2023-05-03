@@ -104,16 +104,16 @@
 
       homestakeros = {
         localization = {
-          hostname = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
+          hostname = lib.mkOption {
+            type = lib.types.str;
             default = "homestaker";
           };
-          timezone = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
+          timezone = lib.mkOption {
+            type = lib.types.str;
             default = "Europe/Helsinki";
           };
-          keymap = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
+          keymap = lib.mkOption {
+            type = lib.types.str;
             default = "us";
           };
         };
@@ -123,74 +123,73 @@
         };
 
         ssh = {
-          privateKeyPath = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.path;
+          privateKeyPath = lib.mkOption {
+            type = lib.types.path;
             default = "/var/mnt/secrets/ssh/id_ed25519";
           };
         };
 
         user = {
-          authorizedKeys = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.listOf nixpkgs.lib.types.str;
+          authorizedKeys = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
             default = [ ];
           };
         };
 
         erigon = {
-          enable = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.bool;
+          enable = lib.mkOption {
+            type = lib.types.bool;
             default = false;
           };
-          endpoint = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
+          endpoint = lib.mkOption {
+            type = lib.types.str;
           };
-          datadir = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
+          datadir = lib.mkOption {
+            type = lib.types.str;
           };
         };
 
         lighthouse = {
-          enable = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.bool;
+          enable = lib.mkOption {
+            type = lib.types.bool;
             default = false;
           };
-          endpoint = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
+          endpoint = lib.mkOption {
+            type = lib.types.str;
           };
-          exec.endpoint = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
+          exec.endpoint = lib.mkOption {
+            type = lib.types.str;
           };
           slasher = {
-            enable = nixpkgs.lib.mkOption {
-              type = nixpkgs.lib.types.bool;
+            enable = lib.mkOption {
+              type = lib.types.bool;
               default = false;
             };
-            history-length = nixpkgs.lib.mkOption {
-              type = nixpkgs.lib.types.int;
+            history-length = lib.mkOption {
+              type = lib.types.int;
               default = 4096;
             };
-            max-db-size = nixpkgs.lib.mkOption {
-              type = nixpkgs.lib.types.int;
+            max-db-size = lib.mkOption {
+              type = lib.types.int;
               default = 256;
             };
           };
           mev-boost = {
-            endpoint = nixpkgs.lib.mkOption {
-              type = nixpkgs.lib.types.str;
+            endpoint = lib.mkOption {
+              type = lib.types.str;
             };
           };
-          datadir = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
+          datadir = lib.mkOption {
+            type = lib.types.str;
           };
         };
 
         mev-boost = {
-          enable = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.bool;
+          enable = lib.mkOption {
+            type = lib.types.bool;
             default = false;
           };
         };
-
       };
     in
     {
