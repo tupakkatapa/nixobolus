@@ -160,6 +160,7 @@
           slasher = {
             enable = nixpkgs.lib.mkOption {
               type = nixpkgs.lib.types.bool;
+              default = false;
             };
             history-length = nixpkgs.lib.mkOption {
               type = nixpkgs.lib.types.int;
