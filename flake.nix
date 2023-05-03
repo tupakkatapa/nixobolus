@@ -321,7 +321,7 @@
           })
 
           #################################################################### ERIGON
-          (mkIf options.erigon.enable {
+          (mkIf (options.erigon.enable) {
             # package
             environment.systemPackages = [
               pkgs.erigon
@@ -362,7 +362,7 @@
           })
 
           #################################################################### MEV-BOOST
-          (mkIf options.mev-boost.enable {
+          (mkIf (options.mev-boost.enable) {
             # podman
             virtualisation.podman.enable = true;
             # dnsname allows containers to use ${name}.dns.podman to reach each other
@@ -405,7 +405,7 @@
           })
 
           #################################################################### LIGHTHOUSE
-          (mkIf options.lighthouse.enable {
+          (mkIf (options.lighthouse.enable) {
             # package
             environment.systemPackages = with pkgs; [
               lighthouse
