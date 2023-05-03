@@ -1,6 +1,3 @@
-# Nixobolus - Automated creation of bootable NixOS images
-# https://github.com/ponkila/Nixobolus
-
 { config, lib, ... }:
 {
   boot = {
@@ -41,7 +38,7 @@
       options = [ "mode=0755" ];
       neededForBoot = true;
     };
-    
+
     "/nix/store" = lib.mkImageMediaOverride {
       fsType = "overlay";
       device = "overlay";
