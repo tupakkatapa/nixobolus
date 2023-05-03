@@ -3,7 +3,6 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixobolus.url = "github:ponkila/nixobolus/jesse/options-extractions";
     sops-nix.url = "github:Mic92/sops-nix";
     overrides.url = "path:./overrides";
 
@@ -42,10 +41,10 @@
     , home-manager
     , nixos-generators
     , nixpkgs
-    , nixobolus
     , sops-nix
     , overrides
     }@inputs:
+
     let
       inherit (self) outputs;
       lib = nixpkgs.lib;
@@ -96,17 +95,13 @@
           home-manager.sharedModules = [
             sops-nix.homeManagerModules.sops
           ];
-        }
-        {
           system.stateVersion = "23.05";
         }
       ];
 
-      
-      nxbls = rec { ### OPTIONS AND CONFIGS --- START
+      nxbls = rec { ### OPTIONS AND CONFIGS -- START
 
-       #################################################################### LOCALIZATION
-
+        #################################################################### LOCALIZATION
         options.localization = {
           hostname = lib.mkOption {
             type = lib.types.str;
@@ -129,7 +124,6 @@
         };
 
         #################################################################### MOUNTS
-
         options.mounts = lib.mkOption {
           type = lib.types.attrsOf lib.types.string;
         };
@@ -233,6 +227,7 @@
             type = lib.types.str;
           };
         };
+
         config.erigon = lib.mkIf self.options.erigon.enable {
           # package
           environment.systemPackages = with nixpkgs; [
@@ -274,7 +269,6 @@
         };
 
         #################################################################### LIGHTHOUSE
-
         options.lighthouse = {
           enable = lib.mkOption {
             type = lib.types.bool;
@@ -358,7 +352,6 @@
         };
 
         #################################################################### MEV-BOOST
-
         options.mev-boost = {
           enable = lib.mkOption {
             type = lib.types.bool;
@@ -460,7 +453,7 @@
             }
           ];
         };
-        ### OPTIONS AND CONFIGS --- END
+        ### OPTIONS AND CONFIGS -- END
       };
     in
     {
@@ -470,11 +463,11 @@
       # custom packages and modifications, exported as overlays
       overlays = import ./overlays { inherit inputs; };
 
-      # nix code formatter -- accessible through 'nix fmt'
+      # code formatter -- accessible through 'nix fmt'
       formatter = forEachPkgs (pkgs: pkgs.nixpkgs-fmt);
 
-      # nixos-generators attributes for each system and hostname combination
-      # available through 'nix build .#nixobolus.<system_arch>.<hostname>'
+      # nixos-generators entrypoints for each system and hostname combination
+      # accessible through 'nix build .#nixobolus.<system_arch>.<hostname>'
       nixobolus = builtins.listToAttrs (map
         (system: {
           name = system;
@@ -491,8 +484,8 @@
         })
         systems);
 
-      # nixos configuration entrypoints (needed for accessing options through eval)
-      # TODO -- only maps "x86_64-linux" at the moment 
+      # nixos configuration entrypoints for evaluating
+      # accessible through 'nix eval .#nixosConfigurations.<hostname>.config'
       nixosConfigurations = builtins.listToAttrs (map
         (hostname: {
           name = hostname;
@@ -505,16 +498,16 @@
         hostnames);
 
       # filters options recursively
-      # option exports -- available through'nix eval --json .#exports'
+      # option exports -- accessible through 'nix eval --json .#exports'
       exports = lib.attrsets.mapAttrsRecursiveCond
         (v: ! lib.options.isOption v)
         (k: v: v.type.name)
         nxbls.options;
 
-      # To use, see: https://github.com/ponkila/homestaking-infra/commit/574382212cf817dbb75657e9fef9cdb223e9823b
+      # usage: https://github.com/ponkila/homestaking-infra/commit/574382212cf817dbb75657e9fef9cdb223e9823b
       nixosModules = {
         nixobolus = {
-          # General
+          # general
           localization = { config, ... }: {
             options = nxbls.options.localization;
             config = nxbls.config.localization;
@@ -527,7 +520,7 @@
             options = nxbls.options.ssh;
             config = nxbls.config.ssh;
           };
-          # Ethereum
+          # ethereum
           erigon = { config, pkgs, ... }: {
             options = nxbls.options.erigon;
             config = nxbls.config.erigon;
