@@ -30,7 +30,7 @@
     serviceConfig = {
       Type = "oneshot";
       ExecStart = ''
-        /run/current-system/sw/bin/loginctl enable-linger core
+        /run/current-system/sw/bin/loginctl enable-linger user_core
       '';
     };
 
