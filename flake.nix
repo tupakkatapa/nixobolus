@@ -117,9 +117,10 @@
 
       nixosModules.homestakeros = { config, lib, pkgs, ... }: with lib; rec {
         options = homestakeros;
-        config = {
+        config = mkMerge [
 
-          mev-boost = nixpkgs.lib.mkIf (options.mev-boost.enable) {
+          (mkIf options.mev-boost.enable {
+
             virtualisation.podman.enable = true;
             # dnsname allows containers to use ${name}.dns.podman to reach each other
             # on the same host instead of using hard-coded IPs.
@@ -157,9 +158,9 @@
 
               wantedBy = [ "multi-user.target" ];
             };
-          };
+          })
 
-          lighthouse = lib.mkIf (options.lighthouse.enable) {
+          (mkIf options.lighthouse.enable {
             # package
             environment.systemPackages = with pkgs; [
               lighthouse
@@ -205,9 +206,9 @@
                 5052 # lighthouse
               ];
             };
-          };
+          })
 
-          erigon = mkIf (options.erigon.enable) {
+          (mkIf (options.erigon.enable) {
             # package
             environment.systemPackages = [
               pkgs.erigon
@@ -245,15 +246,16 @@
               allowedTCPPorts = [ 30303 30304 42069 ];
               allowedUDPPorts = [ 30303 30304 42069 ];
             };
-          };
+          })
 
-          localization = {
+          (mkIf true {
             networking.hostName = options.localization.hostname;
             time.timeZone = options.localization.timezone;
             console.keyMap = options.localization.keymap;
-          };
+          })
 
-          ssh = {
+          (mkIf true {
+
             services.openssh = {
               enable = true;
               settings.PasswordAuthentication = false;
@@ -262,9 +264,9 @@
                 type = "ed25519";
               }];
             };
-          };
+          })
 
-          user = {
+          (mkIf true {
             services.getty.autologinUser = "core";
             users.users.core = {
               isNormalUser = true;
@@ -306,8 +308,8 @@
 
               home.stateVersion = "23.05";
             };
-          };
-        };
+          })
+        ];
       };
     };
 }
