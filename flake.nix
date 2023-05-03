@@ -162,8 +162,8 @@
           };
         };
 
-        #################################################################### USER (user_core)
-        options.user_core = {
+        #################################################################### USER (core)
+        options.user = {
           authorizedKeys = lib.mkOption {
             type = lib.types.listOf lib.types.str;
             default = [ ];
@@ -171,19 +171,19 @@
         };
 
         config.user = {
-          services.getty.autologinUser = "user_core";
-          users.users.user_core = {
+          services.getty.autologinUser = "core";
+          users.users.core = {
             isNormalUser = true;
-            group = "user_core";
+            group = "core";
             extraGroups = [ "wheel" ];
             openssh.authorizedKeys.keys = self.options.user.authorizedKeys;
             shell = nixpkgs.fish;
           };
-          users.groups.user_core = { };
+          users.groups.core = { };
           environment.shells = [ nixpkgs.fish ];
           programs.fish.enable = true;
 
-          home-manager.users.user_core = { nixpkgs, ... }: {
+          home-manager.users.core = { nixpkgs, ... }: {
 
             sops = {
               defaultSopsFile = ./secrets/default.yaml;
