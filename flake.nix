@@ -321,7 +321,7 @@
           })
 
           #################################################################### ERIGON
-          (mkIf (options.erigon.enable) {
+          (mkIf options.erigon.enable {
             # package
             environment.systemPackages = [
               pkgs.erigon
