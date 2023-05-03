@@ -253,7 +253,7 @@
           (mkIf true {
             systemd.mounts = builtins.listToAttrs (map
               (mount: {
-                enable = true;
+                enable = mount.enable or true;
                 description = mount.description or "Unnamed mount point";
                 what = mount.what;
                 where = mount.where;
