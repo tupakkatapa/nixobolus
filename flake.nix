@@ -4,6 +4,7 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     sops-nix.url = "github:Mic92/sops-nix";
+    nixobolus.url = "github:ponkila/nixobolus";
     overrides.url = "path:./overrides";
 
     home-manager = {
@@ -39,6 +40,7 @@
     , disko
     , ethereum-nix
     , home-manager
+    , nixobolus
     , nixos-generators
     , nixpkgs
     , sops-nix
@@ -86,6 +88,7 @@
         ./system/ramdisk.nix
         home-manager.nixosModules.home-manager
         disko.nixosModules.disko
+        nixobolus.nixosModules.homestakeros
         {
           nixpkgs.overlays = [
             ethereum-nix.overlays.default
