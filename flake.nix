@@ -55,7 +55,7 @@
         "x86_64-darwin"
         "x86_64-linux"
       ];
-      forEachSystem = lib.genAttrs systems;
+      forEachSystem = nixpkgs.lib.genAttrs systems;
       forEachPkgs = f: forEachSystem (sys: f nixpkgs.legacyPackages.${sys});
 
       # custom packages -- accessible through 'nix build', 'nix shell', etc
@@ -224,7 +224,7 @@
       nixosConfigurations = builtins.listToAttrs (map
         (hostname: {
           name = hostname;
-          value = lib.nixosSystem {
+          value = nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
             inherit modules;
             specialArgs = { inherit inputs outputs; };
