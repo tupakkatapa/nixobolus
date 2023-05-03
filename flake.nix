@@ -49,7 +49,6 @@
 
     let
       inherit (self) outputs;
-      lib = nixpkgs.lib;
       systems = [
         "aarch64-darwin"
         "aarch64-linux"
@@ -104,89 +103,89 @@
 
       homestakeros = {
         localization = {
-          hostname = lib.mkOption {
-            type = lib.types.str;
+          hostname = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
             default = "homestaker";
           };
-          timezone = lib.mkOption {
-            type = lib.types.str;
+          timezone = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
             default = "Europe/Helsinki";
           };
-          keymap = lib.mkOption {
-            type = lib.types.str;
+          keymap = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
             default = "us";
           };
         };
 
-        mounts = lib.mkOption {
-          type = lib.types.attrsOf lib.types.string;
+        mounts = nixpkgs.lib.mkOption {
+          type = nixpkgs.lib.types.attrsOf nixpkgs.lib.types.string;
         };
 
         ssh = {
-          privateKeyPath = lib.mkOption {
-            type = lib.types.path;
+          privateKeyPath = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.path;
             default = "/var/mnt/secrets/ssh/id_ed25519";
           };
         };
 
         user = {
-          authorizedKeys = lib.mkOption {
-            type = lib.types.listOf lib.types.str;
+          authorizedKeys = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.listOf nixpkgs.lib.types.str;
             default = [ ];
           };
         };
 
         erigon = {
-          enable = lib.mkOption {
-            type = lib.types.bool;
+          enable = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.bool;
             default = false;
           };
-          endpoint = lib.mkOption {
-            type = lib.types.str;
+          endpoint = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
           };
-          datadir = lib.mkOption {
-            type = lib.types.str;
+          datadir = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
           };
         };
 
         lighthouse = {
-          enable = lib.mkOption {
-            type = lib.types.bool;
+          enable = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.bool;
             default = false;
           };
-          endpoint = lib.mkOption {
-            type = lib.types.str;
+          endpoint = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
           };
-          exec.endpoint = lib.mkOption {
-            type = lib.types.str;
+          exec.endpoint = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
           };
           slasher = {
-            enable = lib.mkOption {
-              type = lib.types.bool;
+            enable = nixpkgs.lib.mkOption {
+              type = nixpkgs.lib.types.bool;
               default = false;
             };
-            history-length = lib.mkOption {
-              type = lib.types.int;
+            history-length = nixpkgs.lib.mkOption {
+              type = nixpkgs.lib.types.int;
               default = 4096;
             };
-            max-db-size = lib.mkOption {
-              type = lib.types.int;
+            max-db-size = nixpkgs.lib.mkOption {
+              type = nixpkgs.lib.types.int;
               default = 256;
             };
           };
           mev-boost = {
-            endpoint = lib.mkOption {
-              type = lib.types.str;
+            endpoint = nixpkgs.lib.mkOption {
+              type = nixpkgs.lib.types.str;
             };
           };
-          datadir = lib.mkOption {
-            type = lib.types.str;
+          datadir = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
           };
         };
 
         mev-boost = {
-          enable = lib.mkOption {
-            type = lib.types.bool;
+          enable = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.bool;
             default = false;
           };
         };
@@ -270,8 +269,8 @@
 
       # filters options recursively
       # option exports -- accessible through 'nix eval --json .#exports'
-      exports = lib.attrsets.mapAttrsRecursiveCond
-        (v: ! lib.options.isOption v)
+      exports = nixpkgs.lib.attrsets.mapAttrsRecursiveCond
+        (v: ! nixpkgs.lib.options.isOption v)
         (k: v: v.type.name)
         homestakeros;
 
