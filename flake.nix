@@ -234,6 +234,41 @@
         })
         hostnames);
 
+      # utility scripts -- accessible through 'nix run .#utils.<script_name>'
+      utils = {
+        dinar-ping =
+          let
+            pkgs = import nixpkgs { system = "x86_64-linux"; };
+            my-name = "dinar-ping";
+            my-script = pkgs.writeShellScriptBin my-name ''
+              ping $(nix eval --raw ../homestaking-infra#nixosConfigurations.dinar-ephemeral-alpha.config.lighthouse.endpoint)
+            '';
+            my-buildInputs = with pkgs; [ cowsay ddate ];
+          in
+          pkgs.symlinkJoin {
+            name = my-name;
+            paths = [ my-script ] ++ my-buildInputs;
+            buildInputs = [ pkgs.makeWrapper ];
+            postBuild = "wrapProgram $out/bin/${my-name} --prefix PATH : $out/bin";
+          };
+        dinar-latest-block-hash =
+          let
+            pkgs = import nixpkgs { system = "x86_64-linux"; };
+            my-name = "dinar-latest-block-hash";
+            my-script = pkgs.writeShellScriptBin my-name ''
+              ip=$(nix eval --raw path:../homestaking-infra#nixosConfigurations.dinar-ephemeral-alpha.config.lighthouse.endpoint)
+              curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest", false],"id":1}' $ip:5052
+            '';
+            my-buildInputs = with pkgs; [ cowsay ddate ];
+          in
+          pkgs.symlinkJoin {
+            name = my-name;
+            paths = [ my-script ] ++ my-buildInputs;
+            buildInputs = [ pkgs.makeWrapper ];
+            postBuild = "wrapProgram $out/bin/${my-name} --prefix PATH : $out/bin";
+          };
+      };
+
       # filters options recursively
       # option exports -- accessible through 'nix eval --json .#exports'
       exports = lib.attrsets.mapAttrsRecursiveCond
