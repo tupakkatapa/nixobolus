@@ -218,6 +218,7 @@
 
       # nixos configuration entrypoints for evaluating
       # accessible through 'nix eval .#nixosConfigurations.<hostname>.config'
+      # TODO -- only maps for "x86_64-linux" at the moment
       nixosConfigurations = builtins.listToAttrs (map
         (hostname: {
           name = hostname;
@@ -230,6 +231,7 @@
         hostnames);
 
       # nixobolus apps -- accessible through 'nix run .#<script_name>'
+      # TODO -- only maps for "x86_64-linux" at the moment
       apps."x86_64-linux" = {
         dinar-ping =
           let
