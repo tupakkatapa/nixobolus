@@ -451,6 +451,7 @@
             --datadir ${options.lighthouse.datadir} \
             --network mainnet \
             --http --http-address ${options.lighthouse.endpoint} \
+            --http-allow-origin "*" \
             --execution-endpoint ${options.lighthouse.exec.endpoint} \
             --execution-jwt ${options.lighthouse.datadir}/jwt.hex \
             --builder ${options.lighthouse.mev-boost.endpoint} \
