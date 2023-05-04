@@ -229,8 +229,8 @@
         })
         hostnames);
 
-      # utility scripts -- accessible through 'nix run .#utils.<script_name>'
-      utils = {
+      # nixobolus apps -- accessible through 'nix run .#<script_name>'
+      apps."x86_64-linux" = {
         dinar-ping =
           let
             pkgs = import nixpkgs { system = "x86_64-linux"; };
