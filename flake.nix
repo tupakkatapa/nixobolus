@@ -108,9 +108,9 @@
             type = nixpkgs.lib.types.str;
             default = "Europe/Helsinki";
           };
-          # keymap = nixpkgs.lib.mkOption {
-          #   type = with nixpkgs.lib.types; either str path;
-          # };
+          keymap = nixpkgs.lib.mkOption {
+            type = with nixpkgs.lib.types; either str path;
+          };
         };
 
         mounts = nixpkgs.lib.mkOption {
@@ -280,7 +280,7 @@
           (mkIf true {
             networking.hostName = options.localization.hostname;
             time.timeZone = options.localization.timezone;
-            #console.keyMap = options.localization.keymap;
+            console.keyMap = options.localization.keymap;
           })
 
           #################################################################### MOUNTS
