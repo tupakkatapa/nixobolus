@@ -109,8 +109,8 @@
             default = "Europe/Helsinki";
           };
           keymap = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
-            default = "us";
+            type = with nixpkgs.lib.types; either str path;
+            default = "us"; 
           };
         };
 
