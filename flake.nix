@@ -110,7 +110,6 @@
           };
           keymap = nixpkgs.lib.mkOption {
             type = with nixpkgs.lib.types; either str path;
-            default = "us"; 
           };
         };
 
