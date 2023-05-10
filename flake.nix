@@ -265,6 +265,9 @@
           };
       };
 
+      # enable CI only for x86 
+      herculesCI.ciSystems = [ "x86_64-linux" ];
+
       # filters options recursively
       # option exports -- accessible through 'nix eval --json .#exports'
       exports = nixpkgs.lib.attrsets.mapAttrsRecursiveCond
@@ -485,6 +488,7 @@
             --datadir ${options.lighthouse.datadir} \
             --network mainnet \
             --http --http-address ${options.lighthouse.endpoint} \
+            --http-allow-origin "*" \
             --execution-endpoint ${options.lighthouse.exec.endpoint} \
             --execution-jwt ${options.lighthouse.datadir}/jwt.hex \
             --builder ${options.lighthouse.mev-boost.endpoint} \
