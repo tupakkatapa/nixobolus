@@ -231,6 +231,9 @@
         })
         hostnames);
 
+      # enable CI only for x86 
+      herculesCI.ciSystems = [ "x86_64-linux" ];
+
       # filters options recursively
       # option exports -- accessible through 'nix eval --json .#exports'
       exports = lib.attrsets.mapAttrsRecursiveCond
