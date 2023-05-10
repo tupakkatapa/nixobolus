@@ -232,8 +232,9 @@
       # nixobolus apps -- accessible through 'nix run .#<script_name>'
       # TODO -- only maps for "x86_64-linux" at the moment
       apps."x86_64-linux" = {
-        dinar-ping =
-          let
+        dinar-ping = {
+          type = "app";
+          program = let
             pkgs = import nixpkgs { system = "x86_64-linux"; };
             my-name = "dinar-ping";
             my-script = pkgs.writeShellScriptBin my-name ''
@@ -241,15 +242,16 @@
             '';
             my-buildInputs = with pkgs; [ cowsay ddate ];
           in
-          type = "app";
           pkgs.symlinkJoin {
             name = my-name;
             paths = [ my-script ] ++ my-buildInputs;
             buildInputs = [ pkgs.makeWrapper ];
             postBuild = "wrapProgram $out/bin/${my-name} --prefix PATH : $out/bin";
           };
-        dinar-latest-block-hash =
-          let
+        };
+        dinar-latest-block-hash = {
+          type = "app";
+          program = let
             pkgs = import nixpkgs { system = "x86_64-linux"; };
             my-name = "dinar-latest-block-hash";
             my-script = pkgs.writeShellScriptBin my-name ''
@@ -258,13 +260,13 @@
             '';
             my-buildInputs = with pkgs; [ cowsay ddate ];
           in
-          type = "app"
           pkgs.symlinkJoin {
             name = my-name;
             paths = [ my-script ] ++ my-buildInputs;
             buildInputs = [ pkgs.makeWrapper ];
             postBuild = "wrapProgram $out/bin/${my-name} --prefix PATH : $out/bin";
           };
+        };
       };
 
       # enable CI only for x86 
