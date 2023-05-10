@@ -234,6 +234,7 @@
       apps."x86_64-linux" = {
         dinar-ping =
           let
+            type = "app";
             pkgs = import nixpkgs { system = "x86_64-linux"; };
             my-name = "dinar-ping";
             my-script = pkgs.writeShellScriptBin my-name ''
@@ -249,6 +250,7 @@
           };
         dinar-latest-block-hash =
           let
+            type = "app";
             pkgs = import nixpkgs { system = "x86_64-linux"; };
             my-name = "dinar-latest-block-hash";
             my-script = pkgs.writeShellScriptBin my-name ''
