@@ -234,7 +234,6 @@
       apps."x86_64-linux" = {
         dinar-ping =
           let
-            type = "app";
             pkgs = import nixpkgs { system = "x86_64-linux"; };
             my-name = "dinar-ping";
             my-script = pkgs.writeShellScriptBin my-name ''
@@ -242,6 +241,7 @@
             '';
             my-buildInputs = with pkgs; [ cowsay ddate ];
           in
+          type = "app";
           pkgs.symlinkJoin {
             name = my-name;
             paths = [ my-script ] ++ my-buildInputs;
@@ -250,7 +250,6 @@
           };
         dinar-latest-block-hash =
           let
-            type = "app";
             pkgs = import nixpkgs { system = "x86_64-linux"; };
             my-name = "dinar-latest-block-hash";
             my-script = pkgs.writeShellScriptBin my-name ''
@@ -259,6 +258,7 @@
             '';
             my-buildInputs = with pkgs; [ cowsay ddate ];
           in
+          type = "app"
           pkgs.symlinkJoin {
             name = my-name;
             paths = [ my-script ] ++ my-buildInputs;
