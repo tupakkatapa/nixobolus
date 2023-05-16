@@ -47,110 +47,94 @@
       forEachSystem = lib.genAttrs systems;
       forEachPkgs = f: forEachSystem (sys: f nixpkgs.legacyPackages.${sys});
 
-      # list hostnames from ./hosts
-      ls = builtins.readDir ./hosts;
-      hostnames = builtins.filter
-        (name: builtins.hasAttr name ls && (ls.${name} == "directory"))
-        (builtins.attrNames ls);
+      homestakeros_options = {
+        localization = {
+          hostname = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
+            default = "homestaker";
+          };
+          timezone = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
+            default = "Europe/Helsinki";
+          };
+          keymap = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
+            default = "us";
+          };
+        };
 
-      homestakeros = {
-        system = "x86_64-linux";
-        specialArgs = { inherit inputs outputs; };
-        modules = [
-          ./system
-          ./system/ramdisk.nix
-          ./system/formats/netboot-kexec.nix
-          nixobolus.nixosModules.homestakeros
-          home-manager.nixosModules.home-manager
-          {
-            nixpkgs.overlays = [
-              ethereum-nix.overlays.default
-              outputs.overlays.additions
-              outputs.overlays.modifications
-            ];
-            home-manager.sharedModules = [
-              sops-nix.homeManagerModules.sops
-            ];
-            system.stateVersion = "23.05";
-          }
-          {
-            localization = {
-              hostname = nixpkgs.lib.mkOption {
-                type = nixpkgs.lib.types.str;
-                default = "homestaker";
-              };
-              timezone = nixpkgs.lib.mkOption {
-                type = nixpkgs.lib.types.str;
-                default = "Europe/Helsinki";
-              };
-              keymap = nixpkgs.lib.mkOption {
-                type = nixpkgs.lib.types.str;
-                default = "us";
-              };
-            };
+        mounts = lib.mkOption {
+          type = lib.types.attrsOf lib.types.string;
+        };
 
-            mounts = lib.mkOption {
-              type = lib.types.attrsOf lib.types.string;
-            };
+        ssh = {
+          privateKeyPath = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.path;
+            default = "/var/mnt/secrets/ssh/id_ed25519";
+          };
+        };
 
-            ssh = {
-              privateKeyPath = nixpkgs.lib.mkOption {
-                type = nixpkgs.lib.types.path;
-                default = "/var/mnt/secrets/ssh/id_ed25519";
-              };
-            };
+        user = {
+          authorizedKeys = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.listOf nixpkgs.lib.types.str;
+            default = [ ];
+          };
+        };
 
-            user = {
-              authorizedKeys = nixpkgs.lib.mkOption {
-                type = nixpkgs.lib.types.listOf nixpkgs.lib.types.str;
-                default = [ ];
-              };
-            };
+        erigon = {
+          enable = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.bool;
+            default = false;
+          };
+          endpoint = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
+          };
+          datadir = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
+          };
+        };
 
-            erigon = {
-              enable = nixpkgs.lib.mkEnableOption { };
-              endpoint = nixpkgs.lib.mkOption {
-                type = nixpkgs.lib.types.str;
-              };
-              datadir = nixpkgs.lib.mkOption {
-                type = nixpkgs.lib.types.str;
-              };
+        lighthouse = {
+          enable = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.bool;
+            default = false;
+          };
+          endpoint = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
+          };
+          exec.endpoint = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
+          };
+          slasher = {
+            enable = nixpkgs.lib.mkOption {
+              type = nixpkgs.lib.types.bool;
+              default = false;
             };
+            history-length = nixpkgs.lib.mkOption {
+              type = nixpkgs.lib.types.int;
+              default = 4096;
+            };
+            max-db-size = nixpkgs.lib.mkOption {
+              type = nixpkgs.lib.types.int;
+              default = 256;
+            };
+          };
+          mev-boost = {
+            endpoint = nixpkgs.lib.mkOption {
+              type = nixpkgs.lib.types.str;
+            };
+          };
+          datadir = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.str;
+          };
+        };
 
-            lighthouse = {
-              enable = nixpkgs.lib.mkEnableOption { };
-              endpoint = nixpkgs.lib.mkOption {
-                type = nixpkgs.lib.types.str;
-              };
-              exec.endpoint = nixpkgs.lib.mkOption {
-                type = nixpkgs.lib.types.str;
-              };
-              slasher = {
-                enable = nixpkgs.lib.mkEnableOption { };
-                history-length = nixpkgs.lib.mkOption {
-                  type = nixpkgs.lib.types.int;
-                  default = 4096;
-                };
-                max-db-size = nixpkgs.lib.mkOption {
-                  type = nixpkgs.lib.types.int;
-                  default = 256;
-                };
-              };
-              mev-boost = {
-                endpoint = nixpkgs.lib.mkOption {
-                  type = nixpkgs.lib.types.str;
-                };
-              };
-              datadir = nixpkgs.lib.mkOption {
-                type = nixpkgs.lib.types.str;
-              };
-            };
-
-            mev-boost = {
-              enable = nixpkgs.lib.mkEnableOption { };
-            };
-          }
-        ];
+        mev-boost = {
+          enable = nixpkgs.lib.mkOption {
+            type = nixpkgs.lib.types.bool;
+            default = false;
+          };
+        };
       };
     in
     rec {
@@ -167,8 +151,28 @@
       # eval  - 'nix eval .#nixosConfigurations.<hostname>.config'
       # build - 'nix build .#nixosConfigurations.<hostname>.config.system.build.<format>'
       # TODO only maps x86_64-linux at the moment
-      nixosConfigurations = with nixpkgs.lib; {
-        "homestakeros" = nixosSystem (getAttrs [ "system" "specialArgs" "modules" ] homestakeros);
+      nixosConfigurations.homestakeros = lib.nixosSystem {
+        system = "x86_64-linux";
+        specialArgs = { inherit inputs outputs; };
+        modules = [
+          homestakeros_options
+          ./system
+          ./system/formats/netboot-kexec.nix
+          ./system/ramdisk.nix
+          home-manager.nixosModules.home-manager
+          {
+            nixpkgs.overlays = [
+              ethereum-nix.overlays.default
+              outputs.overlays.additions
+              outputs.overlays.modifications
+            ];
+          }
+          {
+            home-manager.sharedModules = [
+              sops-nix.homeManagerModules.sops
+            ];
+          }
+        ];
       };
 
       packages = forEachSystem (system: {
@@ -182,11 +186,11 @@
       exports = lib.attrsets.mapAttrsRecursiveCond
         (v: ! lib.options.isOption v)
         (k: v: v.type.name)
-        homestakeros;
+        homestakeros_options;
 
       # usage: https://github.com/ponkila/homestaking-infra/commit/574382212cf817dbb75657e9fef9cdb223e9823b
       nixosModules.homestakeros = { config, lib, pkgs, ... }: with lib; rec {
-        options = homestakeros;
+        options = homestakeros_options;
         config = mkMerge [
           ################################################################### LOCALIZATION
           (mkIf true {
