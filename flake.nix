@@ -2,8 +2,9 @@
   description = "Nixobolus flake";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable-small";
     sops-nix.url = "github:Mic92/sops-nix";
+    nixobolus.url = "github:ponkila/nixobolus/jesse/wip";
     overrides.url = "path:./overrides";
 
     home-manager = {
@@ -13,16 +14,6 @@
 
     ethereum-nix = {
       url = "github:nix-community/ethereum.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    nixos-generators = {
-      url = "github:nix-community/nixos-generators";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    disko = {
-      url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -36,11 +27,10 @@
   outputs =
     { self
     , darwin
-    , disko
     , ethereum-nix
     , home-manager
-    , nixos-generators
     , nixpkgs
+    , nixobolus
     , sops-nix
     , overrides
     }@inputs:
@@ -57,140 +47,113 @@
       forEachSystem = lib.genAttrs systems;
       forEachPkgs = f: forEachSystem (sys: f nixpkgs.legacyPackages.${sys});
 
-      # custom packages -- accessible through 'nix build', 'nix shell', etc
-      # TODO -- check that this actually works
-      packages = forEachPkgs (pkgs: import ./pkgs { inherit pkgs; });
-
       # list hostnames from ./hosts
       ls = builtins.readDir ./hosts;
       hostnames = builtins.filter
         (name: builtins.hasAttr name ls && (ls.${name} == "directory"))
         (builtins.attrNames ls);
 
-      # custom formats for nixos-generators
-      # other available formats can be found at: https://github.com/nix-community/nixos-generators/tree/master/formats
-      customFormats = {
-        "netboot-kexec" = {
-          formatAttr = "kexecTree";
-          imports = [ ./system/formats/netboot-kexec.nix ];
-        };
-        "copytoram-iso" = {
-          formatAttr = "isoImage";
-          imports = [ ./system/formats/copytoram-iso.nix ];
-          filename = "*.iso";
-        };
-      };
-
-      modules = [
-        ./system
-        ./system/ramdisk.nix
-        home-manager.nixosModules.home-manager
-        disko.nixosModules.disko
-        {
-          nixpkgs.overlays = [
-            ethereum-nix.overlays.default
-            outputs.overlays.additions
-            outputs.overlays.modifications
-          ];
-          home-manager.sharedModules = [
-            sops-nix.homeManagerModules.sops
-          ];
-          system.stateVersion = "23.05";
-        }
-      ];
-
       homestakeros = {
-        localization = {
-          hostname = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
-            default = "homestaker";
-          };
-          timezone = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
-            default = "Europe/Helsinki";
-          };
-          keymap = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
-            default = "us";
-          };
-        };
-
-        mounts = lib.mkOption {
-          type = lib.types.attrsOf lib.types.string;
-        };
-
-        ssh = {
-          privateKeyPath = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.path;
-            default = "/var/mnt/secrets/ssh/id_ed25519";
-          };
-        };
-
-        user = {
-          authorizedKeys = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.listOf nixpkgs.lib.types.str;
-            default = [ ];
-          };
-        };
-
-        erigon = {
-          enable = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.bool;
-            default = false;
-          };
-          endpoint = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
-          };
-          datadir = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
-          };
-        };
-
-        lighthouse = {
-          enable = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.bool;
-            default = false;
-          };
-          endpoint = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
-          };
-          exec.endpoint = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
-          };
-          slasher = {
-            enable = nixpkgs.lib.mkOption {
-              type = nixpkgs.lib.types.bool;
-              default = false;
+        system = "x86_64-linux";
+        specialArgs = { inherit inputs outputs; };
+        modules = [
+          ./system
+          ./system/ramdisk.nix
+          ./system/formats/netboot-kexec.nix
+          nixobolus.nixosModules.homestakeros
+          home-manager.nixosModules.home-manager
+          {
+            nixpkgs.overlays = [
+              ethereum-nix.overlays.default
+              outputs.overlays.additions
+              outputs.overlays.modifications
+            ];
+            home-manager.sharedModules = [
+              sops-nix.homeManagerModules.sops
+            ];
+            system.stateVersion = "23.05";
+          }
+          {
+            localization = {
+              hostname = nixpkgs.lib.mkOption {
+                type = nixpkgs.lib.types.str;
+                default = "homestaker";
+              };
+              timezone = nixpkgs.lib.mkOption {
+                type = nixpkgs.lib.types.str;
+                default = "Europe/Helsinki";
+              };
+              keymap = nixpkgs.lib.mkOption {
+                type = nixpkgs.lib.types.str;
+                default = "us";
+              };
             };
-            history-length = nixpkgs.lib.mkOption {
-              type = nixpkgs.lib.types.int;
-              default = 4096;
-            };
-            max-db-size = nixpkgs.lib.mkOption {
-              type = nixpkgs.lib.types.int;
-              default = 256;
-            };
-          };
-          mev-boost = {
-            endpoint = nixpkgs.lib.mkOption {
-              type = nixpkgs.lib.types.str;
-            };
-          };
-          datadir = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.str;
-          };
-        };
 
-        mev-boost = {
-          enable = nixpkgs.lib.mkOption {
-            type = nixpkgs.lib.types.bool;
-            default = false;
-          };
-        };
+            mounts = lib.mkOption {
+              type = lib.types.attrsOf lib.types.string;
+            };
 
+            ssh = {
+              privateKeyPath = nixpkgs.lib.mkOption {
+                type = nixpkgs.lib.types.path;
+                default = "/var/mnt/secrets/ssh/id_ed25519";
+              };
+            };
+
+            user = {
+              authorizedKeys = nixpkgs.lib.mkOption {
+                type = nixpkgs.lib.types.listOf nixpkgs.lib.types.str;
+                default = [ ];
+              };
+            };
+
+            erigon = {
+              enable = nixpkgs.lib.mkEnableOption { };
+              endpoint = nixpkgs.lib.mkOption {
+                type = nixpkgs.lib.types.str;
+              };
+              datadir = nixpkgs.lib.mkOption {
+                type = nixpkgs.lib.types.str;
+              };
+            };
+
+            lighthouse = {
+              enable = nixpkgs.lib.mkEnableOption { };
+              endpoint = nixpkgs.lib.mkOption {
+                type = nixpkgs.lib.types.str;
+              };
+              exec.endpoint = nixpkgs.lib.mkOption {
+                type = nixpkgs.lib.types.str;
+              };
+              slasher = {
+                enable = nixpkgs.lib.mkEnableOption { };
+                history-length = nixpkgs.lib.mkOption {
+                  type = nixpkgs.lib.types.int;
+                  default = 4096;
+                };
+                max-db-size = nixpkgs.lib.mkOption {
+                  type = nixpkgs.lib.types.int;
+                  default = 256;
+                };
+              };
+              mev-boost = {
+                endpoint = nixpkgs.lib.mkOption {
+                  type = nixpkgs.lib.types.str;
+                };
+              };
+              datadir = nixpkgs.lib.mkOption {
+                type = nixpkgs.lib.types.str;
+              };
+            };
+
+            mev-boost = {
+              enable = nixpkgs.lib.mkEnableOption { };
+            };
+          }
+        ];
       };
     in
-    {
+    rec {
       # devshell -- accessible through 'nix develop' or 'nix-shell' (legacy)
       devShells = forEachPkgs (pkgs: import ./shell.nix { inherit pkgs; });
 
@@ -200,39 +163,19 @@
       # code formatter -- accessible through 'nix fmt'
       formatter = forEachPkgs (pkgs: pkgs.nixpkgs-fmt);
 
-      # nixos-generators entrypoints for each system and hostname combination
-      # accessible through 'nix build .#nixobolus.<system_arch>.<hostname>'
-      nixobolus = builtins.listToAttrs (map
-        (system: {
-          name = system;
-          value = builtins.listToAttrs (map
-            (hostname: {
-              name = hostname;
-              value = nixos-generators.nixosGenerate {
-                inherit modules system customFormats;
-                specialArgs = { inherit inputs outputs; };
-                format = "netboot-kexec";
-              };
-            })
-            hostnames);
-        })
-        systems);
+      # nixos configuration entrypoints
+      # eval  - 'nix eval .#nixosConfigurations.<hostname>.config'
+      # build - 'nix build .#nixosConfigurations.<hostname>.config.system.build.<format>'
+      # TODO only maps x86_64-linux at the moment
+      nixosConfigurations = with nixpkgs.lib; {
+        "homestakeros" = nixosSystem (getAttrs [ "system" "specialArgs" "modules" ] homestakeros);
+      };
 
-      # nixos configuration entrypoints for evaluating
-      # accessible through 'nix eval .#nixosConfigurations.<hostname>.config'
-      nixosConfigurations = builtins.listToAttrs (map
-        (hostname: {
-          name = hostname;
-          value = lib.nixosSystem {
-            system = "x86_64-linux";
-            inherit modules;
-            specialArgs = { inherit inputs outputs; };
-          };
-        })
-        hostnames);
+      packages = forEachSystem (system: {
+        homestakeros = nixosConfigurations.homestakeros.config.system.build.kexecTree;
+      });
 
-      # enable CI only for x86 
-      herculesCI.ciSystems = [ "x86_64-linux" ];
+      herculesCI.ciSystems = [ "x86_64-linux" "aarch64-linux" ];
 
       # filters options recursively
       # option exports -- accessible through 'nix eval --json .#exports'
