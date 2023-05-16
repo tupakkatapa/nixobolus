@@ -159,6 +159,7 @@
           ./system
           ./system/formats/netboot-kexec.nix
           ./system/ramdisk.nix
+          nixobolus.nixosModules.homestakeros
           home-manager.nixosModules.home-manager
           {
             nixpkgs.overlays = [
