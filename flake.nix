@@ -80,6 +80,9 @@
             ];
           };
         };
+        packages = with flake.nixosConfigurations; {
+          "homestakeros" = homestakeros.config.system.build.kexecTree;
+        };
       };
       flake =
         let
@@ -94,13 +97,13 @@
               ./system/formats/netboot-kexec.nix
               nixobolus.nixosModules.homestakeros
               home-manager.nixosModules.home-manager
-              # disko.nixosModules.disko
+              disko.nixosModules.disko
               {
-                #   nixpkgs.overlays = [
-                #     ethereum-nix.overlays.default
-                #     outputs.overlays.additions
-                #     outputs.overlays.modifications
-                #   ];
+                nixpkgs.overlays = [
+                  ethereum-nix.overlays.default
+                  outputs.overlays.additions
+                  outputs.overlays.modifications
+                ];
                 home-manager.sharedModules = [
                   sops-nix.homeManagerModules.sops
                 ];
@@ -109,16 +112,101 @@
             ];
           };
         in
-        {
-          overlays = import ./overlays { inherit inputs; };
+        rec {
+          # filters options recursively
+          # option exports -- accessible through 'nix eval --json .#exports'
+          exports = nixpkgs.lib.attrsets.mapAttrsRecursiveCond
+            (v: ! nixpkgs.lib.options.isOption v)
+            (k: v: v.type.name)
+            nixosModules.homestakeros.options;
 
-          nixosModules.homestakeros = {
-            imports = [ ./modules/homestakeros ];
-          };
+          overlays = import ./overlays { inherit inputs; };
 
           nixosConfigurations = with nixpkgs.lib; {
             "homestakeros" = nixosSystem (getAttrs [ "system" "specialArgs" "modules" ] homestakeros);
           } // (with nixpkgs-stable.lib; { });
+
+          nixosModules.homestakeros = {
+            imports = [ ./modules/homestakeros ];
+            options = {
+              localization = {
+                hostname = nixpkgs.lib.mkOption {
+                  type = nixpkgs.lib.types.str;
+                  default = "homestaker";
+                };
+                timezone = nixpkgs.lib.mkOption {
+                  type = nixpkgs.lib.types.str;
+                  default = "Europe/Helsinki";
+                };
+              };
+
+              mounts = nixpkgs.lib.mkOption {
+                type = nixpkgs.lib.types.attrsOf nixpkgs.lib.types.string;
+              };
+
+              ssh = {
+                privateKeyPath = nixpkgs.lib.mkOption {
+                  type = nixpkgs.lib.types.path;
+                  default = "/var/mnt/secrets/ssh/id_ed25519";
+                };
+              };
+
+              user = {
+                authorizedKeys = nixpkgs.lib.mkOption {
+                  type = nixpkgs.lib.types.listOf nixpkgs.lib.types.singleLineStr;
+                  default = [ ];
+                };
+              };
+
+              erigon = {
+                enable = nixpkgs.lib.mkOption {
+                  type = nixpkgs.lib.types.bool;
+                  default = false;
+                };
+                endpoint = nixpkgs.lib.mkOption {
+                  type = nixpkgs.lib.types.str;
+                };
+                datadir = nixpkgs.lib.mkOption {
+                  type = nixpkgs.lib.types.str;
+                };
+              };
+
+              lighthouse = {
+                enable = nixpkgs.lib.mkOption {
+                  type = nixpkgs.lib.types.bool;
+                  default = false;
+                };
+                endpoint = nixpkgs.lib.mkOption {
+                  type = nixpkgs.lib.types.str;
+                };
+                exec.endpoint = nixpkgs.lib.mkOption {
+                  type = nixpkgs.lib.types.str;
+                };
+                slasher = {
+                  enable = nixpkgs.lib.mkOption {
+                    type = nixpkgs.lib.types.bool;
+                    default = false;
+                  };
+                  history-length = nixpkgs.lib.mkOption {
+                    type = nixpkgs.lib.types.int;
+                    default = 4096;
+                  };
+                  max-db-size = nixpkgs.lib.mkOption {
+                    type = nixpkgs.lib.types.int;
+                    default = 256;
+                  };
+                };
+                mev-boost = {
+                  endpoint = nixpkgs.lib.mkOption {
+                    type = nixpkgs.lib.types.str;
+                  };
+                };
+                datadir = nixpkgs.lib.mkOption {
+                  type = nixpkgs.lib.types.str;
+                };
+              };
+            };
+          };
         };
     };
 }

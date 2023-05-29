@@ -3,215 +3,130 @@ let
   cfg = config.homestakeros;
 in
 {
-  homestakeros.options = {
-    localization = {
-      hostname = nixpkgs.lib.mkOption {
-        type = nixpkgs.lib.types.str;
-        default = "homestaker";
-      };
-      timezone = nixpkgs.lib.mkOption {
-        type = nixpkgs.lib.types.str;
-        default = "Europe/Helsinki";
-      };
-    };
+  # usage: https://github.com/ponkila/homestaking-infra/commit/574382212cf817dbb75657e9fef9cdb223e9823b
 
-    mounts = nixpkgs.lib.mkOption {
-      type = nixpkgs.lib.types.attrsOf nixpkgs.lib.types.string;
-    };
+  config = with nixpkgs.lib; mkMerge [
+    ################################################################### LOCALIZATION
+    (mkIf true {
+      networking.hostName = cfg.localization.hostname;
+      time.timeZone = cfg.localization.timezone;
+    })
 
-    ssh = {
-      privateKeyPath = nixpkgs.lib.mkOption {
-        type = nixpkgs.lib.types.path;
-        default = "/var/mnt/secrets/ssh/id_ed25519";
+    #################################################################### MOUNTS
+    (mkIf true {
+      systemd.mounts = builtins.listToAttrs (map
+        (mount: {
+          enable = mount.enable or true;
+          description = mount.description or "Unnamed mount point";
+          what = mount.what;
+          where = mount.where;
+          type = mount.type or "ext4";
+          options = mount.options or "defaults";
+          before = lib.mkDefault mount.before;
+          wantedBy = mount.wantedBy or [ "multi-user.target" ];
+        })
+        cfg.mounts);
+    })
+
+    #################################################################### SSH (system level)
+    (mkIf true {
+      services.openssh = {
+        enable = true;
+        settings.PasswordAuthentication = false;
+        hostKeys = [{
+          path = cfg.ssh.privateKeyPath;
+          type = "ed25519";
+        }];
       };
-    };
+    })
 
-    user = {
-      authorizedKeys = nixpkgs.lib.mkOption {
-        type = nixpkgs.lib.types.listOf nixpkgs.lib.types.singleLineStr;
-        default = [ ];
+    #################################################################### USER (core)
+    (mkIf true {
+      services.getty.autologinUser = "core";
+      users.users.core = {
+        isNormalUser = true;
+        group = "core";
+        extraGroups = [ "wheel" ];
+        openssh.authorizedKeys.keys = cfg.user.authorizedKeys;
+        shell = pkgs.fish;
       };
-    };
+      users.groups.core = { };
+      environment.shells = [ pkgs.fish ];
+      programs.fish.enable = true;
 
-    erigon = {
-      enable = nixpkgs.lib.mkOption {
-        type = nixpkgs.lib.types.bool;
-        default = false;
-      };
-      endpoint = nixpkgs.lib.mkOption {
-        type = nixpkgs.lib.types.str;
-      };
-      datadir = nixpkgs.lib.mkOption {
-        type = nixpkgs.lib.types.str;
-      };
-    };
+      home-manager.users.core = { pkgs, ... }: {
 
-    lighthouse = {
-      enable = nixpkgs.lib.mkOption {
-        type = nixpkgs.lib.types.bool;
-        default = false;
-      };
-      endpoint = nixpkgs.lib.mkOption {
-        type = nixpkgs.lib.types.str;
-      };
-      exec.endpoint = nixpkgs.lib.mkOption {
-        type = nixpkgs.lib.types.str;
-      };
-      slasher = {
-        enable = nixpkgs.lib.mkOption {
-          type = nixpkgs.lib.types.bool;
-          default = false;
-        };
-        history-length = nixpkgs.lib.mkOption {
-          type = nixpkgs.lib.types.int;
-          default = 4096;
-        };
-        max-db-size = nixpkgs.lib.mkOption {
-          type = nixpkgs.lib.types.int;
-          default = 256;
-        };
-      };
-      mev-boost = {
-        endpoint = nixpkgs.lib.mkOption {
-          type = nixpkgs.lib.types.str;
-        };
-      };
-      datadir = nixpkgs.lib.mkOption {
-        type = nixpkgs.lib.types.str;
-      };
-    };
-
-    # filters options recursively
-    # option exports -- accessible through 'nix eval --json .#exports'
-    # exports = nixpkgs.lib.attrsets.mapAttrsRecursiveCond
-    #   (v: ! nixpkgs.lib.options.isOption v)
-    #   (k: v: v.type.name)
-    #   homestakeros_options;
-
-    # usage: https://github.com/ponkila/homestaking-infra/commit/574382212cf817dbb75657e9fef9cdb223e9823b
-
-    config = with nixpkgs.lib; mkMerge [
-      ################################################################### LOCALIZATION
-      (mkIf true {
-        networking.hostName = cfg.localization.hostname;
-        time.timeZone = cfg.localization.timezone;
-      })
-
-      #################################################################### MOUNTS
-      (mkIf true {
-        systemd.mounts = builtins.listToAttrs (map
-          (mount: {
-            enable = mount.enable or true;
-            description = mount.description or "Unnamed mount point";
-            what = mount.what;
-            where = mount.where;
-            type = mount.type or "ext4";
-            options = mount.options or "defaults";
-            before = lib.mkDefault mount.before;
-            wantedBy = mount.wantedBy or [ "multi-user.target" ];
-          })
-          cfg.mounts);
-      })
-
-      #################################################################### SSH (system level)
-      (mkIf true {
-        services.openssh = {
-          enable = true;
-          settings.PasswordAuthentication = false;
-          hostKeys = [{
-            path = cfg.ssh.privateKeyPath;
-            type = "ed25519";
-          }];
-        };
-      })
-
-      #################################################################### USER (core)
-      (mkIf true {
-        services.getty.autologinUser = "core";
-        users.users.core = {
-          isNormalUser = true;
-          group = "core";
-          extraGroups = [ "wheel" ];
-          openssh.authorizedKeys.keys = cfg.user.authorizedKeys;
-          shell = pkgs.fish;
-        };
-        users.groups.core = { };
-        environment.shells = [ pkgs.fish ];
-        programs.fish.enable = true;
-
-        home-manager.users.core = { pkgs, ... }: {
-
-          sops = {
-            defaultSopsFile = ./secrets/default.yaml;
-            secrets."wireguard/wg0" = {
-              path = "%r/wireguard/wg0.conf";
-            };
-            age.sshKeyPaths = [ cfg.ssh.privateKeyPath ];
+        sops = {
+          defaultSopsFile = ./secrets/default.yaml;
+          secrets."wireguard/wg0" = {
+            path = "%r/wireguard/wg0.conf";
           };
-
-          home.packages = with pkgs; [
-            file
-            tree
-            bind # nslookup
-          ];
-
-          programs = {
-            tmux.enable = true;
-            htop.enable = true;
-            vim.enable = true;
-            git.enable = true;
-            fish.enable = true;
-            fish.loginShellInit = "fish_add_path --move --prepend --path $HOME/.nix-profile/bin /run/wrappers/bin /etc/profiles/per-user/$USER/bin /run/current-system/sw/bin /nix/var/nix/profiles/default/bin";
-
-            home-manager.enable = true;
-          };
-          home.stateVersion = "23.05";
+          age.sshKeyPaths = [ cfg.ssh.privateKeyPath ];
         };
-      })
 
-      #################################################################### WIREGUARD (no options)
-      (mkIf true {
-        systemd.services.wg0 = {
-          enable = true;
+        home.packages = with pkgs; [
+          file
+          tree
+          bind # nslookup
+        ];
 
-          description = "wireguard interface for cross-node communication";
-          requires = [ "network-online.target" ];
-          after = [ "network-online.target" ];
+        programs = {
+          tmux.enable = true;
+          htop.enable = true;
+          vim.enable = true;
+          git.enable = true;
+          fish.enable = true;
+          fish.loginShellInit = "fish_add_path --move --prepend --path $HOME/.nix-profile/bin /run/wrappers/bin /etc/profiles/per-user/$USER/bin /run/current-system/sw/bin /nix/var/nix/profiles/default/bin";
 
-          serviceConfig = {
-            Type = "oneshot";
-          };
+          home-manager.enable = true;
+        };
+        home.stateVersion = "23.05";
+      };
+    })
 
-          script = ''${nixpkgs.wireguard-tools}/bin/wg-quick \
+    #################################################################### WIREGUARD (no options)
+    (mkIf true {
+      systemd.services.wg0 = {
+        enable = true;
+
+        description = "wireguard interface for cross-node communication";
+        requires = [ "network-online.target" ];
+        after = [ "network-online.target" ];
+
+        serviceConfig = {
+          Type = "oneshot";
+        };
+
+        script = ''${nixpkgs.wireguard-tools}/bin/wg-quick \
                     up /run/user/1000/wireguard/wg0.conf
                   '';
 
-          wantedBy = [ "multi-user.target" ];
+        wantedBy = [ "multi-user.target" ];
+      };
+    })
+
+    #################################################################### ERIGON
+    (mkIf (cfg.erigon.enable) {
+      # package
+      environment.systemPackages = [
+        pkgs.erigon
+      ];
+
+      # service
+      systemd.user.services.erigon = {
+        enable = true;
+
+        description = "execution, mainnet";
+        requires = [ "wg0.service" ];
+        after = [ "wg0.service" "lighthouse.service" ];
+
+        serviceConfig = {
+          Restart = "always";
+          RestartSec = "5s";
+          Type = "simple";
         };
-      })
 
-      #################################################################### ERIGON
-      (mkIf (cfg.erigon.enable) {
-        # package
-        environment.systemPackages = [
-          pkgs.erigon
-        ];
-
-        # service
-        systemd.user.services.erigon = {
-          enable = true;
-
-          description = "execution, mainnet";
-          requires = [ "wg0.service" ];
-          after = [ "wg0.service" "lighthouse.service" ];
-
-          serviceConfig = {
-            Restart = "always";
-            RestartSec = "5s";
-            Type = "simple";
-          };
-
-          script = ''${pkgs.erigon}/bin/erigon \
+        script = ''${pkgs.erigon}/bin/erigon \
                     --datadir=${cfg.erigon.datadir} \
                     --chain mainnet \
                     --authrpc.vhosts="*" \
@@ -221,33 +136,33 @@ in
                     --externalcl
                   '';
 
-          wantedBy = [ "multi-user.target" ];
+        wantedBy = [ "multi-user.target" ];
+      };
+
+      # firewall
+      networking.firewall = {
+        allowedTCPPorts = [ 30303 30304 42069 ];
+        allowedUDPPorts = [ 30303 30304 42069 ];
+      };
+    })
+
+    #################################################################### MEV-BOOST
+    (mkIf (cfg.mev-boost.enable) {
+      # service
+      systemd.user.services.mev-boost = {
+        enable = true;
+
+        description = "MEV-boost allows proof-of-stake Ethereum consensus clients to outsource block construction";
+        requires = [ "wg0.service" ];
+        after = [ "wg0.service" ];
+
+        serviceConfig = {
+          Restart = "always";
+          RestartSec = "5s";
+          Type = "simple";
         };
 
-        # firewall
-        networking.firewall = {
-          allowedTCPPorts = [ 30303 30304 42069 ];
-          allowedUDPPorts = [ 30303 30304 42069 ];
-        };
-      })
-
-      #################################################################### MEV-BOOST
-      (mkIf (cfg.mev-boost.enable) {
-        # service
-        systemd.user.services.mev-boost = {
-          enable = true;
-
-          description = "MEV-boost allows proof-of-stake Ethereum consensus clients to outsource block construction";
-          requires = [ "wg0.service" ];
-          after = [ "wg0.service" ];
-
-          serviceConfig = {
-            Restart = "always";
-            RestartSec = "5s";
-            Type = "simple";
-          };
-
-          script = ''${pkgs.mev-boost}/bin/mev-boost \
+        script = ''${pkgs.mev-boost}/bin/mev-boost \
                     -mainnet \
                     -relay-check \
                     -relays ${lib.concatStringsSep "," [
@@ -262,32 +177,32 @@ in
                     -addr 0.0.0.0:18550
                   '';
 
-          wantedBy = [ "multi-user.target" ];
+        wantedBy = [ "multi-user.target" ];
+      };
+    })
+
+    #################################################################### LIGHTHOUSE
+    (mkIf (cfg.lighthouse.enable) {
+      # package
+      environment.systemPackages = with pkgs; [
+        lighthouse
+      ];
+
+      # service
+      systemd.user.services.lighthouse = {
+        enable = true;
+
+        description = "beacon, mainnet";
+        requires = [ "wg0.service" ];
+        after = [ "wg0.service" "mev-boost.service" ];
+
+        serviceConfig = {
+          Restart = "always";
+          RestartSec = "5s";
+          Type = "simple";
         };
-      })
 
-      #################################################################### LIGHTHOUSE
-      (mkIf (cfg.lighthouse.enable) {
-        # package
-        environment.systemPackages = with pkgs; [
-          lighthouse
-        ];
-
-        # service
-        systemd.user.services.lighthouse = {
-          enable = true;
-
-          description = "beacon, mainnet";
-          requires = [ "wg0.service" ];
-          after = [ "wg0.service" "mev-boost.service" ];
-
-          serviceConfig = {
-            Restart = "always";
-            RestartSec = "5s";
-            Type = "simple";
-          };
-
-          script = ''${pkgs.lighthouse}/bin/lighthouse bn \
+        script = ''${pkgs.lighthouse}/bin/lighthouse bn \
                     --datadir ${cfg.lighthouse.datadir} \
                     --network mainnet \
                     --http --http-address ${cfg.lighthouse.endpoint} \
@@ -303,18 +218,18 @@ in
                       + " --slasher-max-db-size " + (toString cfg.lighthouse.slasher.max-db-size)
                     else "" }
                   '';
-          wantedBy = [ "multi-user.target" ];
-        };
+        wantedBy = [ "multi-user.target" ];
+      };
 
-        # firewall
-        networking.firewall = {
-          allowedTCPPorts = [ 9000 ];
-          allowedUDPPorts = [ 9000 ];
-          interfaces."wg0".allowedTCPPorts = [
-            5052 # lighthouse
-          ];
-        };
-      })
-    ];
-  };
+      # firewall
+      networking.firewall = {
+        allowedTCPPorts = [ 9000 ];
+        allowedUDPPorts = [ 9000 ];
+        interfaces."wg0".allowedTCPPorts = [
+          5052 # lighthouse
+        ];
+      };
+    })
+  ];
+};
 }
