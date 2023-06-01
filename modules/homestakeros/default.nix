@@ -54,15 +54,8 @@ in
       environment.shells = [ pkgs.fish ];
       programs.fish.enable = true;
 
+      home-manager.users.root.home.stateVersion = config.home-manager.users.core.home.stateVersion;
       home-manager.users.core = { pkgs, ... }: {
-
-        sops = {
-          defaultSopsFile = ./secrets/default.yaml;
-          secrets."wireguard/wg0" = {
-            path = "%r/wireguard/wg0.conf";
-          };
-          age.sshKeyPaths = [ cfg.ssh.privateKeyPath ];
-        };
 
         home.packages = with pkgs; [
           file
@@ -80,12 +73,22 @@ in
 
           home-manager.enable = true;
         };
+
         home.stateVersion = "23.05";
       };
     })
 
     #################################################################### WIREGUARD (no options)
     (mkIf true {
+      home-manager.users.core = { pkgs, ... }: {
+        sops = {
+          defaultSopsFile = ./secrets/default.yaml;
+          secrets."wireguard/wg0" = {
+            path = "%r/wireguard/wg0.conf";
+          };
+          age.sshKeyPaths = [ "/var/mnt/secrets/ssh/id_ed25519" ]; # cfg.ssh.privateKeyPath opt here
+        };
+      };
       systemd.services.wg0 = {
         enable = true;
 
@@ -231,5 +234,4 @@ in
       };
     })
   ];
-};
 }

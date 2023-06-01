@@ -126,83 +126,83 @@
             "homestakeros" = nixosSystem (getAttrs [ "system" "specialArgs" "modules" ] homestakeros);
           } // (with nixpkgs-stable.lib; { });
 
-          nixosModules.homestakeros = {
+          nixosModules.homestakeros = with nixpkgs.lib; {
             imports = [ ./modules/homestakeros ];
             options = {
               localization = {
-                hostname = nixpkgs.lib.mkOption {
-                  type = nixpkgs.lib.types.str;
+                hostname = mkOption {
+                  type = types.str;
                   default = "homestaker";
                 };
-                timezone = nixpkgs.lib.mkOption {
-                  type = nixpkgs.lib.types.str;
+                timezone = mkOption {
+                  type = types.str;
                   default = "Europe/Helsinki";
                 };
               };
 
-              mounts = nixpkgs.lib.mkOption {
-                type = nixpkgs.lib.types.attrsOf nixpkgs.lib.types.string;
+              mounts = mkOption {
+                type = types.attrsOf types.string;
               };
 
               ssh = {
-                privateKeyPath = nixpkgs.lib.mkOption {
-                  type = nixpkgs.lib.types.path;
+                privateKeyPath = mkOption {
+                  type = types.path;
                   default = "/var/mnt/secrets/ssh/id_ed25519";
                 };
               };
 
               user = {
-                authorizedKeys = nixpkgs.lib.mkOption {
-                  type = nixpkgs.lib.types.listOf nixpkgs.lib.types.singleLineStr;
+                authorizedKeys = mkOption {
+                  type = types.listOf types.singleLineStr;
                   default = [ ];
                 };
               };
 
               erigon = {
-                enable = nixpkgs.lib.mkOption {
-                  type = nixpkgs.lib.types.bool;
+                enable = mkOption {
+                  type = types.bool;
                   default = false;
                 };
-                endpoint = nixpkgs.lib.mkOption {
-                  type = nixpkgs.lib.types.str;
+                endpoint = mkOption {
+                  type = types.str;
                 };
-                datadir = nixpkgs.lib.mkOption {
-                  type = nixpkgs.lib.types.str;
+                datadir = mkOption {
+                  type = types.str;
                 };
               };
 
               lighthouse = {
-                enable = nixpkgs.lib.mkOption {
-                  type = nixpkgs.lib.types.bool;
+                enable = mkOption {
+                  type = types.bool;
                   default = false;
                 };
-                endpoint = nixpkgs.lib.mkOption {
-                  type = nixpkgs.lib.types.str;
+                endpoint = mkOption {
+                  type = types.str;
                 };
-                exec.endpoint = nixpkgs.lib.mkOption {
-                  type = nixpkgs.lib.types.str;
+                exec.endpoint = mkOption {
+                  type = types.str;
                 };
                 slasher = {
-                  enable = nixpkgs.lib.mkOption {
-                    type = nixpkgs.lib.types.bool;
+                  enable = mkOption {
+                    type = types.bool;
                     default = false;
                   };
-                  history-length = nixpkgs.lib.mkOption {
-                    type = nixpkgs.lib.types.int;
+                  history-length = mkOption {
+                    type = types.int;
                     default = 4096;
                   };
-                  max-db-size = nixpkgs.lib.mkOption {
-                    type = nixpkgs.lib.types.int;
+                  max-db-size = mkOption {
+                    type = types.int;
                     default = 256;
                   };
                 };
                 mev-boost = {
-                  endpoint = nixpkgs.lib.mkOption {
-                    type = nixpkgs.lib.types.str;
+                  endpoint = mkOption {
+                    type = types.str;
                   };
                 };
-                datadir = nixpkgs.lib.mkOption {
-                  type = nixpkgs.lib.types.str;
+                datadir = mkOption {
+                  type = types.str;
                 };
               };
             };
