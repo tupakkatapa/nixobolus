@@ -5,7 +5,7 @@ in
 {
   # usage: https://github.com/ponkila/homestaking-infra/commit/574382212cf817dbb75657e9fef9cdb223e9823b
 
-  config = with nixpkgs.lib; mkMerge [
+  config = with lib; mkMerge [
     ################################################################### LOCALIZATION
     (mkIf true {
       networking.hostName = cfg.localization.hostname;
