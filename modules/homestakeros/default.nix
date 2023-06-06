@@ -110,6 +110,14 @@ in
 
     #################################################################### ERIGON
     (mkIf (cfg.erigon.enable) {
+      # split endpoint to address and port
+      endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
+      endpointMatch = builtins.match endpointRegex cfg.erigon.endpoint;
+      endpoint = {
+        addr = builtins.elemAt endpointMatch 1;
+        port = builtins.elemAt endpointMatch 2;
+      };
+
       # package
       environment.systemPackages = [
         pkgs.erigon
@@ -130,14 +138,15 @@ in
         };
 
         script = ''${pkgs.erigon}/bin/erigon \
-                    --datadir=${cfg.erigon.datadir} \
-                    --chain mainnet \
-                    --authrpc.vhosts="*" \
-                    --authrpc.addr ${cfg.erigon.endpoint} \
-                    --authrpc.jwtsecret=${cfg.erigon.datadir}/jwt.hex \
-                    --metrics \
-                    --externalcl
-                  '';
+          --datadir=${cfg.datadir} \
+          --chain mainnet \
+          --authrpc.vhosts="*" \
+          --authrpc.port ${endpoint.port} \
+          --authrpc.addr ${endpoint.addr} \
+          --authrpc.jwtsecret=%r/jwt.hex \
+          --metrics \
+          --externalcl
+        '';
 
         wantedBy = [ "multi-user.target" ];
       };
@@ -186,6 +195,14 @@ in
 
     #################################################################### LIGHTHOUSE
     (mkIf (cfg.lighthouse.enable) {
+      # split endpoint to address and port
+      endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
+      endpointMatch = builtins.match endpointRegex cfg.lighthouse.endpoint;
+      endpoint = {
+        addr = builtins.elemAt endpointMatch 1;
+        port = builtins.elemAt endpointMatch 2;
+      };
+
       # package
       environment.systemPackages = with pkgs; [
         lighthouse
@@ -206,21 +223,22 @@ in
         };
 
         script = ''${pkgs.lighthouse}/bin/lighthouse bn \
-                    --datadir ${cfg.lighthouse.datadir} \
-                    --network mainnet \
-                    --http --http-address ${cfg.lighthouse.endpoint} \
-                    --http-allow-origin "*" \
-                    --execution-endpoint ${cfg.lighthouse.exec.endpoint} \
-                    --execution-jwt ${cfg.lighthouse.datadir}/jwt.hex \
-                    --builder ${cfg.lighthouse.mev-boost.endpoint} \
-                    --prune-payloads false \
-                    --metrics \
-                    ${if cfg.lighthouse.slasher.enable then
-                      "--slasher "
-                      + " --slasher-history-length " + (toString cfg.lighthouse.slasher.history-length)
-                      + " --slasher-max-db-size " + (toString cfg.lighthouse.slasher.max-db-size)
-                    else "" }
-                  '';
+          --datadir ${cfg.datadir} \
+          --network mainnet \
+          --http --http-address ${endpoint.addr} \
+          --http-port ${endpoint.port} \
+          --http-allow-origin "*" \
+          --execution-endpoint ${cfg.exec.endpoint} \
+          --execution-jwt %r/jwt.hex \
+          --builder ${cfg.mev-boost.endpoint} \
+          --prune-payloads false \
+          --metrics \
+          ${if cfg.slasher.enable then
+            "--slasher "
+            + " --slasher-history-length " + (toString cfg.slasher.history-length)
+            + " --slasher-max-db-size " + (toString cfg.slasher.max-db-size)
+          else "" }
+        '';
         wantedBy = [ "multi-user.target" ];
       };
 
@@ -229,7 +247,7 @@ in
         allowedTCPPorts = [ 9000 ];
         allowedUDPPorts = [ 9000 ];
         interfaces."wg0".allowedTCPPorts = [
-          5052 # lighthouse
+          5052 # TODO: use 'lighthouse.endpoint.port' here by converting it to u16
         ];
       };
     })
