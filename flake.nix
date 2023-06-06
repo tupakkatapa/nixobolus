@@ -95,7 +95,7 @@
               ./system
               ./system/ramdisk.nix
               ./system/formats/netboot-kexec.nix
-              nixobolus.nixosModules.homestakeros
+              #nixobolus.nixosModules.homestakeros
               home-manager.nixosModules.home-manager
               disko.nixosModules.disko
               {
@@ -165,9 +165,11 @@
                 };
                 endpoint = mkOption {
                   type = types.str;
+                  default = "http://${infra.ip}:8551";
                 };
                 datadir = mkOption {
                   type = types.str;
+                  default = "/var/mnt/erigon";
                 };
               };
 
@@ -178,9 +180,11 @@
                 };
                 endpoint = mkOption {
                   type = types.str;
+                  default = "http://${infra.ip}:5052";
                 };
                 exec.endpoint = mkOption {
                   type = types.str;
+                  default = "http://${infra.ip}:8551";
                 };
                 slasher = {
                   enable = mkOption {
@@ -199,6 +203,7 @@
                 mev-boost = {
                   endpoint = mkOption {
                     type = types.str;
+                    default = "http://${infra.ip}:18550";
                   };
                 };
                 datadir = mkOption {
