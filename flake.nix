@@ -259,7 +259,7 @@
 
                 #################################################################### USER (core)
                 (mkIf true {
-                  services.getty.autologinUser = "core";
+                  #services.getty.autologinUser = "core";
                   users.users.core = {
                     isNormalUser = true;
                     group = "core";
