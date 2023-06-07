@@ -348,7 +348,7 @@
                       };
 
                       script = ''${pkgs.erigon}/bin/erigon \
-                      --datadir=${cfg.datadir} \
+                      --datadir=${cfg.erigon.datadir} \
                       --chain mainnet \
                       --authrpc.vhosts="*" \
                       --authrpc.port ${endpoint.port} \
