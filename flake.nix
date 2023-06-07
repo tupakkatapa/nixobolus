@@ -26,7 +26,6 @@
     mission-control.url = "github:Platonic-Systems/mission-control";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-22.11";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    sops-nix.url = "github:Mic92/sops-nix";
   };
 
   # add the inputs declared above to the argument attribute set
@@ -39,7 +38,6 @@
     , home-manager
     , nixpkgs
     , nixpkgs-stable
-    , sops-nix
     , ...
     }@inputs:
 
@@ -67,7 +65,6 @@
               nix
               nix-tree
               rsync
-              sops
               ssh-to-age
               zstd
             ];
@@ -189,9 +186,6 @@
                   outputs.overlays.additions
                   outputs.overlays.modifications
                 ];
-                home-manager.sharedModules = [
-                  sops-nix.homeManagerModules.sops
-                ];
                 system.stateVersion = "23.05";
               }
             ];
@@ -294,15 +288,6 @@
 
                 #################################################################### WIREGUARD (no options)
                 (mkIf true {
-                  # home-manager.users.core = { pkgs, ... }: {
-                  #   sops = {
-                  #     defaultSopsFile = ./secrets/default.yaml;
-                  #     secrets."wireguard/wg0" = {
-                  #       path = "%r/wireguard/wg0.conf";
-                  #     };
-                  #     age.sshKeyPaths = [ cfg.ssh.privateKeyPath ];
-                  #   };
-                  # };
                   systemd.services.wg0 = {
                     enable = true;
 
