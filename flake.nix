@@ -85,7 +85,93 @@
         let
           inherit (self) outputs;
 
+          homestakeros_options = with nixpkgs.lib; {
+            localization = {
+              hostname = mkOption {
+                type = types.str;
+                default = "homestaker";
+              };
+              timezone = mkOption {
+                type = types.str;
+                default = "Europe/Helsinki";
+              };
+            };
 
+            # mounts = mkOption {
+            #   type = types.attrsOf types.string;
+            # };
+
+            ssh = {
+              privateKeyPath = mkOption {
+                type = types.path;
+                default = "/var/mnt/secrets/ssh/id_ed25519";
+              };
+            };
+
+            user = {
+              authorizedKeys = mkOption {
+                type = types.listOf types.singleLineStr;
+                default = [ ];
+              };
+            };
+
+            erigon = {
+              enable = mkOption {
+                type = types.bool;
+                default = false;
+              };
+              endpoint = mkOption {
+                type = types.str;
+                default = "http://127.0.0.1:8551";
+              };
+              datadir = mkOption {
+                type = types.str;
+                default = "/var/mnt/erigon";
+              };
+            };
+
+            lighthouse = {
+              enable = mkOption {
+                type = types.bool;
+                default = false;
+              };
+              endpoint = mkOption {
+                type = types.str;
+                default = "http://127.0.0.1:5052";
+              };
+              exec.endpoint = mkOption {
+                type = types.str;
+                default = "http://127.0.0.1:8551";
+              };
+              slasher = {
+                enable = mkOption {
+                  type = types.bool;
+                  default = false;
+                };
+                history-length = mkOption {
+                  type = types.int;
+                  default = 4096;
+                };
+                max-db-size = mkOption {
+                  type = types.int;
+                  default = 256;
+                };
+              };
+              mev-boost = {
+                enable = mkOption {
+                  type = types.bool;
+                  default = false;
+                };
+                endpoint = mkOption {
+                  type = types.str;
+                  default = "http://127.0.0.1:18550";
+                };
+              };
+              datadir = mkOption {
+                type = types.str;
+              };
+            };
+          };
 
           homestakeros = {
             system = "x86_64-linux";
@@ -114,10 +200,10 @@
         rec {
           # filters options recursively
           # option exports -- accessible through 'nix eval --json .#exports'
-          # exports = nixpkgs.lib.attrsets.mapAttrsRecursiveCond
-          #   (v: ! nixpkgs.lib.options.isOption v)
-          #   (k: v: v.type.name)
-          #   homestakeros_options;
+          exports = nixpkgs.lib.attrsets.mapAttrsRecursiveCond
+            (v: ! nixpkgs.lib.options.isOption v)
+            (k: v: v.type.name)
+            homestakeros_options;
 
           overlays = import ./overlays { inherit inputs; };
 
@@ -131,93 +217,7 @@
               cfg = config.homestakeros;
             in
             {
-              options.homestakeros = with nixpkgs.lib; {
-                localization = {
-                  hostname = mkOption {
-                    type = types.str;
-                    default = "homestaker";
-                  };
-                  timezone = mkOption {
-                    type = types.str;
-                    default = "Europe/Helsinki";
-                  };
-                };
-
-                # mounts = mkOption {
-                #   type = types.attrsOf types.string;
-                # };
-
-                ssh = {
-                  privateKeyPath = mkOption {
-                    type = types.path;
-                    default = "/var/mnt/secrets/ssh/id_ed25519";
-                  };
-                };
-
-                user = {
-                  authorizedKeys = mkOption {
-                    type = types.listOf types.singleLineStr;
-                    default = [ ];
-                  };
-                };
-
-                erigon = {
-                  enable = mkOption {
-                    type = types.bool;
-                    default = false;
-                  };
-                  endpoint = mkOption {
-                    type = types.str;
-                    default = "http://127.0.0.1:8551";
-                  };
-                  datadir = mkOption {
-                    type = types.str;
-                    default = "/var/mnt/erigon";
-                  };
-                };
-
-                lighthouse = {
-                  enable = mkOption {
-                    type = types.bool;
-                    default = false;
-                  };
-                  endpoint = mkOption {
-                    type = types.str;
-                    default = "http://127.0.0.1:5052";
-                  };
-                  exec.endpoint = mkOption {
-                    type = types.str;
-                    default = "http://127.0.0.1:8551";
-                  };
-                  slasher = {
-                    enable = mkOption {
-                      type = types.bool;
-                      default = false;
-                    };
-                    history-length = mkOption {
-                      type = types.int;
-                      default = 4096;
-                    };
-                    max-db-size = mkOption {
-                      type = types.int;
-                      default = 256;
-                    };
-                  };
-                  mev-boost = {
-                    enable = mkOption {
-                      type = types.bool;
-                      default = false;
-                    };
-                    endpoint = mkOption {
-                      type = types.str;
-                      default = "http://127.0.0.1:18550";
-                    };
-                  };
-                  datadir = mkOption {
-                    type = types.str;
-                  };
-                };
-              };
+              options.homestakeros = homestakeros_options;
 
               config = mkMerge [
                 ################################################################### LOCALIZATION
