@@ -96,9 +96,11 @@
               };
             };
 
-            # mounts = mkOption {
-            #   type = types.attrsOf types.string;
-            # };
+            mounts = mkOption {
+              type = types.attrsOf types.attrs;
+              default = {};
+              description = "Systemd mounts configuration";
+            };
 
             ssh = {
               privateKeyPath = mkOption {
@@ -237,20 +239,19 @@
                 })
 
                 #################################################################### MOUNTS
-                # (mkIf true {
-                #   systemd.mounts = builtins.listToAttrs (map
-                #     (mount: {
-                #       enable = mount.enable or true;
-                #       description = mount.description or "Unnamed mount point";
-                #       what = mount.what;
-                #       where = mount.where;
-                #       type = mount.type or "ext4";
-                #       options = mount.options or "defaults";
-                #       before = lib.mkDefault mount.before;
-                #       wantedBy = mount.wantedBy or [ "multi-user.target" ];
-                #     })
-                #     (lib.mkDefault cfg.mounts or []));
-                # })
+                (mkIf true {
+                  systemd.mounts = lib.attrsets.mapAttrsToList (mount: {
+                    enable = mount.enable or true;
+                    description = mount.description or "Unnamed mount point";
+                    what = mount.what;
+                    where = mount.where;
+                    type = mount.type or "ext4";
+                    options = mount.options or "defaults";
+                    before = lib.mkDefault mount.before;
+                    wantedBy = mount.wantedBy or [ "multi-user.target" ];
+                  })
+                  (config.mounts or {});
+                })
 
                 #################################################################### SSH (system level)
                 (mkIf true {
