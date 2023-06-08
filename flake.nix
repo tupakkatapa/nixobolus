@@ -87,10 +87,12 @@
               hostname = mkOption {
                 type = types.str;
                 default = "homestaker";
+                description = "The name of the machine";
               };
               timezone = mkOption {
                 type = types.str;
                 default = "Europe/Helsinki";
+                description = "The time zone used when displaying times and dates";
               };
             };
 
@@ -102,6 +104,7 @@
               privateKeyPath = mkOption {
                 type = types.path;
                 default = "/var/mnt/secrets/ssh/id_ed25519";
+                description = "Path, where SSH host keys are automatically generated";
               };
             };
 
@@ -109,6 +112,7 @@
               authorizedKeys = mkOption {
                 type = types.listOf types.singleLineStr;
                 default = [ ];
+                description = "A list of public keys that should be added to the user’s authorized keys";
               };
             };
 
@@ -116,14 +120,17 @@
               enable = mkOption {
                 type = types.bool;
                 default = false;
+                description = "Whether to enable Erigon";
               };
               endpoint = mkOption {
                 type = types.str;
                 default = "http://127.0.0.1:8551";
+                description = "HTTP-RPC server listening interface of engine API";
               };
               datadir = mkOption {
                 type = types.str;
                 default = "/var/mnt/erigon";
+                description = "Data directory for the databases";
               };
             };
 
@@ -131,41 +138,50 @@
               enable = mkOption {
                 type = types.bool;
                 default = false;
+                description = "Whether to enable Lighthouse";
               };
               endpoint = mkOption {
                 type = types.str;
                 default = "http://127.0.0.1:5052";
+                description = "HTTP server listening interface";
               };
               exec.endpoint = mkOption {
                 type = types.str;
                 default = "http://127.0.0.1:8551";
+                description = "Listening interface of the execution engine API";
               };
               slasher = {
                 enable = mkOption {
                   type = types.bool;
                   default = false;
+                  description = "Whether to enable slasher";
                 };
                 history-length = mkOption {
                   type = types.int;
                   default = 4096;
+                  description = "Number of epochs to store";
                 };
                 max-db-size = mkOption {
                   type = types.int;
                   default = 256;
+                  description = "Maximum size of the database in gigabytes";
                 };
               };
               mev-boost = {
                 enable = mkOption {
                   type = types.bool;
                   default = false;
+                  description = "Whether to enable MEV-Boost";
                 };
                 endpoint = mkOption {
                   type = types.str;
                   default = "http://127.0.0.1:18550";
+                  description = "Listening interface for MEV-Boost server";
                 };
               };
               datadir = mkOption {
                 type = types.str;
+                description = "Data directory for the databases";
               };
             };
           };
