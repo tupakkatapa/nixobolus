@@ -94,9 +94,9 @@
               };
             };
 
-            mounts = mkOption {
-              type = utils.systemdUtils.types.mounts;
-            };
+            # mounts = mkOption {
+            #   type = types.attrsOf types.string;
+            # };
 
             ssh = {
               privateKeyPath = mkOption {
@@ -221,9 +221,20 @@
                 })
 
                 #################################################################### MOUNTS
-                (mkIf true {
-                  systemd.mounts = cfg.mounts;
-                })
+                # (mkIf true {
+                #   systemd.mounts = builtins.listToAttrs (map
+                #     (mount: {
+                #       enable = mount.enable or true;
+                #       description = mount.description or "Unnamed mount point";
+                #       what = mount.what;
+                #       where = mount.where;
+                #       type = mount.type or "ext4";
+                #       options = mount.options or "defaults";
+                #       before = lib.mkDefault mount.before;
+                #       wantedBy = mount.wantedBy or [ "multi-user.target" ];
+                #     })
+                #     (lib.mkDefault cfg.mounts or []));
+                # })
 
                 #################################################################### SSH (system level)
                 (mkIf true {
