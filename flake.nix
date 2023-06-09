@@ -432,7 +432,7 @@
                     let
                       # split endpoint to address and port
                       endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
-                      endpointMatch = builtins.match endpointRegex cfg.erigon.endpoint;
+                      endpointMatch = builtins.match endpointRegex cfg.lighthouse.endpoint;
                       endpoint = {
                         addr = builtins.elemAt endpointMatch 1;
                         port = builtins.elemAt endpointMatch 2;
@@ -452,20 +452,20 @@
                       };
 
                       script = ''${pkgs.lighthouse}/bin/lighthouse bn \
-                      --datadir ${cfg.datadir} \
+                      --datadir ${cfg.lighthouse.datadir} \
                       --network mainnet \
                       --http --http-address ${endpoint.addr} \
                       --http-port ${endpoint.port} \
                       --http-allow-origin "*" \
-                      --execution-endpoint ${cfg.exec.endpoint} \
+                      --execution-endpoint ${cfg.lighthouse.exec.endpoint} \
                       --execution-jwt %r/jwt.hex \
-                      --builder ${cfg.mev-boost.endpoint} \
+                      --builder ${cfg.lighthouse.mev-boost.endpoint} \
                       --prune-payloads false \
                       --metrics \
-                      ${if cfg.slasher.enable then
+                      ${if cfg.lighthouse.slasher.enable then
                         "--slasher "
-                        + " --slasher-history-length " + (toString cfg.slasher.history-length)
-                        + " --slasher-max-db-size " + (toString cfg.slasher.max-db-size)
+                        + " --slasher-history-length " + (toString cfg.lighthouse.slasher.history-length)
+                        + " --slasher-max-db-size " + (toString cfg.lighthouse.slasher.max-db-size)
                       else "" }
                     '';
                       wantedBy = [ "multi-user.target" ];
