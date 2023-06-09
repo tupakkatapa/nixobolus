@@ -24,7 +24,7 @@
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     home-manager.url = "github:nix-community/home-manager";
     mission-control.url = "github:Platonic-Systems/mission-control";
-    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-22.11";
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-23.05";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
