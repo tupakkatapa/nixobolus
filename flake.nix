@@ -183,6 +183,7 @@
               };
               datadir = mkOption {
                 type = types.str;
+                default = "/var/mnt/lighthouse";
                 description = "Data directory for the databases";
               };
             };
