@@ -221,7 +221,7 @@
           overlays = import ./overlays { inherit inputs; };
 
           nixosConfigurations = with nixpkgs.lib; {
-            "homestakeros" = nixosSystem (getAttrs [ "system" "specialArgs" "modules" ] homestakeros);
+            "homestakeros" = nixosSystem homestakeros;
           } // (with nixpkgs-stable.lib; { });
 
           # usage: https://github.com/ponkila/homestaking-infra/commit/574382212cf817dbb75657e9fef9cdb223e9823b
