@@ -243,18 +243,18 @@
 
                 #################################################################### MOUNTS
                 (mkIf true {
-                  systemd.mounts = lib.attrsets.mapAttrsToList
-                    (mount: {
+                  systemd.mounts = lib.mapAttrsToList
+                    (name: mount: {
                       enable = mount.enable or true;
-                      description = mount.description or "Unnamed mount point";
+                      description = mount.description or "${name} mount point";
                       what = mount.what;
                       where = mount.where;
                       type = mount.type or "ext4";
                       options = mount.options or "defaults";
-                      before = lib.mkDefault mount.before;
+                      before = lib.mkDefault (mount.before or [ ]);
                       wantedBy = mount.wantedBy or [ "multi-user.target" ];
                     })
-                    (config.mounts or { });
+                    cfg.mounts;
                 })
 
                 #################################################################### SSH (system level)
