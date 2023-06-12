@@ -8,7 +8,7 @@
     lighthouse = prev.lighthouse.overrideAttrs (oldAttrs: rec {
       # Version override
       pname = "lighthouse";
-      version = "4.1.0";
+      version = "4.0.2-rc.0";
       src = final.fetchFromGitHub {
         owner = "sigp";
         repo = "lighthouse";
