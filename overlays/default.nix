@@ -15,6 +15,7 @@
         rev = "v${version}";
         hash = "sha256-10DpoG9MS6jIod0towzIsmyyakfiT62NIJBKxqsgsK0=";
       };
+      cargoSha256 = "sha256-KlTQF1iL2PYAk+nmQIm72guy2PxGkN/YzhgCNv1FZGM=";
       # Enables aggressive optimisations including full LTO
       PROFILE = "maxperf";
     });
