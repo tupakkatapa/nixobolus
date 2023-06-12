@@ -41,14 +41,9 @@
       "tsx_async_abort=off"
     ];
     kernelPackages = lib.mkDefault (pkgs.linuxPackagesFor (pkgs.linux_latest));
-  } // (
     # Increase tmpfs (default: "50%")
-    if (lib.trivial.release == "22.11") then {
-      tmpOnTmpfsSize = "80%";
-    } else {
-      tmp.tmpfsSize = "80%";
-    }
-  );
+    tmp.tmpfsSize = "80%";
+  };
 
   environment.systemPackages = with pkgs; [
     btrfs-progs
@@ -101,17 +96,12 @@
   # Enable podman with DNS
   virtualisation.podman = {
     enable = true;
-  } // (
     # dnsname allows containers to use ${name}.dns.podman to reach each other
     # on the same host instead of using hard-coded IPs.
     # NOTE: --net must be the same on the containers, and not eq "host"
     # TODO: extend this with flannel ontop of wireguard for cross-node comms
-    if (lib.trivial.release == "22.11") then {
-      defaultNetwork.dnsname.enable = true;
-    } else {
-      defaultNetwork.settings = { dns_enabled = true; };
-    }
-  );
+    defaultNetwork.settings = { dns_enabled = true; };
+  };
 
   # Reboots hanged system
   systemd.watchdog.device = "/dev/watchdog";
