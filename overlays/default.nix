@@ -11,14 +11,14 @@
       version = "4.0.2-rc.0";
       src = final.fetchFromGitHub {
         owner = "sigp";
-        repo = "lighthouse";
+        repo = pname;
         rev = "v${version}";
         hash = "sha256-10DpoG9MS6jIod0towzIsmyyakfiT62NIJBKxqsgsK0=";
       };
       # Enables aggressive optimisations including full LTO
       PROFILE = "maxperf";
     });
-    erigon = prev.lighthouse.overrideAttrs (oldAttrs: rec {
+    erigon = prev.erigon.overrideAttrs (oldAttrs: rec {
       # Version override
       pname = "erigon";
       version = "2.42.0";

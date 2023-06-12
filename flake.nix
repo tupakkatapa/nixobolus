@@ -200,11 +200,6 @@
               home-manager.nixosModules.home-manager
               disko.nixosModules.disko
               {
-                nixpkgs.overlays = [
-                  ethereum-nix.overlays.default
-                  outputs.overlays.additions
-                  outputs.overlays.modifications
-                ];
                 system.stateVersion = "23.05";
               }
             ];
@@ -233,6 +228,13 @@
               options.homestakeros = homestakeros_options;
 
               config = mkMerge [
+                (mkIf true {
+                  nixpkgs.overlays = [
+                    ethereum-nix.overlays.default
+                    outputs.overlays.additions
+                    outputs.overlays.modifications
+                  ];
+                })
                 ################################################################### LOCALIZATION
                 (mkIf true {
                   networking.hostName = cfg.localization.hostname;
