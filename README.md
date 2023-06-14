@@ -1,66 +1,27 @@
 # Nixobolus
 Automated creation of bootable NixOS images
 
-## Work in Progress
-This repository is a work in progress and is subject to change at any time. Please note that the code and documentation may be incomplete, inaccurate, or contain bugs. Use at your own risk.
+## About
+This project currently functions as the backend for [HomestakerOS](https://github.com/ponkila/HomestakerOS), a Web UI designed to generate an integrated network of ephemeral Linux servers. Additionally, this provides modules for our Ethereum [homestaking-infra](https://github.com/ponkila/homestaking-infra) to ensure that everything remain up-to-date and optimized.
 
-## Building (no cross-compile)
-Tested on Ubuntu 22.04.2 LTS aarch64, 5.15.0-69-generic
+As you can see, we are kicking things off by focusing on Ethereum-related stuff, but this has the potential to be used for the deployment and maintenance of any kind of infrastructure.
 
-- Within [Docker](https://docs.docker.com/desktop/install/linux-install/) / [Podman](https://podman.io/getting-started/installation)
+## Usage as module
 
-    ```
-    podman build . --tag nix-builder --build-arg hostname=<hostname> --build-arg system=<system_arch>
-    ```
+```nix
+{
+  inputs.nixobolus.url = "github:ponkila/nixobolus";
 
-    ```
-    podman run -v "$PWD:$PWD":z -w "$PWD" nix-builder
-    ```
-
-    <details>
-    <summary>Debug notes</summary>
-
-      This error occurs when `programs.fish.enable` is set to `true`
-      ...
-      building '/nix/store/dgy59sxqj2wq2418f82n14z9cljzjin4-man-cache.drv'...
-      error: builder for '/nix/store/dgy59sxqj2wq2418f82n14z9cljzjin4-man-cache.drv' failed with exit code 2
-      error: 1 dependencies of derivation '/nix/store/p6lx3x6fxbl7hhch5nnsrxxlcsnw524d-etc-man_db.conf.drv' failed to build
-      error: 1 dependencies of derivation '/nix/store/m341zgn4qz0na8pvf3vkv44im3m9i8q0-etc.drv' failed to build
-      building '/nix/store/yp47gm038kyizbzl1m8y52jq6brkw0da-system-path.drv'...
-      error: 1 dependencies of derivation '/nix/store/31h7aqrpzn2ykbv57xfbyj51zb6pz4fi-nixos-system-ponkila-ephemeral-beta-23.05.20230417.f00994e.drv' failed to build
-      error: 1 dependencies of derivation '/nix/store/as1q3nzf9kpxxcsr08n5y4zdsijj80qw-closure-info.drv' failed to build
-      error: 1 dependencies of derivation '/nix/store/qzl3krxf1z8viz9z3bxi6h0afhyk4s4y-kexec-boot.drv' failed to build
-      error: 1 dependencies of derivation '/nix/store/0ys7pxf0l529gmjpayb9ny37kc68bawf-kexec-tree.drv' failed to build
-    </details>
-
-- With Nix package manager
-
-    Let root run the nix installer (**optional**)
-
-    ```
-    mkdir -p /etc/nix
-    ```
-
-    ```
-    echo "build-users-group =" > /etc/nix/nix.conf
-    ```
-
-    Install Nix in single-user mode
-
-    ```
-    curl -L https://nixos.org/nix/install | sh
-    ```
-
-    ```
-    . $HOME/.nix-profile/etc/profile.d/nix.sh
-    ```
-
-    Install nix-command and build
-
-    ```
-    nix-env -iA nixpkgs.nix
-    ```
-
-    ```
-    nix --extra-experimental-features "nix-command flakes" build .#nixobolus.<system_arch>.<hostname>
-    ```
+  outputs = { self, nixpkgs, nixobolus }: {
+    # change `yourhostname` to your actual hostname
+    nixosConfigurations.yourhostname = nixpkgs.lib.nixosSystem {
+      # customize to your system
+      system = "x86_64-linux";
+      modules = [
+        ./configuration.nix
+        nixobolus.nixosModules.homestakeros
+      ];
+    };
+  };
+}
+```
