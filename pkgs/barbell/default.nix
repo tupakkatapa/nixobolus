@@ -1,9 +1,10 @@
-{ pkgs ? import <nixpkgs> { } }:
+{ pkgs ? import <nixpkgs> { } 
+, lib ? pkgs.lib
+}:
 
 let
   name = "barbell";
   src = pkgs.fetchFromGitHub {
-    # https://github.com/jhvst/barbell
     owner = "jhvst";
     repo = name;
     rev = "6583e6bc553611cbe42ac696eea734cfb9cb75e2";
@@ -20,4 +21,10 @@ pkgs.stdenv.mkDerivation {
   shellHook = ''
     export PATH="$PATH:${barbell-script}/bin"
   '';
+  meta = with lib; {
+    homepage = "https://github.com/jhvst/barbell";
+    description = "Barbell is like the templating system Handlebars, but with BQN's Under doing the heavy lifting ";
+    license = licenses.mit;
+    platforms = [ "x86_64-linux" ];
+  };
 }
