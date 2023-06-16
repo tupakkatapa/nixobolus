@@ -49,6 +49,10 @@
     btrfs-progs
     kexec-tools
     fuse-overlayfs
+    bind
+    file
+    tree
+    vim
   ];
 
   programs.rust-motd = {
@@ -73,12 +77,7 @@
         '';
       };
       uptime.prefix = "Uptime:";
-      last_login = builtins.listToAttrs (map
-        (user: {
-          name = user;
-          value = 2;
-        })
-        (builtins.attrNames config.home-manager.users));
+      last_login.core = 2;
     };
   };
 

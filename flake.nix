@@ -21,8 +21,6 @@
     ethereum-nix.url = "github:nix-community/ethereum.nix";
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-root.url = "github:srid/flake-root";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs";
-    home-manager.url = "github:nix-community/home-manager";
     mission-control.url = "github:Platonic-Systems/mission-control";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-23.05";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -35,7 +33,6 @@
     , disko
     , ethereum-nix
     , flake-parts
-    , home-manager
     , nixpkgs
     , nixpkgs-stable
     , ...
@@ -197,7 +194,6 @@
               ./system/ramdisk.nix
               ./system/formats/netboot-kexec.nix
               self.nixosModules.homestakeros
-              home-manager.nixosModules.home-manager
               disko.nixosModules.disko
               {
                 system.stateVersion = "23.05";
@@ -290,29 +286,13 @@
                   };
                   users.groups.core = { };
                   environment.shells = [ pkgs.fish ];
-                  programs.fish.enable = true;
 
-                  home-manager.users.root.home.stateVersion = config.home-manager.users.core.home.stateVersion;
-                  home-manager.users.core = { pkgs, ... }: {
-
-                    home.packages = with pkgs; [
-                      file
-                      tree
-                      bind # nslookup
-                    ];
-
-                    programs = {
-                      tmux.enable = true;
-                      htop.enable = true;
-                      vim.enable = true;
-                      git.enable = true;
-                      fish.enable = true;
-                      fish.loginShellInit = "fish_add_path --move --prepend --path $HOME/.nix-profile/bin /run/wrappers/bin /etc/profiles/per-user/$USER/bin /run/current-system/sw/bin /nix/var/nix/profiles/default/bin";
-
-                      home-manager.enable = true;
-                    };
-
-                    home.stateVersion = "23.05";
+                  programs = {
+                    tmux.enable = true;
+                    htop.enable = true;
+                    git.enable = true;
+                    fish.enable = true;
+                    fish.loginShellInit = "fish_add_path --move --prepend --path $HOME/.nix-profile/bin /run/wrappers/bin /etc/profiles/per-user/$USER/bin /run/current-system/sw/bin /nix/var/nix/profiles/default/bin";
                   };
                 })
 
