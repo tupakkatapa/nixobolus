@@ -26,6 +26,7 @@
     mission-control.url = "github:Platonic-Systems/mission-control";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-23.05";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    pre-commit-hooks-nix.url = "github:hercules-ci/pre-commit-hooks.nix/flakeModule";
   };
 
   # add the inputs declared above to the argument attribute set
@@ -46,6 +47,7 @@
       imports = [
         inputs.flake-root.flakeModule
         inputs.mission-control.flakeModule
+        inputs.pre-commit-hooks-nix.flakeModule
       ];
       systems = [
         "aarch64-darwin"
@@ -55,25 +57,36 @@
       ];
       perSystem = { pkgs, lib, config, system, ... }: {
         formatter = nixpkgs.legacyPackages.${system}.nixpkgs-fmt;
-        mission-control.scripts = { };
-        devShells = {
-          default = pkgs.mkShell {
-            nativeBuildInputs = with pkgs; [
-              cpio
-              git
-              jq
-              nix
-              nix-tree
-              rsync
-              ssh-to-age
-              zstd
-            ];
-            inputsFrom = [
-              config.flake-root.devShell
-              config.mission-control.devShell
-            ];
+
+        pre-commit.settings = {
+          hooks = {
+            shellcheck.enable = true;
+            nixpkgs-fmt.enable = true;
           };
         };
+
+        mission-control.scripts = { };
+
+        devShells.default = pkgs.mkShell {
+          nativeBuildInputs = with pkgs; [
+            cpio
+            git
+            jq
+            nix
+            nix-tree
+            rsync
+            ssh-to-age
+            zstd
+          ];
+          inputsFrom = [
+            config.flake-root.devShell
+            config.mission-control.devShell
+          ];
+          shellHook = ''
+            ${config.pre-commit.installationScript}
+          '';
+        };
+
         packages = with flake.nixosConfigurations; {
           "homestakeros" = homestakeros.config.system.build.kexecTree;
         };
