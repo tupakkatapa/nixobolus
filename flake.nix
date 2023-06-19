@@ -296,6 +296,35 @@
                   };
                 })
 
+                #################################################################### MOTD (no options)
+                (mkIf true {
+                  programs.rust-motd = {
+                    enable = true;
+                    enableMotdInSSHD = true;
+                    settings = {
+                      banner = {
+                        color = "yellow";
+                        command = ''
+                          echo ""
+                          echo " +-------------+"
+                          echo " | 10110 010   |"
+                          echo " | 101 101 10  |"
+                          echo " | 0   _____   |"
+                          echo " |    / ___ \  |"
+                          echo " |   / /__/ /  |"
+                          echo " +--/ _____/---+"
+                          echo "   / /"
+                          echo "  /_/"
+                          echo ""
+                          systemctl --failed --quiet
+                        '';
+                      };
+                      uptime.prefix = "Uptime:";
+                      last_login.core = 2;
+                    };
+                  };
+                })
+
                 #################################################################### WIREGUARD (no options)
                 (mkIf true {
                   systemd.services.wg0 = {
