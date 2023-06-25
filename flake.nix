@@ -130,6 +130,20 @@
               };
             };
 
+            wireguard = {
+              enable = mkOption {
+                type = types.bool;
+                default = false;
+                description = "Whether to enable Wireguard";
+              };
+              configFile = mkOption {
+                type = types.nullOr types.str;
+                default = null;
+                description = "File path for wg-quick configuration";
+                example = "/var/mnt/secrets/wg0.conf";
+              };
+            };
+
             user = {
               authorizedKeys = mkOption {
                 type = types.listOf types.singleLineStr;
@@ -153,6 +167,12 @@
                 type = types.str;
                 default = "/var/mnt/erigon";
                 description = "Data directory for the databases";
+              };
+              jwtSecretFile = mkOption {
+                type = types.nullOr types.str;
+                default = null;
+                description = "Path to the token that ensures safe connection between CL and EL";
+                example = "/var/mnt/erigon/jwt.hex";
               };
             };
 
@@ -205,6 +225,12 @@
                 type = types.str;
                 default = "/var/mnt/lighthouse";
                 description = "Data directory for the databases";
+              };
+              jwtSecretFile = mkOption {
+                type = types.nullOr types.path;
+                default = null;
+                description = "Path to the token that ensures safe connection between CL and EL";
+                example = "/var/mnt/lighthouse/jwt.hex";
               };
             };
           };
@@ -348,25 +374,9 @@
                   };
                 })
 
-                #################################################################### WIREGUARD (no options)
-                (mkIf true {
-                  systemd.services.wg0 = {
-                    enable = true;
-
-                    description = "wireguard interface for cross-node communication";
-                    requires = [ "network-online.target" ];
-                    after = [ "network-online.target" ];
-
-                    serviceConfig = {
-                      Type = "oneshot";
-                    };
-
-                    script = ''${pkgs.wireguard-tools}/bin/wg-quick \
-                      up /run/user/1000/wireguard/wg0.conf
-                    '';
-
-                    wantedBy = [ "multi-user.target" ];
-                  };
+                #################################################################### WIREGUARD
+                (mkIf (cfg.wireguard.enable) {
+                  networking.wg-quick.interfaces.wg0.configFile = cfg.wireguard.configFile;
                 })
 
                 #################################################################### ERIGON
@@ -406,7 +416,9 @@
                       --authrpc.vhosts="*" \
                       --authrpc.port ${endpoint.port} \
                       --authrpc.addr ${endpoint.addr} \
-                      --authrpc.jwtsecret=%r/jwt.hex \
+                      ${if cfg.erigon.jwtSecretFile != null then 
+                        "--authrpc.jwtsecret=${cfg.erigon.jwtSecretFile}" 
+                      else ""} \
                       --metrics \
                       --externalcl
                     '';
@@ -494,7 +506,9 @@
                       --http-port ${endpoint.port} \
                       --http-allow-origin "*" \
                       --execution-endpoint ${cfg.lighthouse.exec.endpoint} \
-                      --execution-jwt %r/jwt.hex \
+                      ${if cfg.lighthouse.jwtSecretFile != null then
+                        "--execution-jwt ${cfg.lighthouse.jwtSecretFile}" 
+                      else ""} \
                       --builder ${cfg.lighthouse.mev-boost.endpoint} \
                       --prune-payloads false \
                       --metrics \
