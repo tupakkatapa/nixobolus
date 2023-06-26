@@ -95,128 +95,135 @@
         # Custom packages and aliases for building hosts
         # Accessible through 'nix build', 'nix run', etc
         packages = with flake.nixosConfigurations; {
-          "homestakeros" = homestakeros.config.system.build.kexecTree;
+          "homestaker" = homestaker.config.system.build.kexecTree;
         };
       };
       flake =
         let
           inherit (self) outputs;
 
-          homestakeros_options = with nixpkgs.lib; {
-            localization = {
-              hostname = mkOption {
-                type = types.str;
-                default = "homestaker";
-                description = "The name of the machine";
+          homestakerOptions = with nixpkgs.lib;
+            let
+              nospace = str: filter (c: c == " ") (stringToCharacters str) == [ ];
+            in
+            {
+              localization = {
+                hostname = mkOption {
+                  type = types.strMatching "^$|^[[:alnum:]]([[:alnum:]_-]{0,61}[[:alnum:]])?$";
+                  default = "homestaker";
+                  description = "The name of the machine.";
+                };
+                timezone = mkOption {
+                  type = types.nullOr (types.addCheck types.str nospace);
+                  default = null;
+                  description = "The time zone used when displaying times and dates.";
+                  example = "America/New_York";
+                };
               };
-              timezone = mkOption {
-                type = types.str;
-                default = "Europe/Helsinki";
-                description = "The time zone used when displaying times and dates";
-              };
-            };
 
-            mounts = mkOption {
-              type = types.attrsOf types.attrs;
-              default = { };
-              description = "Systemd mounts configuration";
-            };
+              mounts = mkOption {
+                type = types.attrsOf types.attrs;
+                default = { };
+                description = "Systemd mounts configuration.";
+              };
 
-            ssh = {
-              privateKeyPath = mkOption {
-                type = types.path;
-                default = "/var/mnt/secrets/ssh/id_ed25519";
-                description = "Path, where SSH host keys are automatically generated";
+              ssh = {
+                privateKeyFile = mkOption {
+                  type = types.nullOr types.path;
+                  default = null;
+                  description = "Path to automatically generated Ed25519 SSH host key.";
+                  example = "/var/mnt/secrets/ssh/id_ed25519";
+                };
               };
-            };
 
-            user = {
-              authorizedKeys = mkOption {
-                type = types.listOf types.singleLineStr;
-                default = [ ];
-                description = "A list of public keys that should be added to the user’s authorized keys";
+              user = {
+                authorizedKeys = mkOption {
+                  type = types.listOf types.singleLineStr;
+                  default = [ ];
+                  description = "A list of public keys that should be added to the user’s authorized keys.";
+                };
               };
-            };
 
-            erigon = {
-              enable = mkOption {
-                type = types.bool;
-                default = false;
-                description = "Whether to enable Erigon";
-              };
-              endpoint = mkOption {
-                type = types.str;
-                default = "http://127.0.0.1:8551";
-                description = "HTTP-RPC server listening interface of engine API";
-              };
-              datadir = mkOption {
-                type = types.str;
-                default = "/var/mnt/erigon";
-                description = "Data directory for the databases";
-              };
-            };
-
-            lighthouse = {
-              enable = mkOption {
-                type = types.bool;
-                default = false;
-                description = "Whether to enable Lighthouse";
-              };
-              endpoint = mkOption {
-                type = types.str;
-                default = "http://127.0.0.1:5052";
-                description = "HTTP server listening interface";
-              };
-              exec.endpoint = mkOption {
-                type = types.str;
-                default = "http://127.0.0.1:8551";
-                description = "Listening interface of the execution engine API";
-              };
-              slasher = {
+              erigon = {
                 enable = mkOption {
                   type = types.bool;
                   default = false;
-                  description = "Whether to enable slasher";
-                };
-                history-length = mkOption {
-                  type = types.int;
-                  default = 4096;
-                  description = "Number of epochs to store";
-                };
-                max-db-size = mkOption {
-                  type = types.int;
-                  default = 256;
-                  description = "Maximum size of the database in gigabytes";
-                };
-              };
-              mev-boost = {
-                enable = mkOption {
-                  type = types.bool;
-                  default = false;
-                  description = "Whether to enable MEV-Boost";
+                  description = "Whether to enable Erigon.";
                 };
                 endpoint = mkOption {
                   type = types.str;
-                  default = "http://127.0.0.1:18550";
-                  description = "Listening interface for MEV-Boost server";
+                  default = "http://127.0.0.1:8551";
+                  description = "HTTP-RPC server listening interface of engine API.";
+                };
+                dataDir = mkOption {
+                  type = types.path;
+                  default = "/var/mnt/erigon";
+                  description = "Data directory for the databases.";
                 };
               };
-              datadir = mkOption {
-                type = types.str;
-                default = "/var/mnt/lighthouse";
-                description = "Data directory for the databases";
+
+              lighthouse = {
+                enable = mkOption {
+                  type = types.bool;
+                  default = false;
+                  description = "Whether to enable Lighthouse.";
+                };
+                endpoint = mkOption {
+                  type = types.str;
+                  default = "http://127.0.0.1:5052";
+                  description = "HTTP server listening interface.";
+                };
+                execEndpoint = mkOption {
+                  type = types.str;
+                  default = "http://127.0.0.1:8551";
+                  description = "Listening interface of the execution engine API.";
+                };
+                slasher = {
+                  enable = mkOption {
+                    type = types.bool;
+                    default = false;
+                    description = "Whether to enable slasher.";
+                  };
+                  historyLength = mkOption {
+                    type = types.int;
+                    default = 4096;
+                    description = "Number of epochs to store.";
+                  };
+                  maxDatabaseSize = mkOption {
+                    type = types.int;
+                    default = 256;
+                    description = "Maximum size of the database in gigabytes.";
+                  };
+                };
+                mev-boost = {
+                  enable = mkOption {
+                    type = types.bool;
+                    default = false;
+                    description = "Whether to enable MEV-Boost.";
+                  };
+                  endpoint = mkOption {
+                    type = types.str;
+                    default = "http://127.0.0.1:18550";
+                    description = "Listening interface for MEV-Boost server.";
+                  };
+                };
+                dataDir = mkOption {
+                  type = types.path;
+                  default = "/var/mnt/lighthouse";
+                  description = "Data directory for the databases.";
+                };
               };
             };
-          };
 
-          homestakeros = {
+
+          homestaker = {
             system = "x86_64-linux";
             specialArgs = { inherit inputs outputs; };
             modules = [
               ./system
               ./system/ramdisk.nix
               ./system/formats/netboot-kexec.nix
-              self.nixosModules.homestakeros
+              self.nixosModules.homestaker
               {
                 system.stateVersion = "23.05";
               }
@@ -229,22 +236,22 @@
           exports = nixpkgs.lib.attrsets.mapAttrsRecursiveCond
             (v: ! nixpkgs.lib.options.isOption v)
             (k: v: v.type.name)
-            homestakeros_options;
+            homestakerOptions;
 
           overlays = import ./overlays { inherit inputs; };
 
           # NixOS configuration entrypoints for the frontend
           nixosConfigurations = with nixpkgs.lib; {
-            "homestakeros" = nixosSystem homestakeros;
+            "homestaker" = nixosSystem homestaker;
           } // (with nixpkgs-stable.lib; { });
 
-          # HomestakerOS module for all Ethereum-related components
-          nixosModules.homestakeros = { config, lib, pkgs, ... }: with nixpkgs.lib;
+          # HomestakerOS module for Ethereum-related components
+          nixosModules.homestaker = { config, lib, pkgs, ... }: with nixpkgs.lib;
             let
-              cfg = config.homestakeros;
+              cfg = config.homestaker;
             in
             {
-              options.homestakeros = homestakeros_options;
+              options.homestaker = homestakerOptions;
 
               config = mkMerge [
                 (mkIf true {
@@ -280,8 +287,8 @@
                 (mkIf true {
                   services.openssh = {
                     enable = true;
-                    hostKeys = [{
-                      path = cfg.ssh.privateKeyPath;
+                    hostKeys = lib.mkIf (cfg.ssh.privateKeyFile != null) [{
+                      path = cfg.ssh.privateKeyFile;
                       type = "ed25519";
                     }];
                     allowSFTP = false;
@@ -398,7 +405,7 @@
                       };
 
                       script = ''${pkgs.erigon}/bin/erigon \
-                      --datadir=${cfg.erigon.datadir} \
+                      --datadir=${cfg.erigon.dataDir} \
                       --chain mainnet \
                       --authrpc.vhosts="*" \
                       --authrpc.port ${endpoint.port} \
@@ -481,20 +488,20 @@
                       };
 
                       script = ''${pkgs.lighthouse}/bin/lighthouse bn \
-                      --datadir ${cfg.lighthouse.datadir} \
+                      --datadir ${cfg.lighthouse.dataDir} \
                       --network mainnet \
                       --http --http-address ${endpoint.addr} \
                       --http-port ${endpoint.port} \
                       --http-allow-origin "*" \
-                      --execution-endpoint ${cfg.lighthouse.exec.endpoint} \
+                      --execution-endpoint ${cfg.lighthouse.execEndpoint} \
                       --execution-jwt %r/jwt.hex \
                       --builder ${cfg.lighthouse.mev-boost.endpoint} \
                       --prune-payloads false \
                       --metrics \
                       ${if cfg.lighthouse.slasher.enable then
                         "--slasher "
-                        + " --slasher-history-length " + (toString cfg.lighthouse.slasher.history-length)
-                        + " --slasher-max-db-size " + (toString cfg.lighthouse.slasher.max-db-size)
+                        + " --slasher-history-length " + (toString cfg.lighthouse.slasher.historyLength)
+                        + " --slasher-max-db-size " + (toString cfg.lighthouse.slasher.maxDatabaseSize)
                       else "" }
                     '';
                       wantedBy = [ "multi-user.target" ];
