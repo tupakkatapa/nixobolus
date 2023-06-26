@@ -90,14 +90,14 @@
         # Custom packages and aliases for building hosts
         # Accessible through 'nix build', 'nix run', etc
         packages = with flake.nixosConfigurations; {
-          "homestaker" = homestaker.config.system.build.kexecTree;
+          "homestakeros" = homestakeros.config.system.build.kexecTree;
         };
       };
       flake =
         let
           inherit (self) outputs;
 
-          homestakerOptions = with nixpkgs.lib;
+          homestakerosOptions = with nixpkgs.lib;
             let
               nospace = str: filter (c: c == " ") (stringToCharacters str) == [ ];
             in
@@ -211,14 +211,14 @@
             };
 
 
-          homestaker = {
+          homestakeros = {
             system = "x86_64-linux";
             specialArgs = { inherit inputs outputs; };
             modules = [
               ./system
               ./system/ramdisk.nix
               ./system/formats/netboot-kexec.nix
-              self.nixosModules.homestaker
+              self.nixosModules.homestakeros
               {
                 system.stateVersion = "23.05";
               }
@@ -231,22 +231,22 @@
           exports = nixpkgs.lib.attrsets.mapAttrsRecursiveCond
             (v: ! nixpkgs.lib.options.isOption v)
             (k: v: v.type.name)
-            homestakerOptions;
+            homestakerosOptions;
 
           overlays = import ./overlays { inherit inputs; };
 
           # NixOS configuration entrypoints for the frontend
           nixosConfigurations = with nixpkgs.lib; {
-            "homestaker" = nixosSystem homestaker;
+            "homestakeros" = nixosSystem homestakeros;
           } // (with nixpkgs-stable.lib; { });
 
           # HomestakerOS module for Ethereum-related components
-          nixosModules.homestaker = { config, lib, pkgs, ... }: with nixpkgs.lib;
+          nixosModules.homestakeros = { config, lib, pkgs, ... }: with nixpkgs.lib;
             let
-              cfg = config.homestaker;
+              cfg = config.homestakeros;
             in
             {
-              options.homestaker = homestakerOptions;
+              options.homestakeros = homestakerosOptions;
 
               config = mkMerge [
                 (mkIf true {
