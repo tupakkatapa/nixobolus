@@ -13,8 +13,6 @@
   };
 
   inputs = {
-    darwin.inputs.nixpkgs.follows = "nixpkgs";
-    darwin.url = "github:lnl7/nix-darwin";
     ethereum-nix.inputs.nixpkgs.follows = "nixpkgs";
     ethereum-nix.url = "github:nix-community/ethereum.nix";
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -27,7 +25,6 @@
 
   outputs =
     { self
-    , darwin
     , ethereum-nix
     , flake-parts
     , nixpkgs
@@ -43,9 +40,7 @@
         inputs.pre-commit-hooks-nix.flakeModule
       ];
       systems = [
-        "aarch64-darwin"
         "aarch64-linux"
-        "x86_64-darwin"
         "x86_64-linux"
       ];
       perSystem = { pkgs, lib, config, system, ... }: {
