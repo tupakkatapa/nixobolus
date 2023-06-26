@@ -233,7 +233,7 @@
               ./system/formats/netboot-kexec.nix
               self.nixosModules.homestakeros
               {
-                system.stateVersion = "23.05";
+                system.stateVersion = "23.11";
               }
             ];
           };
