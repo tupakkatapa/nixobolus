@@ -119,7 +119,7 @@
               mounts = mkOption {
                 type = types.attrsOf types.attrs;
                 default = { };
-                description = "Definition of systemd mount units. For more information: https://www.freedesktop.org/software/systemd/man/systemd.mount.html#Options";
+                description = "Definition of systemd mount units. For more information: [Systemd Mount Options](https://www.freedesktop.org/software/systemd/man/systemd.mount.html#Options)";
                 example = {
                   my-mount = {
                     enable = true;
@@ -222,7 +222,6 @@
                 };
               };
             };
-
 
           homestakeros = {
             system = "x86_64-linux";
