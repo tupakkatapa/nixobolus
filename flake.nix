@@ -27,7 +27,6 @@
     pre-commit-hooks-nix.url = "github:hercules-ci/pre-commit-hooks.nix/flakeModule";
   };
 
-  # add the inputs declared above to the argument attribute set
   outputs =
     { self
     , darwin
@@ -74,6 +73,8 @@
 
         mission-control.scripts = { };
 
+        # Devshells for bootstrapping
+        # Accessible through 'nix develop' or 'nix-shell' (legacy)
         devShells.default = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [
             cpio
@@ -94,6 +95,8 @@
           '';
         };
 
+        # Custom packages and aliases for building hosts
+        # Accessible through 'nix build', 'nix run', etc
         packages = with flake.nixosConfigurations; {
           "homestakeros" = homestakeros.config.system.build.kexecTree;
         };
@@ -225,8 +228,8 @@
           };
         in
         rec {
-          # filters options recursively
-          # option exports -- accessible through 'nix eval --json .#exports'
+          # Filters options to exports recursively
+          # Accessible through 'nix eval --json .#exports'
           exports = nixpkgs.lib.attrsets.mapAttrsRecursiveCond
             (v: ! nixpkgs.lib.options.isOption v)
             (k: v: v.type.name)
@@ -234,11 +237,12 @@
 
           overlays = import ./overlays { inherit inputs; };
 
+          # NixOS configuration entrypoints for the frontend
           nixosConfigurations = with nixpkgs.lib; {
             "homestakeros" = nixosSystem homestakeros;
           } // (with nixpkgs-stable.lib; { });
 
-          # usage: https://github.com/ponkila/homestaking-infra/commit/574382212cf817dbb75657e9fef9cdb223e9823b
+          # HomestakerOS module for all Ethereum-related components
           nixosModules.homestakeros = { config, lib, pkgs, ... }: with nixpkgs.lib;
             let
               cfg = config.homestakeros;
@@ -299,7 +303,6 @@
 
                 #################################################################### USER (core)
                 (mkIf true {
-                  #services.getty.autologinUser = "core";
                   users.users.core = {
                     isNormalUser = true;
                     group = "core";
@@ -371,15 +374,13 @@
 
                 #################################################################### ERIGON
                 (mkIf (cfg.erigon.enable) {
-                  # package
                   environment.systemPackages = [
                     pkgs.erigon
                   ];
 
-                  # service
                   systemd.user.services.erigon =
                     let
-                      # split endpoint to address and port
+                      # Split endpoint to address and port
                       endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
                       endpointMatch = builtins.match endpointRegex cfg.erigon.endpoint;
                       endpoint = {
@@ -414,7 +415,6 @@
                       wantedBy = [ "multi-user.target" ];
                     };
 
-                  # firewall
                   networking.firewall = {
                     allowedTCPPorts = [ 30303 30304 42069 ];
                     allowedUDPPorts = [ 30303 30304 42069 ];
@@ -423,7 +423,6 @@
 
                 #################################################################### MEV-BOOST
                 (mkIf (cfg.lighthouse.mev-boost.enable) {
-                  # service
                   systemd.user.services.mev-boost = {
                     enable = true;
 
@@ -458,15 +457,13 @@
 
                 #################################################################### LIGHTHOUSE
                 (mkIf (cfg.lighthouse.enable) {
-                  # package
                   environment.systemPackages = with pkgs; [
                     lighthouse
                   ];
 
-                  # service
                   systemd.user.services.lighthouse =
                     let
-                      # split endpoint to address and port
+                      # Split endpoint to address and port
                       endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
                       endpointMatch = builtins.match endpointRegex cfg.lighthouse.endpoint;
                       endpoint = {
@@ -507,12 +504,11 @@
                       wantedBy = [ "multi-user.target" ];
                     };
 
-                  # firewall
                   networking.firewall = {
                     allowedTCPPorts = [ 9000 ];
                     allowedUDPPorts = [ 9000 ];
                     interfaces."wg0".allowedTCPPorts = [
-                      5052 # TODO: use 'lighthouse.endpoint.port' here by converting it to u16
+                      5052 # TODO: use 'cfg.lighthouse.endpoint.port' here by converting it to u16
                     ];
                   };
                 })
