@@ -15,8 +15,6 @@
   inputs = {
     darwin.inputs.nixpkgs.follows = "nixpkgs";
     darwin.url = "github:lnl7/nix-darwin";
-    disko.inputs.nixpkgs.follows = "nixpkgs";
-    disko.url = "github:nix-community/disko";
     ethereum-nix.inputs.nixpkgs.follows = "nixpkgs";
     ethereum-nix.url = "github:nix-community/ethereum.nix";
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -30,7 +28,6 @@
   outputs =
     { self
     , darwin
-    , disko
     , ethereum-nix
     , flake-parts
     , nixpkgs
@@ -220,7 +217,6 @@
               ./system/ramdisk.nix
               ./system/formats/netboot-kexec.nix
               self.nixosModules.homestakeros
-              disko.nixosModules.disko
               {
                 system.stateVersion = "23.05";
               }
