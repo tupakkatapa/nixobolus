@@ -94,8 +94,22 @@
           '';
         };
 
-        packages = with flake.nixosConfigurations; {
-          "homestakeros" = homestakeros.config.system.build.kexecTree;
+        packages = {
+          "homestakeros" = flake.nixosConfigurations.homestakeros.config.system.build.kexecTree;
+          "buidl" =
+            let
+              pkgs = import nixpkgs { inherit system; };
+              name = "buidl";
+              buidl-script = (pkgs.writeScriptBin name (builtins.readFile ./scripts/buidl.sh)).overrideAttrs (old: {
+                buildCommand = "${old.buildCommand}\n patchShebangs $out";
+              });
+            in
+            pkgs.symlinkJoin {
+              inherit name;
+              paths = [ buidl-script ] ++ [ /* buildInputs here */ ];
+              buildInputs = with pkgs; [ makeWrapper ];
+              postBuild = "wrapProgram $out/bin/${name} --prefix PATH : $out/bin";
+            };
         };
       };
       flake =
@@ -221,7 +235,7 @@
               {
                 system.stateVersion = "23.05";
               }
-            ];
+            ] ++ nixpkgs.lib.optional (builtins.pathExists /tmp/data.nix) /tmp/data.nix;
           };
         in
         rec {
