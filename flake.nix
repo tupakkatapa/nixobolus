@@ -119,14 +119,27 @@
               mounts = mkOption {
                 type = types.attrsOf types.attrs;
                 default = { };
-                description = "Systemd mounts configuration.";
+                description = "Definition of systemd mount units. For more information: https://www.freedesktop.org/software/systemd/man/systemd.mount.html#Options";
+                example = {
+                  my-mount = {
+                    enable = true;
+                    description = "A storage device";
+
+                    what = "/dev/disk/by-label/my-label";
+                    where = "/path/to/my/mount";
+                    options = "noatime";
+                    type = "btrfs";
+
+                    wantedBy = [ "multi-user.target" ];
+                  };
+                };
               };
 
               ssh = {
                 privateKeyFile = mkOption {
                   type = types.nullOr types.path;
                   default = null;
-                  description = "Path to automatically generated Ed25519 SSH host key.";
+                  description = "Path to the SSH host key, either generated automatically if absent or an existing Ed25519 key.";
                   example = "/var/mnt/secrets/ssh/id_ed25519";
                 };
               };
@@ -135,7 +148,7 @@
                 authorizedKeys = mkOption {
                   type = types.listOf types.singleLineStr;
                   default = [ ];
-                  description = "A list of public keys that should be added to the user’s authorized keys.";
+                  description = "A list of public SSH keys that should be added to the user’s authorized keys.";
                 };
               };
 
@@ -153,7 +166,7 @@
                 dataDir = mkOption {
                   type = types.path;
                   default = "/var/mnt/erigon";
-                  description = "Data directory for the databases.";
+                  description = "Data directory for the blockchain.";
                 };
               };
 
@@ -187,7 +200,7 @@
                   maxDatabaseSize = mkOption {
                     type = types.int;
                     default = 256;
-                    description = "Maximum size of the database in gigabytes.";
+                    description = "Maximum size of the slasher database in gigabytes.";
                   };
                 };
                 mev-boost = {
@@ -205,7 +218,7 @@
                 dataDir = mkOption {
                   type = types.path;
                   default = "/var/mnt/lighthouse";
-                  description = "Data directory for the databases.";
+                  description = "Data directory for the blockchain.";
                 };
               };
             };
