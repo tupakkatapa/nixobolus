@@ -29,9 +29,13 @@ Options:
   -h, --help
       Displays this help message.
 
-Example:
+Examples:
+  
+  Local:
+      nix run .#buidl -- --base homestakeros --json '{"erigon":{"enable":true}}'
 
-  nix run .#buidl -- --base homestakeros --json '{"erigon":{"enable":true}}'
+  Remote:
+      nix run github:ponkila/nixobolus#buidl -- -b homestakeros -j '{"erigon":{"enable":true}}'
 
 USAGE
 }
@@ -43,22 +47,26 @@ USAGE
 }
 
 while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        -b|--base)
-            hostname="$2"
-            shift 2 ;;
-        -j|--json)
-            shift
-            json_data="$*"
-            break ;;
-        -h|--help)
-            display_usage
-            exit 0 ;;
-        *)
-            echo Unknown option: "$1"
-            exit 1 ;;
-    esac
+  case $1 in
+    -b|--base)
+      hostname="$2"
+      shift 2 ;;
+    -j|--json)
+      json_data="$2"
+      shift 2 ;;
+    -h|--help)
+      display_usage
+      exit 0 ;;
+    *)
+      echo Unknown option: "$1"
+      exit 1 ;;
+  esac
 done
+
+if [[ -z $hostname ]]; then
+  echo "Base hostname is required."
+  exit 1
+fi
 
 if [[ -n $json_data ]]; then
   # Escape double quotes
@@ -80,4 +88,6 @@ fi
 echo -e "$data_nix: \n$(cat $data_nix)"
 
 # Run nix build command
-nix build .#"$hostname" --impure --no-warn-dirty || exit 1
+nix build .#"$hostname" --impure --no-warn-dirty \
+  || nix build github:ponkila/nixobolus#"$hostname" --impure --no-warn-dirty \
+  || exit 1
