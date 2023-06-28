@@ -242,6 +242,10 @@
           nixosModules.homestakeros = { config, lib, pkgs, ... }: with nixpkgs.lib;
             let
               cfg = config.homestakeros;
+              # Figure out the active consensus client (prob inefficient)
+              consensusClients = [ "lighthouse" ];
+              activeConsensusClients = builtins.filter (name: cfg.${name}.enable) consensusClients;
+              activeConsensusClient = if builtins.length activeConsensusClients > 0 then builtins.elemAt activeConsensusClients 0 else null;
             in
             {
               options.homestakeros = homestakeros_options;
@@ -392,7 +396,7 @@
 
                       description = "execution, mainnet";
                       requires = [ "wg0.service" ];
-                      after = [ "wg0.service" "lighthouse.service" ];
+                      after = [ "wg0.service" ] ++ lib.optional (activeConsensusClient != null) "${activeConsensusClient}.service";
 
                       serviceConfig = {
                         Restart = "always";
@@ -422,7 +426,7 @@
                 })
 
                 #################################################################### MEV-BOOST
-                (mkIf (cfg.lighthouse.mev-boost.enable) {
+                (mkIf (activeConsensusClient != null && cfg.${activeConsensusClient}.mev-boost.enable) {
                   # service
                   systemd.user.services.mev-boost = {
                     enable = true;
@@ -449,7 +453,7 @@
                         "https://0x98650451ba02064f7b000f5768cf0cf4d4e492317d82871bdc87ef841a0743f69f0f1eea11168503240ac35d101c9135@mainnet-relay.securerpc.com"
                         "https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money"
                       ]} \
-                      -addr 0.0.0.0:18550
+                      -addr ${cfg.${activeConsensusClient}.mev-boost.endpoint}
                     '';
 
                     wantedBy = [ "multi-user.target" ];
@@ -479,7 +483,7 @@
 
                       description = "beacon, mainnet";
                       requires = [ "wg0.service" ];
-                      after = [ "wg0.service" "mev-boost.service" ];
+                      after = [ "wg0.service" ] ++ lib.optional (cfg.lighthouse.mev-boost.enable) "mev-boost.service";
 
                       serviceConfig = {
                         Restart = "always";
@@ -495,7 +499,9 @@
                       --http-allow-origin "*" \
                       --execution-endpoint ${cfg.lighthouse.exec.endpoint} \
                       --execution-jwt %r/jwt.hex \
-                      --builder ${cfg.lighthouse.mev-boost.endpoint} \
+                      ${if cfg.lighthouse.mev-boost.enable then
+                        "--builder ${cfg.lighthouse.mev-boost.endpoint}"
+                      else "" } \
                       --prune-payloads false \
                       --metrics \
                       ${if cfg.lighthouse.slasher.enable then
