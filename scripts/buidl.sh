@@ -5,12 +5,36 @@ set -o pipefail
 trap cleanup EXIT
 trap cleanup SIGINT
 
+# This path is also hard-coded in flake.nix
 data_nix="/tmp/data.nix"
+
+# Default flags for nix-command
+nix_flags=(
+  --impure
+  --no-warn-dirty
+  --accept-flake-config
+  --extra-experimental-features 'nix-command flakes'
+)
 
 # Cleanup which will be executed at exit
 cleanup() {
-  rm -rf "$data_nix"
+  if [ -f "$data_nix" ]; then
+    rm "$data_nix"
+  fi
 }
+
+# Check dependencies 
+if ! command -v nix-instantiate >/dev/null 2>&1; then
+  echo "Error: 'nix-instantiate' command not found. Please install the Nix package manager."
+  echo "For installation instructions, visit: https://nixos.org/download.html"
+  exit 1
+else
+  if ! command -v nix >/dev/null 2>&1; then
+    echo "Error: 'nix' command not found. Please install the nix-command."
+    echo "You can install the nix-command by running 'nix-env -iA nixpkgs.nix'."
+    exit 1
+  fi
+fi
 
 # Function to display help message
 display_usage() {
@@ -24,7 +48,7 @@ Options:
       Available configurations: "homestakeros".
 
   -j, --json <data>
-      Specifie raw JSON data to inject into the base configuration.
+      Specify raw JSON data to inject into the base configuration.
 
   -h, --help
       Displays this help message.
@@ -40,12 +64,13 @@ Examples:
 USAGE
 }
 
-# Parse command line arguments
+# Check that any argument exists
 [[ $# -eq 0 ]] && {
   display_usage
   exit 1
 }
 
+# Parse command line arguments
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     -b|--base)
@@ -58,17 +83,22 @@ while [[ "$#" -gt 0 ]]; do
       display_usage
       exit 0 ;;
     *)
-      echo Unknown option: "$1"
+      echo "Error: unknown option -- '$1'"
+      echo "Try '--help' for more information."
       exit 1 ;;
   esac
 done
 
+# Check that base configuration has been set
 if [[ -z $hostname ]]; then
-  echo "Base hostname is required."
+  echo "Error: base configuration is required."
+  echo "Try '--help' for more information."
   exit 1
 fi
 
+# Create data.nix from JSON data
 if [[ -n $json_data ]]; then
+
   # Escape double quotes
   esc_json_data=$(echo "$json_data" | sed 's/"/\\"/g')
   
@@ -82,12 +112,13 @@ if [[ -n $json_data ]]; then
   $hostname = $nix_expr;
 }
 EOF
+
+  # Display injected data
+  echo -e "$data_nix: \n$(cat $data_nix)"
+else
+  cleanup
 fi
 
-# Display injected data
-echo -e "$data_nix: \n$(cat $data_nix)"
-
 # Run nix build command
-nix build .#"$hostname" --impure --no-warn-dirty \
-  || nix build github:ponkila/nixobolus#"$hostname" --impure --no-warn-dirty \
-  || exit 1
+nix build .#"$hostname" "${nix_flags[@]}" || \
+  { echo "Fetching from GitHub"; nix build github:ponkila/nixobolus#"$hostname" "${nix_flags[@]}" || exit 1; }
