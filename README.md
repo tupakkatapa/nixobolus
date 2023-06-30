@@ -13,12 +13,11 @@ First, the frontend requests a JSON schema that's generated from the available m
 nix eval --json github:ponkila/nixobolus#exports
 ```
 
-The user then defines the options within the HTML frontend, and upon form submission, the form payload is sent to Nixobolus using the following command. This command triggers the execution of the `scripts/buidl.sh` script, which generates a `/tmp/data.nix` file based on the provided JSON data and initiates the building process.
+The user then defines the options within the HTML frontend, and upon form submission, the form payload is sent to Nixobolus using a command as such:
 ```bash
 nix run github:ponkila/nixobolus#buidl --base <hostname> --json <json_data>
 ```
-
-The base configuration is automatically set up to import this file if it exists. The resulting output is stored in the `./result` directory.
+This command triggers the execution of the `scripts/buidl.sh` script, which generates a `/tmp/data.nix` file based on the provided JSON data and initiates the building process. The base configuration is automatically set up to import this file if it exists. The resulting output is stored in the `./result` directory.
 
 ## Usage as a Module
 
