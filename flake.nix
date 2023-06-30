@@ -242,10 +242,27 @@
           nixosModules.homestakeros = { config, lib, pkgs, ... }: with nixpkgs.lib;
             let
               cfg = config.homestakeros;
-              # Figure out the active consensus client (prob inefficient)
-              consensusClients = [ "lighthouse" ];
-              activeConsensusClients = builtins.filter (name: cfg.${name}.enable) consensusClients;
-              activeConsensusClient = if builtins.length activeConsensusClients > 0 then builtins.elemAt activeConsensusClients 0 else null;
+
+              # Function to get the active client
+              getActiveClient = clients:
+                let
+                  enabledClients = builtins.filter (name: cfg.${name}.enable) clients;
+                  numEnabledClients = builtins.length enabledClients;
+                in
+                if numEnabledClients == 1 then
+                  builtins.elemAt enabledClients 0
+                else if numEnabledClients >= 2 then
+                  builtins.throw "Multiple clients enabled for the same category: ${toString enabledClients}"
+                else
+                  null;
+
+              # Get the active client from a list of available clients
+              # Note: In nix, variables are not evaluated unless they are used somewhere
+              activeConsensusClient = getActiveClient [ "lighthouse" ];
+              activeExecutionClient = getActiveClient [ "erigon" ];
+              activeVpnClient = getActiveClient [ "wireguard" ];
+
+              # TODO: add cfg.<vpn-name>.interface option to use ${cfg.${activeVpnClient}.interface} in config below
             in
             {
               options.homestakeros = homestakeros_options;
