@@ -3,7 +3,7 @@
 
 set -o pipefail
 trap cleanup EXIT
-trap cleanup SIGINT
+trap 'cleanup && exit 0' SIGINT
 
 # This path is also hard-coded in flake.nix
 data_nix="/tmp/data.nix"
@@ -100,10 +100,10 @@ fi
 if [[ -n $json_data ]]; then
 
   # Escape double quotes
-  esc_json_data=$(echo "$json_data" | sed 's/"/\\"/g')
+  esc_json_data="${json_data//\"/\\\"}"
   
   # Convert JSON to Nix expression
-  nix_expr=$(nix-instantiate --eval --expr "builtins.fromJSON \"$esc_json_data\"")
+  nix_expr=$(nix-instantiate --eval --expr "builtins.fromJSON \"$esc_json_data\"") || exit 1
 
   # Create data.nix file
   cat > "$data_nix" << EOF
@@ -112,11 +112,14 @@ if [[ -n $json_data ]]; then
   $hostname = $nix_expr;
 }
 EOF
-
-  # Display injected data
-  echo -e "$data_nix: \n$(cat $data_nix)"
 else
+  # Precaution
   cleanup
+fi
+
+# Display injected data
+if [ -f "$data_nix" ]; then
+  echo -e "$data_nix: \n$(cat $data_nix)"
 fi
 
 # Run nix build command
