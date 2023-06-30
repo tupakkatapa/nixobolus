@@ -228,7 +228,6 @@
             specialArgs = { inherit inputs outputs; };
             modules = [
               ./system
-              ./system/ramdisk.nix
               ./system/formats/netboot-kexec.nix
               self.nixosModules.homestakeros
               {
