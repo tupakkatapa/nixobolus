@@ -401,8 +401,8 @@
                       enable = true;
 
                       description = "execution, mainnet";
-                      requires = [ "wg0.service" ];
-                      after = [ "wg0.service" "lighthouse.service" ];
+                      requires = [ "wg-quick-wg-quick-wg0.service" ];
+                      after = [ "wg-quick-wg0.service" "lighthouse.service" ];
 
                       serviceConfig = {
                         Restart = "always";
@@ -416,8 +416,8 @@
                       --authrpc.vhosts="*" \
                       --authrpc.port ${endpoint.port} \
                       --authrpc.addr ${endpoint.addr} \
-                      ${if cfg.erigon.jwtSecretFile != null then 
-                        "--authrpc.jwtsecret=${cfg.erigon.jwtSecretFile}" 
+                      ${if cfg.erigon.jwtSecretFile != null then
+                        "--authrpc.jwtsecret=${cfg.erigon.jwtSecretFile}"
                       else ""} \
                       --metrics \
                       --externalcl
@@ -440,8 +440,8 @@
                     enable = true;
 
                     description = "MEV-boost allows proof-of-stake Ethereum consensus clients to outsource block construction";
-                    requires = [ "wg0.service" ];
-                    after = [ "wg0.service" ];
+                    requires = [ "wg-quick-wg0.service" ];
+                    after = [ "wg-quick-wg0.service" ];
 
                     serviceConfig = {
                       Restart = "always";
@@ -490,8 +490,8 @@
                       enable = true;
 
                       description = "beacon, mainnet";
-                      requires = [ "wg0.service" ];
-                      after = [ "wg0.service" "mev-boost.service" ];
+                      requires = [ "wg-quick-wg0.service" ];
+                      after = [ "wg-quick-wg0.service" "mev-boost.service" ];
 
                       serviceConfig = {
                         Restart = "always";
@@ -507,7 +507,7 @@
                       --http-allow-origin "*" \
                       --execution-endpoint ${cfg.lighthouse.exec.endpoint} \
                       ${if cfg.lighthouse.jwtSecretFile != null then
-                        "--execution-jwt ${cfg.lighthouse.jwtSecretFile}" 
+                        "--execution-jwt ${cfg.lighthouse.jwtSecretFile}"
                       else ""} \
                       --builder ${cfg.lighthouse.mev-boost.endpoint} \
                       --prune-payloads false \
@@ -535,4 +535,3 @@
         };
     };
 }
-
