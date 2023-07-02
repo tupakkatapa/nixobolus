@@ -419,8 +419,7 @@
                       ${if cfg.erigon.jwtSecretFile != null then
                         "--authrpc.jwtsecret=${cfg.erigon.jwtSecretFile}"
                       else ""} \
-                      --metrics \
-                      --externalcl
+                      --metrics
                     '';
 
                       wantedBy = [ "multi-user.target" ];
