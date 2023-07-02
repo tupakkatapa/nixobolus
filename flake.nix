@@ -387,7 +387,7 @@
                   ];
 
                   # service
-                  systemd.user.services.erigon =
+                  systemd.services.erigon =
                     let
                       # split endpoint to address and port
                       endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
@@ -436,7 +436,7 @@
                 #################################################################### MEV-BOOST
                 (mkIf (cfg.lighthouse.mev-boost.enable) {
                   # service
-                  systemd.user.services.mev-boost = {
+                  systemd.services.mev-boost = {
                     enable = true;
 
                     description = "MEV-boost allows proof-of-stake Ethereum consensus clients to outsource block construction";
@@ -476,7 +476,7 @@
                   ];
 
                   # service
-                  systemd.user.services.lighthouse =
+                  systemd.services.lighthouse =
                     let
                       # split endpoint to address and port
                       endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
