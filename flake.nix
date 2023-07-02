@@ -401,7 +401,7 @@
                       enable = true;
 
                       description = "execution, mainnet";
-                      requires = [ "wg-quick-wg-quick-wg0.service" ];
+                      requires = [ "wg-quick-wg0.service" ];
                       after = [ "wg-quick-wg0.service" "lighthouse.service" ];
 
                       serviceConfig = {
