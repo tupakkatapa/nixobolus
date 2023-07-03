@@ -7,7 +7,7 @@
     };
 
     initrd = {
-      availableKernelModules = [ "squashfs" "overlay" ];
+      availableKernelModules = [ "squashfs" "overlay" "btrfs" ];
       kernelModules = [ "loop" "overlay" ];
     };
 
