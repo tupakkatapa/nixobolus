@@ -156,6 +156,11 @@
                 description = "File path for wg-quick configuration";
                 example = "/var/mnt/secrets/wg0.conf";
               };
+              interfaceName = mkOption {
+                type = types.str;
+                default = "wg0";
+                description = "The name assigned to the WireGuard network interface.";
+              };
             };
 
             user = {
@@ -200,11 +205,6 @@
                 type = types.str;
                 default = "http://127.0.0.1:5052";
                 description = "HTTP server listening interface";
-              };
-              exec.endpoint = mkOption {
-                type = types.str;
-                default = "http://127.0.0.1:8551";
-                description = "Listening interface of the execution engine API";
               };
               slasher = {
                 enable = mkOption {
@@ -261,6 +261,20 @@
               {
                 system.stateVersion = "23.05";
               }
+              # Keeping this here for testing
+              # {
+              #   homestakeros = {
+              #     lighthouse = {
+              #       enable = true;
+              #       mev-boost.enable = true;
+              #     };
+              #     erigon.enable = true;
+              #     wireguard = {
+              #       enable = true;
+              #       configFile = "/var/mnt/secrets/wg0.conf";
+              #     };
+              #   };
+              # }
             ] ++ nixpkgs.lib.optional (builtins.pathExists /tmp/data.nix) /tmp/data.nix;
           };
         in
@@ -300,9 +314,7 @@
               # Note: In nix, variables are not evaluated unless they are used somewhere
               activeConsensusClient = getActiveClient [ "lighthouse" ];
               activeExecutionClient = getActiveClient [ "erigon" ];
-              activeVpnClient = getActiveClient [ "wireguard" ];
-
-              # TODO: add cfg.<vpn-name>.interface option to use ${cfg.${activeVpnClient}.interface} in config below
+              activeVPNClient = getActiveClient [ "wireguard" ];
             in
             {
               options.homestakeros = homestakeros_options;
@@ -411,7 +423,7 @@
 
                 #################################################################### WIREGUARD
                 (mkIf (cfg.wireguard.enable) {
-                  networking.wg-quick.interfaces.wg0.configFile = cfg.wireguard.configFile;
+                  networking.wg-quick.interfaces.${cfg.${activeVPNClient}.interfaceName}.configFile = cfg.wireguard.configFile;
                 })
 
                 #################################################################### ERIGON
@@ -436,8 +448,15 @@
                       enable = true;
 
                       description = "execution, mainnet";
-                      requires = [ "wg-quick-wg0.service" ];
-                      after = [ "wg-quick-wg0.service" ] ++ lib.optional (activeConsensusClient != null) "${activeConsensusClient}.service";
+                      requires = [ ]
+                        ++ lib.optional (activeVPNClient == "wireguard")
+                        "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
+
+                      after = [ ]
+                        ++ lib.optional (activeConsensusClient != null)
+                        "${activeConsensusClient}.service"
+                        ++ lib.optional (activeVPNClient == "wireguard")
+                        "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
 
                       serviceConfig = {
                         Restart = "always";
@@ -474,8 +493,13 @@
                     enable = true;
 
                     description = "MEV-boost allows proof-of-stake Ethereum consensus clients to outsource block construction";
-                    requires = [ "wg-quick-wg0.service" ];
-                    after = [ "wg-quick-wg0.service" ];
+                    requires = [ ]
+                      ++ lib.optional (activeVPNClient == "wireguard")
+                      "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
+
+                    after = [ ]
+                      ++ lib.optional (activeVPNClient == "wireguard")
+                      "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
 
                     serviceConfig = {
                       Restart = "always";
@@ -503,29 +527,36 @@
                 })
 
                 #################################################################### LIGHTHOUSE
-                (mkIf (cfg.lighthouse.enable) {
-                  # package
-                  environment.systemPackages = with pkgs; [
-                    lighthouse
-                  ];
+                (
+                  let
+                    # split endpoint to address and port
+                    endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
+                    endpointMatch = builtins.match endpointRegex cfg.lighthouse.endpoint;
+                    endpoint = {
+                      addr = builtins.elemAt endpointMatch 1;
+                      port = builtins.elemAt endpointMatch 2;
+                    };
+                  in
+                  mkIf (cfg.lighthouse.enable) {
+                    # package
+                    environment.systemPackages = with pkgs; [
+                      lighthouse
+                    ];
 
-                  # service
-                  systemd.services.lighthouse =
-                    let
-                      # split endpoint to address and port
-                      endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
-                      endpointMatch = builtins.match endpointRegex cfg.lighthouse.endpoint;
-                      endpoint = {
-                        addr = builtins.elemAt endpointMatch 1;
-                        port = builtins.elemAt endpointMatch 2;
-                      };
-                    in
-                    {
+                    # service
+                    systemd.services.lighthouse = {
                       enable = true;
 
                       description = "beacon, mainnet";
-                      requires = [ "wg-quick-wg0.service" ];
-                      after = [ "wg-quick-wg0.service" ] ++ lib.optional (cfg.lighthouse.mev-boost.enable) "mev-boost.service";
+                      requires = [ ]
+                        ++ lib.optional (activeVPNClient == "wireguard")
+                        "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
+
+                      after = [ ]
+                        ++ lib.optional (cfg.lighthouse.mev-boost.enable)
+                        "mev-boost.service"
+                        ++ lib.optional (activeVPNClient == "wireguard")
+                        "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
 
                       serviceConfig = {
                         Restart = "always";
@@ -557,15 +588,18 @@
                       wantedBy = [ "multi-user.target" ];
                     };
 
-                  # firewall
-                  networking.firewall = {
-                    allowedTCPPorts = [ 9000 ];
-                    allowedUDPPorts = [ 9000 ];
-                    interfaces."wg0".allowedTCPPorts = [
-                      5052 # TODO: use 'lighthouse.endpoint.port' here by converting it to u16
-                    ];
-                  };
-                })
+                    # firewall
+                    networking.firewall = {
+                      allowedTCPPorts = [ 9000 ];
+                      allowedUDPPorts = [ 9000 ];
+                      interfaces = lib.mkIf (cfg.${activeVPNClient}.enable) {
+                        "${cfg.${activeVPNClient}.interfaceName}".allowedTCPPorts = [
+                          (lib.strings.toInt endpoint.port)
+                        ];
+                      };
+                    };
+                  }
+                )
               ];
             };
         };
