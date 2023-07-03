@@ -169,19 +169,16 @@
               };
 
               ssh = {
+                authorizedKeys = mkOption {
+                  type = types.listOf types.singleLineStr;
+                  default = [ ];
+                  description = "A list of public SSH keys that should be added to the user’s authorized keys.";
+                };
                 privateKeyFile = mkOption {
                   type = types.nullOr types.path;
                   default = null;
                   description = "Path to the SSH host key, either generated automatically if absent or an existing Ed25519 key.";
                   example = "/var/mnt/secrets/ssh/id_ed25519";
-                };
-              };
-
-              user = {
-                authorizedKeys = mkOption {
-                  type = types.listOf types.singleLineStr;
-                  default = [ ];
-                  description = "A list of public SSH keys that should be added to the user’s authorized keys.";
                 };
               };
 
@@ -274,19 +271,19 @@
                 system.stateVersion = "23.11";
               }
               # Keeping this here for testing
-              # {
-              #   homestakeros = {
-              #     lighthouse = {
-              #       enable = true;
-              #       mev-boost.enable = true;
-              #     };
-              #     erigon.enable = true;
-              #     wireguard = {
-              #       enable = true;
-              #       configFile = "/var/mnt/secrets/wg0.conf";
-              #     };
-              #   };
-              # }
+              {
+                homestakeros = {
+                  lighthouse = {
+                    enable = true;
+                    mev-boost.enable = true;
+                  };
+                  erigon.enable = true;
+                  wireguard = {
+                    enable = true;
+                    configFile = "/var/mnt/secrets/wg0.conf";
+                  };
+                };
+              }
             ] ++ nixpkgs.lib.optional (builtins.pathExists /tmp/data.nix) /tmp/data.nix;
           };
         in
@@ -389,7 +386,7 @@
                     isNormalUser = true;
                     group = "core";
                     extraGroups = [ "wheel" ];
-                    openssh.authorizedKeys.keys = cfg.user.authorizedKeys;
+                    openssh.authorizedKeys.keys = cfg.ssh.authorizedKeys;
                     shell = pkgs.fish;
                   };
                   users.groups.core = { };
