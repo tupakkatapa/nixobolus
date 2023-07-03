@@ -570,7 +570,9 @@
                       --http --http-address ${endpoint.addr} \
                       --http-port ${endpoint.port} \
                       --http-allow-origin "*" \
-                      --execution-endpoint ${cfg.lighthouse.exec.endpoint} \
+                      ${if activeExecutionClient != null then
+                        "--execution-endpoint ${cfg.${activeExecutionClient}.endpoint}"
+                      else "" } \
                       ${if cfg.lighthouse.mev-boost.enable then
                         "--builder ${cfg.lighthouse.mev-boost.endpoint}"
                       else "" } \
