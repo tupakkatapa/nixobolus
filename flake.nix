@@ -89,8 +89,22 @@
 
         # Custom packages and aliases for building hosts
         # Accessible through 'nix build', 'nix run', etc
-        packages = with flake.nixosConfigurations; {
-          "homestakeros" = homestakeros.config.system.build.kexecTree;
+        packages = {
+          "homestakeros" = flake.nixosConfigurations.homestakeros.config.system.build.kexecTree;
+          "buidl" =
+            let
+              pkgs = import nixpkgs { inherit system; };
+              name = "buidl";
+              buidl-script = (pkgs.writeScriptBin name (builtins.readFile ./scripts/buidl.sh)).overrideAttrs (old: {
+                buildCommand = "${old.buildCommand}\n patchShebangs $out";
+              });
+            in
+            pkgs.symlinkJoin {
+              inherit name;
+              paths = [ buidl-script ] ++ [ /* buildInputs here */ ];
+              buildInputs = with pkgs; [ makeWrapper ];
+              postBuild = "wrapProgram $out/bin/${name} --prefix PATH : $out/bin";
+            };
         };
       };
       flake =
@@ -135,6 +149,20 @@
                 };
               };
 
+              wireguard = {
+                enable = mkOption {
+                  type = types.bool;
+                  default = false;
+                  description = "Whether to enable Wireguard";
+                };
+                configFile = mkOption {
+                  type = types.nullOr types.str;
+                  default = null;
+                  description = "File path for wg-quick configuration";
+                  example = "/var/mnt/secrets/wg0.conf";
+                };
+              };
+
               ssh = {
                 privateKeyFile = mkOption {
                   type = types.nullOr types.path;
@@ -167,6 +195,12 @@
                   type = types.path;
                   default = "/var/mnt/erigon";
                   description = "Data directory for the blockchain.";
+                };
+                jwtSecretFile = mkOption {
+                  type = types.nullOr types.str;
+                  default = null;
+                  description = "Path to the token that ensures safe connection between CL and EL";
+                  example = "/var/mnt/erigon/jwt.hex";
                 };
               };
 
@@ -220,6 +254,12 @@
                   default = "/var/mnt/lighthouse";
                   description = "Data directory for the blockchain.";
                 };
+                jwtSecretFile = mkOption {
+                  type = types.nullOr types.path;
+                  default = null;
+                  description = "Path to the token that ensures safe connection between CL and EL";
+                  example = "/var/mnt/lighthouse/jwt.hex";
+                };
               };
             };
 
@@ -233,7 +273,7 @@
               {
                 system.stateVersion = "23.11";
               }
-            ];
+            ] ++ nixpkgs.lib.optional (builtins.pathExists /tmp/data.nix) /tmp/data.nix;
           };
         in
         rec {
@@ -360,25 +400,9 @@
                   };
                 })
 
-                #################################################################### WIREGUARD (no options)
-                (mkIf true {
-                  systemd.services.wg0 = {
-                    enable = true;
-
-                    description = "wireguard interface for cross-node communication";
-                    requires = [ "network-online.target" ];
-                    after = [ "network-online.target" ];
-
-                    serviceConfig = {
-                      Type = "oneshot";
-                    };
-
-                    script = ''${pkgs.wireguard-tools}/bin/wg-quick \
-                      up /run/user/1000/wireguard/wg0.conf
-                    '';
-
-                    wantedBy = [ "multi-user.target" ];
-                  };
+                #################################################################### WIREGUARD
+                (mkIf (cfg.wireguard.enable) {
+                  networking.wg-quick.interfaces.wg0.configFile = cfg.wireguard.configFile;
                 })
 
                 #################################################################### ERIGON
@@ -387,7 +411,7 @@
                     pkgs.erigon
                   ];
 
-                  systemd.user.services.erigon =
+                  systemd.services.erigon =
                     let
                       # Split endpoint to address and port
                       endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
@@ -401,8 +425,8 @@
                       enable = true;
 
                       description = "execution, mainnet";
-                      requires = [ "wg0.service" ];
-                      after = [ "wg0.service" "lighthouse.service" ];
+                      requires = [ "wg-quick-wg0.service" ];
+                      after = [ "wg-quick-wg0.service" "lighthouse.service" ];
 
                       serviceConfig = {
                         Restart = "always";
@@ -416,9 +440,10 @@
                       --authrpc.vhosts="*" \
                       --authrpc.port ${endpoint.port} \
                       --authrpc.addr ${endpoint.addr} \
-                      --authrpc.jwtsecret=%r/jwt.hex \
-                      --metrics \
-                      --externalcl
+                      ${if cfg.erigon.jwtSecretFile != null then
+                        "--authrpc.jwtsecret=${cfg.erigon.jwtSecretFile}"
+                      else ""} \
+                      --metrics
                     '';
 
                       wantedBy = [ "multi-user.target" ];
@@ -432,12 +457,12 @@
 
                 #################################################################### MEV-BOOST
                 (mkIf (cfg.lighthouse.mev-boost.enable) {
-                  systemd.user.services.mev-boost = {
+                  systemd.services.mev-boost = {
                     enable = true;
 
                     description = "MEV-boost allows proof-of-stake Ethereum consensus clients to outsource block construction";
-                    requires = [ "wg0.service" ];
-                    after = [ "wg0.service" ];
+                    requires = [ "wg-quick-wg0.service" ];
+                    after = [ "wg-quick-wg0.service" ];
 
                     serviceConfig = {
                       Restart = "always";
@@ -455,7 +480,7 @@
                         "https://0xb0b07cd0abef743db4260b0ed50619cf6ad4d82064cb4fbec9d3ec530f7c5e6793d9f286c4e082c0244ffb9f2658fe88@bloxroute.regulated.blxrbdn.com"
                         "https://0x8b5d2e73e2a3a55c6c87b8b6eb92e0149a125c852751db1422fa951e42a09b82c142c3ea98d0d9930b056a3bc9896b8f@bloxroute.max-profit.blxrbdn.com"
                         "https://0x98650451ba02064f7b000f5768cf0cf4d4e492317d82871bdc87ef841a0743f69f0f1eea11168503240ac35d101c9135@mainnet-relay.securerpc.com"
-                        "https://0x84e78cb2ad883861c9eeeb7d1b22a8e02332637448f84144e245d20dff1eb97d7abdde96d4e7f80934e5554e11915c56@relayooor.wtf"
+                        "https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money"
                       ]} \
                       -addr 0.0.0.0:18550
                     '';
@@ -470,7 +495,7 @@
                     lighthouse
                   ];
 
-                  systemd.user.services.lighthouse =
+                  systemd.services.lighthouse =
                     let
                       # Split endpoint to address and port
                       endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
@@ -484,8 +509,8 @@
                       enable = true;
 
                       description = "beacon, mainnet";
-                      requires = [ "wg0.service" ];
-                      after = [ "wg0.service" "mev-boost.service" ];
+                      requires = [ "wg-quick-wg0.service" ];
+                      after = [ "wg-quick-wg0.service" "mev-boost.service" ];
 
                       serviceConfig = {
                         Restart = "always";
@@ -500,7 +525,9 @@
                       --http-port ${endpoint.port} \
                       --http-allow-origin "*" \
                       --execution-endpoint ${cfg.lighthouse.execEndpoint} \
-                      --execution-jwt %r/jwt.hex \
+                      ${if cfg.lighthouse.jwtSecretFile != null then
+                        "--execution-jwt ${cfg.lighthouse.jwtSecretFile}"
+                      else ""} \
                       --builder ${cfg.lighthouse.mev-boost.endpoint} \
                       --prune-payloads false \
                       --metrics \
@@ -526,4 +553,3 @@
         };
     };
 }
-
