@@ -156,6 +156,11 @@
                 description = "File path for wg-quick configuration";
                 example = "/var/mnt/secrets/wg0.conf";
               };
+              interfaceName = mkOption {
+                type = types.str;
+                default = "wg0";
+                description = "The name assigned to the WireGuard network interface.";
+              };
             };
 
             user = {
@@ -200,11 +205,6 @@
                 type = types.str;
                 default = "http://127.0.0.1:5052";
                 description = "HTTP server listening interface";
-              };
-              exec.endpoint = mkOption {
-                type = types.str;
-                default = "http://127.0.0.1:8551";
-                description = "Listening interface of the execution engine API";
               };
               slasher = {
                 enable = mkOption {
@@ -261,6 +261,20 @@
               {
                 system.stateVersion = "23.05";
               }
+              # Keeping this here for testing
+              # {
+              #   homestakeros = {
+              #     lighthouse = {
+              #       enable = true;
+              #       mev-boost.enable = true;
+              #     };
+              #     erigon.enable = true;
+              #     wireguard = {
+              #       enable = true;
+              #       configFile = "/var/mnt/secrets/wg0.conf";
+              #     };
+              #   };
+              # }
             ] ++ nixpkgs.lib.optional (builtins.pathExists /tmp/data.nix) /tmp/data.nix;
           };
         in
@@ -282,6 +296,25 @@
           nixosModules.homestakeros = { config, lib, pkgs, ... }: with nixpkgs.lib;
             let
               cfg = config.homestakeros;
+
+              # Function to get the active client
+              getActiveClient = clients:
+                let
+                  enabledClients = builtins.filter (name: cfg.${name}.enable) clients;
+                  numEnabledClients = builtins.length enabledClients;
+                in
+                if numEnabledClients == 1 then
+                  builtins.elemAt enabledClients 0
+                else if numEnabledClients >= 2 then
+                  builtins.throw "Multiple clients enabled for the same category: ${toString enabledClients}"
+                else
+                  null;
+
+              # Get the active client from a list of available clients
+              # Note: In nix, variables are not evaluated unless they are used somewhere
+              activeConsensusClient = getActiveClient [ "lighthouse" ];
+              activeExecutionClient = getActiveClient [ "erigon" ];
+              activeVPNClient = getActiveClient [ "wireguard" ];
             in
             {
               options.homestakeros = homestakeros_options;
@@ -390,7 +423,7 @@
 
                 #################################################################### WIREGUARD
                 (mkIf (cfg.wireguard.enable) {
-                  networking.wg-quick.interfaces.wg0.configFile = cfg.wireguard.configFile;
+                  networking.wg-quick.interfaces.${cfg.${activeVPNClient}.interfaceName}.configFile = cfg.wireguard.configFile;
                 })
 
                 #################################################################### ERIGON
@@ -406,7 +439,7 @@
                       # split endpoint to address and port
                       endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
                       endpointMatch = builtins.match endpointRegex cfg.erigon.endpoint;
-                      endpoint = {
+                      local.erigon.endpoint = {
                         addr = builtins.elemAt endpointMatch 1;
                         port = builtins.elemAt endpointMatch 2;
                       };
@@ -415,8 +448,15 @@
                       enable = true;
 
                       description = "execution, mainnet";
-                      requires = [ "wg-quick-wg0.service" ];
-                      after = [ "wg-quick-wg0.service" "lighthouse.service" ];
+                      requires = [ ]
+                        ++ lib.optional (activeVPNClient == "wireguard")
+                        "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
+
+                      after = [ ]
+                        ++ lib.optional (activeConsensusClient != null)
+                        "${activeConsensusClient}.service"
+                        ++ lib.optional (activeVPNClient == "wireguard")
+                        "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
 
                       serviceConfig = {
                         Restart = "always";
@@ -428,8 +468,8 @@
                       --datadir=${cfg.erigon.datadir} \
                       --chain mainnet \
                       --authrpc.vhosts="*" \
-                      --authrpc.port ${endpoint.port} \
-                      --authrpc.addr ${endpoint.addr} \
+                      --authrpc.port ${local.erigon.endpoint.port} \
+                      --authrpc.addr ${local.erigon.endpoint.addr} \
                       ${if cfg.erigon.jwtSecretFile != null then
                         "--authrpc.jwtsecret=${cfg.erigon.jwtSecretFile}"
                       else ""} \
@@ -447,14 +487,19 @@
                 })
 
                 #################################################################### MEV-BOOST
-                (mkIf (cfg.lighthouse.mev-boost.enable) {
+                (mkIf (activeConsensusClient != null && cfg.${activeConsensusClient}.mev-boost.enable) {
                   # service
                   systemd.services.mev-boost = {
                     enable = true;
 
                     description = "MEV-boost allows proof-of-stake Ethereum consensus clients to outsource block construction";
-                    requires = [ "wg-quick-wg0.service" ];
-                    after = [ "wg-quick-wg0.service" ];
+                    requires = [ ]
+                      ++ lib.optional (activeVPNClient == "wireguard")
+                      "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
+
+                    after = [ ]
+                      ++ lib.optional (activeVPNClient == "wireguard")
+                      "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
 
                     serviceConfig = {
                       Restart = "always";
@@ -474,7 +519,7 @@
                         "https://0x98650451ba02064f7b000f5768cf0cf4d4e492317d82871bdc87ef841a0743f69f0f1eea11168503240ac35d101c9135@mainnet-relay.securerpc.com"
                         "https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money"
                       ]} \
-                      -addr 0.0.0.0:18550
+                      -addr ${cfg.${activeConsensusClient}.mev-boost.endpoint}
                     '';
 
                     wantedBy = [ "multi-user.target" ];
@@ -482,29 +527,36 @@
                 })
 
                 #################################################################### LIGHTHOUSE
-                (mkIf (cfg.lighthouse.enable) {
-                  # package
-                  environment.systemPackages = with pkgs; [
-                    lighthouse
-                  ];
+                (
+                  let
+                    # split endpoint to address and port
+                    endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
+                    endpointMatch = builtins.match endpointRegex cfg.lighthouse.endpoint;
+                    local.lighthouse.endpoint = {
+                      addr = builtins.elemAt endpointMatch 1;
+                      port = builtins.elemAt endpointMatch 2;
+                    };
+                  in
+                  mkIf (cfg.lighthouse.enable) {
+                    # package
+                    environment.systemPackages = with pkgs; [
+                      lighthouse
+                    ];
 
-                  # service
-                  systemd.services.lighthouse =
-                    let
-                      # split endpoint to address and port
-                      endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
-                      endpointMatch = builtins.match endpointRegex cfg.lighthouse.endpoint;
-                      endpoint = {
-                        addr = builtins.elemAt endpointMatch 1;
-                        port = builtins.elemAt endpointMatch 2;
-                      };
-                    in
-                    {
+                    # service
+                    systemd.services.lighthouse = {
                       enable = true;
 
                       description = "beacon, mainnet";
-                      requires = [ "wg-quick-wg0.service" ];
-                      after = [ "wg-quick-wg0.service" "mev-boost.service" ];
+                      requires = [ ]
+                        ++ lib.optional (activeVPNClient == "wireguard")
+                        "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
+
+                      after = [ ]
+                        ++ lib.optional (cfg.lighthouse.mev-boost.enable)
+                        "mev-boost.service"
+                        ++ lib.optional (activeVPNClient == "wireguard")
+                        "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
 
                       serviceConfig = {
                         Restart = "always";
@@ -515,14 +567,18 @@
                       script = ''${pkgs.lighthouse}/bin/lighthouse bn \
                       --datadir ${cfg.lighthouse.datadir} \
                       --network mainnet \
-                      --http --http-address ${endpoint.addr} \
-                      --http-port ${endpoint.port} \
+                      --http --http-address ${local.lighthouse.endpoint.addr} \
+                      --http-port ${local.lighthouse.endpoint.port} \
                       --http-allow-origin "*" \
-                      --execution-endpoint ${cfg.lighthouse.exec.endpoint} \
+                      ${if activeExecutionClient != null then
+                        "--execution-endpoint ${cfg.${activeExecutionClient}.endpoint}"
+                      else "" } \
+                      ${if cfg.lighthouse.mev-boost.enable then
+                        "--builder ${cfg.lighthouse.mev-boost.endpoint}"
+                      else "" } \
                       ${if cfg.lighthouse.jwtSecretFile != null then
                         "--execution-jwt ${cfg.lighthouse.jwtSecretFile}"
                       else ""} \
-                      --builder ${cfg.lighthouse.mev-boost.endpoint} \
                       --prune-payloads false \
                       --metrics \
                       ${if cfg.lighthouse.slasher.enable then
@@ -534,15 +590,18 @@
                       wantedBy = [ "multi-user.target" ];
                     };
 
-                  # firewall
-                  networking.firewall = {
-                    allowedTCPPorts = [ 9000 ];
-                    allowedUDPPorts = [ 9000 ];
-                    interfaces."wg0".allowedTCPPorts = [
-                      5052 # TODO: use 'lighthouse.endpoint.port' here by converting it to u16
-                    ];
-                  };
-                })
+                    # firewall
+                    networking.firewall = {
+                      allowedTCPPorts = [ 9000 ];
+                      allowedUDPPorts = [ 9000 ];
+                      interfaces = lib.mkIf (cfg.${activeVPNClient}.enable) {
+                        "${cfg.${activeVPNClient}.interfaceName}".allowedTCPPorts = [
+                          (lib.strings.toInt local.lighthouse.endpoint.port)
+                        ];
+                      };
+                    };
+                  }
+                )
               ];
             };
         };
