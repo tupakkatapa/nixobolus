@@ -579,7 +579,7 @@
                         "--execution-endpoint ${cfg.${activeExecutionClient}.endpoint}"
                       else "" } \
                       ${if cfg.lighthouse.mev-boost.enable then
-                        "--builder ${cfg.lighthouse.mev-boost.endpoint}"
+                        "--builder http://${cfg.lighthouse.mev-boost.endpoint}"
                       else "" } \
                       ${if cfg.lighthouse.jwtSecretFile != null then
                         "--execution-jwt ${cfg.lighthouse.jwtSecretFile}"
