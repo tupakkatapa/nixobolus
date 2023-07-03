@@ -439,7 +439,7 @@
                       # split endpoint to address and port
                       endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
                       endpointMatch = builtins.match endpointRegex cfg.erigon.endpoint;
-                      endpoint = {
+                      local.erigon.endpoint = {
                         addr = builtins.elemAt endpointMatch 1;
                         port = builtins.elemAt endpointMatch 2;
                       };
@@ -468,8 +468,8 @@
                       --datadir=${cfg.erigon.datadir} \
                       --chain mainnet \
                       --authrpc.vhosts="*" \
-                      --authrpc.port ${endpoint.port} \
-                      --authrpc.addr ${endpoint.addr} \
+                      --authrpc.port ${local.erigon.endpoint.port} \
+                      --authrpc.addr ${local.erigon.endpoint.addr} \
                       ${if cfg.erigon.jwtSecretFile != null then
                         "--authrpc.jwtsecret=${cfg.erigon.jwtSecretFile}"
                       else ""} \
@@ -532,7 +532,7 @@
                     # split endpoint to address and port
                     endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
                     endpointMatch = builtins.match endpointRegex cfg.lighthouse.endpoint;
-                    endpoint = {
+                    local.lighthouse.endpoint = {
                       addr = builtins.elemAt endpointMatch 1;
                       port = builtins.elemAt endpointMatch 2;
                     };
@@ -567,8 +567,8 @@
                       script = ''${pkgs.lighthouse}/bin/lighthouse bn \
                       --datadir ${cfg.lighthouse.datadir} \
                       --network mainnet \
-                      --http --http-address ${endpoint.addr} \
-                      --http-port ${endpoint.port} \
+                      --http --http-address ${local.lighthouse.endpoint.addr} \
+                      --http-port ${local.lighthouse.endpoint.port} \
                       --http-allow-origin "*" \
                       ${if activeExecutionClient != null then
                         "--execution-endpoint ${cfg.${activeExecutionClient}.endpoint}"
@@ -596,7 +596,7 @@
                       allowedUDPPorts = [ 9000 ];
                       interfaces = lib.mkIf (cfg.${activeVPNClient}.enable) {
                         "${cfg.${activeVPNClient}.interfaceName}".allowedTCPPorts = [
-                          (lib.strings.toInt endpoint.port)
+                          (lib.strings.toInt local.lighthouse.endpoint.port)
                         ];
                       };
                     };
