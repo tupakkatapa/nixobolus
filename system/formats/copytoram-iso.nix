@@ -1,5 +1,4 @@
 # derived from https://github.com/nix-community/nixos-generators/blob/master/formats/install-iso.nix
-
 { config, lib, modulesPath, ... }:
 {
   imports = [
@@ -7,14 +6,11 @@
   ];
 
   # for installer
-  isoImage.isoName = "nixos.iso";
+  isoImage.isoName = lib.mkForce "nixos.iso";
 
   # override installation-cd-base and enable wpa and sshd start at boot
-  systemd.services.wpa_supplicant.wantedBy = lib.mkForce [ "multi-user.target" ];
-  systemd.services.sshd.wantedBy = lib.mkForce [ "multi-user.target" ];
-
-  formatAttr = "isoImage";
-  filename = "*.iso";
+  #systemd.services.wpa_supplicant.wantedBy = lib.mkForce [ "multi-user.target" ];
+  #systemd.services.sshd.wantedBy = lib.mkForce [ "multi-user.target" ];
 
   # GRUB timeout
   boot.loader.timeout = lib.mkForce 1;
