@@ -264,25 +264,28 @@
             system = "x86_64-linux";
             specialArgs = { inherit inputs outputs; };
             modules = [
-              ./system
-              ./system/formats/netboot-kexec.nix
+              self.nixosModules.kexecTree
               self.nixosModules.homestakeros
               {
                 system.stateVersion = "23.11";
               }
               # Keeping this here for testing
+              # {
+              #   homestakeros = {
+              #     lighthouse = {
+              #       enable = true;
+              #       mev-boost.enable = true;
+              #     };
+              #     erigon.enable = true;
+              #     wireguard = {
+              #       enable = true;
+              #       configFile = "/var/mnt/secrets/wg0.conf";
+              #     };
+              #   };
+              # }
               {
-                homestakeros = {
-                  lighthouse = {
-                    enable = true;
-                    mev-boost.enable = true;
-                  };
-                  erigon.enable = true;
-                  wireguard = {
-                    enable = true;
-                    configFile = "/var/mnt/secrets/wg0.conf";
-                  };
-                };
+                boot.loader.systemd-boot.enable = true;
+                boot.loader.efi.canTouchEfiVariables = true;
               }
             ] ++ nixpkgs.lib.optional (builtins.pathExists /tmp/data.nix) /tmp/data.nix;
           };
@@ -301,6 +304,14 @@
           nixosConfigurations = with nixpkgs.lib; {
             "homestakeros" = nixosSystem homestakeros;
           } // (with nixpkgs-stable.lib; { });
+
+          # Format modules
+          nixosModules.isoImage = {
+            imports = [ ./system ./system/formats/copytoram-iso.nix ];
+          };
+          nixosModules.kexecTree = {
+            imports = [ ./system ./system/formats/netboot-kexec.nix ];
+          };
 
           # HomestakerOS module for Ethereum-related components
           nixosModules.homestakeros = { config, lib, pkgs, ... }: with nixpkgs.lib;
