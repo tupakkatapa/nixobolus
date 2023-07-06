@@ -295,7 +295,12 @@
           # Accessible through 'nix eval --json .#exports'
           exports = nixpkgs.lib.attrsets.mapAttrsRecursiveCond
             (v: ! nixpkgs.lib.options.isOption v)
-            (k: v: v.type.name)
+            (k: v: {
+              type = v.type.name;
+              default = v.default;
+              description = if v ? description then v.description else null;
+              example = if v ? example then v.example else null;
+            })
             homestakerosOptions;
 
           overlays = import ./overlays { inherit inputs; };
