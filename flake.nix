@@ -133,7 +133,7 @@
               mounts = mkOption {
                 type = types.attrsOf types.attrs;
                 default = { };
-                description = "Definition of systemd mount units. For more information: [Systemd Mount Options](https://www.freedesktop.org/software/systemd/man/systemd.mount.html#Options)";
+                description = "Definition of systemd mount units. Click [here](https://www.freedesktop.org/software/systemd/man/systemd.mount.html#Options) for more information.";
                 example = {
                   my-mount = {
                     enable = true;
@@ -154,12 +154,12 @@
                   enable = mkOption {
                     type = types.bool;
                     default = false;
-                    description = "Whether to enable Wireguard";
+                    description = "Whether to enable WireGuard.";
                   };
                   configFile = mkOption {
                     type = types.nullOr types.str;
                     default = null;
-                    description = "File path for wg-quick configuration";
+                    description = "A file path for the wg-quick configuration.";
                     example = "/var/mnt/secrets/wg0.conf";
                   };
                   interfaceName = mkOption {
@@ -174,12 +174,12 @@
                 authorizedKeys = mkOption {
                   type = types.listOf types.singleLineStr;
                   default = [ ];
-                  description = "A list of public SSH keys that should be added to the user’s authorized keys.";
+                  description = "A list of public SSH keys to be added to the user's authorized keys.";
                 };
                 privateKeyFile = mkOption {
                   type = types.nullOr types.path;
                   default = null;
-                  description = "Path to the SSH host key, either generated automatically if absent or an existing Ed25519 key.";
+                  description = "Path to the Ed25519 SSH host key. If absent, the key will be generated automatically.";
                   example = "/var/mnt/secrets/ssh/id_ed25519";
                 };
               };
@@ -204,7 +204,7 @@
                   jwtSecretFile = mkOption {
                     type = types.nullOr types.str;
                     default = null;
-                    description = "Path to the token that ensures safe connection between CL and EL";
+                    description = "Path to the token that ensures safe connection between CL and EL.";
                     example = "/var/mnt/erigon/jwt.hex";
                   };
                 };
@@ -253,7 +253,7 @@
                   jwtSecretFile = mkOption {
                     type = types.nullOr types.path;
                     default = null;
-                    description = "Path to the token that ensures safe connection between CL and EL";
+                    description = "Path to the token that ensures safe connection between CL and EL.";
                     example = "/var/mnt/lighthouse/jwt.hex";
                   };
                 };
@@ -269,7 +269,7 @@
                   endpoint = mkOption {
                     type = types.str;
                     default = "http://127.0.0.1:18550";
-                    description = "Listening interface for MEV-Boost server.";
+                    description = "Listening interface for the MEV-Boost server.";
                   };
                 };
               };
