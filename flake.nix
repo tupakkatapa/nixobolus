@@ -285,25 +285,25 @@
                 system.stateVersion = "23.11";
               }
               # Keeping this here for testing
-              {
-                homestakeros = {
-                  consensus = {
-                    lighthouse.enable = true;
-                  };
-                  addons = {
-                    mev-boost.enable = true;
-                  };
-                  execution = {
-                    erigon.enable = true;
-                  };
-                  vpn = {
-                    wireguard = {
-                      enable = true;
-                      configFile = "/var/mnt/secrets/wg0.conf";
-                    };
-                  };
-                };
-              }
+              # {
+              #   homestakeros = {
+              #     consensus = {
+              #       lighthouse.enable = true;
+              #     };
+              #     addons = {
+              #       mev-boost.enable = true;
+              #     };
+              #     execution = {
+              #       erigon.enable = true;
+              #     };
+              #     vpn = {
+              #       wireguard = {
+              #         enable = true;
+              #         configFile = "/var/mnt/secrets/wg0.conf";
+              #       };
+              #     };
+              #   };
+              # }
               {
                 boot.loader.systemd-boot.enable = true;
                 boot.loader.efi.canTouchEfiVariables = true;
@@ -344,8 +344,19 @@
             let
               cfg = config.homestakeros;
 
+              # Function to parse a URL into its components
+              parseEndpoint = endpoint:
+                let
+                  regex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
+                  match = builtins.match regex endpoint;
+                in
+                {
+                  addr = builtins.elemAt match 1;
+                  port = builtins.elemAt match 2;
+                };
+
               # Function to get the active client
-              getActiveClients = clients: path: builtins.filter (name: path.${name}.enable) clients;
+              getActiveClients = clients: path: builtins.filter (clientName: path.${clientName}.enable) clients;
 
               # Get the active client from a list of available clients
               # Note: In nix, variables are not evaluated unless they are used somewhere
@@ -463,22 +474,17 @@
                 })
 
                 #################################################################### ERIGON
-                (mkIf (cfg.execution.erigon.enable) {
-                  environment.systemPackages = [
-                    pkgs.erigon
-                  ];
+                (
+                  let
+                    local.erigon.endpoint = parseEndpoint cfg.execution.erigon.endpoint;
+                  in
 
-                  systemd.services.erigon =
-                    let
-                      # Split endpoint to address and port
-                      endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
-                      endpointMatch = builtins.match endpointRegex cfg.execution.erigon.endpoint;
-                      local.erigon.endpoint = {
-                        addr = builtins.elemAt endpointMatch 1;
-                        port = builtins.elemAt endpointMatch 2;
-                      };
-                    in
-                    {
+                  mkIf (cfg.execution.erigon.enable) {
+                    environment.systemPackages = [
+                      pkgs.erigon
+                    ];
+
+                    systemd.services.erigon = {
                       enable = true;
 
                       description = "execution, mainnet";
@@ -511,34 +517,39 @@
                       wantedBy = [ "multi-user.target" ];
                     };
 
-                  networking.firewall = {
-                    allowedTCPPorts = [ 30303 30304 42069 ];
-                    allowedUDPPorts = [ 30303 30304 42069 ];
-                  };
-                })
+                    networking.firewall = {
+                      allowedTCPPorts = [ 30303 30304 42069 ];
+                      allowedUDPPorts = [ 30303 30304 42069 ];
+                    };
+                  }
+                )
 
                 #################################################################### MEV-BOOST
-                (mkIf (cfg.addons.mev-boost.enable) {
-                  # service
-                  systemd.services.mev-boost = {
-                    enable = true;
+                (
+                  let
+                    local.mev-boost.endpoint = parseEndpoint cfg.addons.mev-boost.endpoint;
+                  in
 
-                    description = "MEV-boost allows proof-of-stake Ethereum consensus clients to outsource block construction";
-                    requires = [ ]
-                      ++ lib.optional (elem "wireguard" activeVPNClients)
-                      "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+                  mkIf (cfg.addons.mev-boost.enable) {
+                    systemd.services.mev-boost = {
+                      enable = true;
 
-                    after = [ ]
-                      ++ lib.optional (elem "wireguard" activeVPNClients)
-                      "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+                      description = "MEV-boost allows proof-of-stake Ethereum consensus clients to outsource block construction";
+                      requires = [ ]
+                        ++ lib.optional (elem "wireguard" activeVPNClients)
+                        "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
 
-                    serviceConfig = {
-                      Restart = "always";
-                      RestartSec = "5s";
-                      Type = "simple";
-                    };
+                      after = [ ]
+                        ++ lib.optional (elem "wireguard" activeVPNClients)
+                        "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
 
-                    script = ''${pkgs.mev-boost}/bin/mev-boost \
+                      serviceConfig = {
+                        Restart = "always";
+                        RestartSec = "5s";
+                        Type = "simple";
+                      };
+
+                      script = ''${pkgs.mev-boost}/bin/mev-boost \
                       -mainnet \
                       -relay-check \
                       -relays ${lib.concatStringsSep "," [
@@ -550,26 +561,21 @@
                         "https://0x98650451ba02064f7b000f5768cf0cf4d4e492317d82871bdc87ef841a0743f69f0f1eea11168503240ac35d101c9135@mainnet-relay.securerpc.com"
                         "https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money"
                       ]} \
-                      -addr ${cfg.addons.mev-boost.endpoint}
+                      -addr ${local.mev-boost.endpoint.addr}:${local.mev-boost.endpoint.port}
                     '';
 
-                    wantedBy = [ "multi-user.target" ];
-                  };
-                })
+                      wantedBy = [ "multi-user.target" ];
+                    };
+                  }
+                )
 
                 #################################################################### LIGHTHOUSE
                 (
                   let
-                    # Split endpoint to address and port
-                    endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
-                    endpointMatch = builtins.match endpointRegex cfg.consensus.lighthouse.endpoint;
-                    local.lighthouse.endpoint = {
-                      addr = builtins.elemAt endpointMatch 1;
-                      port = builtins.elemAt endpointMatch 2;
-                    };
+                    local.lighthouse.endpoint = parseEndpoint cfg.consensus.lighthouse.endpoint;
                   in
+
                   mkIf (cfg.consensus.lighthouse.enable) {
-                    # package
                     environment.systemPackages = with pkgs; [
                       lighthouse
                     ];
@@ -604,7 +610,7 @@
                         "--execution-endpoint ${cfg.consensus.lighthouse.execEndpoint}"
                       else "" } \
                       ${if cfg.addons.mev-boost.enable then
-                        "--builder http://${cfg.addons.mev-boost.endpoint}"
+                        "--builder ${cfg.addons.mev-boost.endpoint}"
                       else "" } \
                       ${if cfg.consensus.lighthouse.jwtSecretFile != null then
                         "--execution-jwt ${cfg.consensus.lighthouse.jwtSecretFile}"
@@ -620,7 +626,7 @@
                       wantedBy = [ "multi-user.target" ];
                     };
 
-                    # firewall
+                    # Firewall
                     networking.firewall = {
                       allowedTCPPorts = [ 9000 ];
                       allowedUDPPorts = [ 9000 ];
