@@ -133,7 +133,7 @@
               mounts = mkOption {
                 type = types.attrsOf types.attrs;
                 default = { };
-                description = "Definition of systemd mount units. For more information: [Systemd Mount Options](https://www.freedesktop.org/software/systemd/man/systemd.mount.html#Options)";
+                description = "Definition of systemd mount units. Click [here](https://www.freedesktop.org/software/systemd/man/systemd.mount.html#Options) for more information.";
                 example = {
                   my-mount = {
                     enable = true;
@@ -149,22 +149,24 @@
                 };
               };
 
-              wireguard = {
-                enable = mkOption {
-                  type = types.bool;
-                  default = false;
-                  description = "Whether to enable Wireguard";
-                };
-                configFile = mkOption {
-                  type = types.nullOr types.str;
-                  default = null;
-                  description = "File path for wg-quick configuration";
-                  example = "/var/mnt/secrets/wg0.conf";
-                };
-                interfaceName = mkOption {
-                  type = types.str;
-                  default = "wg0";
-                  description = "The name assigned to the WireGuard network interface.";
+              vpn = {
+                wireguard = {
+                  enable = mkOption {
+                    type = types.bool;
+                    default = false;
+                    description = "Whether to enable WireGuard.";
+                  };
+                  configFile = mkOption {
+                    type = types.nullOr types.str;
+                    default = null;
+                    description = "A file path for the wg-quick configuration.";
+                    example = "/var/mnt/secrets/wg0.conf";
+                  };
+                  interfaceName = mkOption {
+                    type = types.str;
+                    default = "wg0";
+                    description = "The name assigned to the WireGuard network interface.";
+                  };
                 };
               };
 
@@ -172,68 +174,92 @@
                 authorizedKeys = mkOption {
                   type = types.listOf types.singleLineStr;
                   default = [ ];
-                  description = "A list of public SSH keys that should be added to the user’s authorized keys.";
+                  description = "A list of public SSH keys to be added to the user's authorized keys.";
                 };
                 privateKeyFile = mkOption {
                   type = types.nullOr types.path;
                   default = null;
-                  description = "Path to the SSH host key, either generated automatically if absent or an existing Ed25519 key.";
+                  description = "Path to the Ed25519 SSH host key. If absent, the key will be generated automatically.";
                   example = "/var/mnt/secrets/ssh/id_ed25519";
                 };
               };
 
-              erigon = {
-                enable = mkOption {
-                  type = types.bool;
-                  default = false;
-                  description = "Whether to enable Erigon.";
-                };
-                endpoint = mkOption {
-                  type = types.str;
-                  default = "http://127.0.0.1:8551";
-                  description = "HTTP-RPC server listening interface of engine API.";
-                };
-                dataDir = mkOption {
-                  type = types.path;
-                  default = "/var/mnt/erigon";
-                  description = "Data directory for the blockchain.";
-                };
-                jwtSecretFile = mkOption {
-                  type = types.nullOr types.str;
-                  default = null;
-                  description = "Path to the token that ensures safe connection between CL and EL";
-                  example = "/var/mnt/erigon/jwt.hex";
-                };
-              };
-
-              lighthouse = {
-                enable = mkOption {
-                  type = types.bool;
-                  default = false;
-                  description = "Whether to enable Lighthouse.";
-                };
-                endpoint = mkOption {
-                  type = types.str;
-                  default = "http://127.0.0.1:5052";
-                  description = "HTTP server listening interface.";
-                };
-                slasher = {
+              execution = {
+                erigon = {
                   enable = mkOption {
                     type = types.bool;
                     default = false;
-                    description = "Whether to enable slasher.";
+                    description = "Whether to enable Erigon.";
                   };
-                  historyLength = mkOption {
-                    type = types.int;
-                    default = 4096;
-                    description = "Number of epochs to store.";
+                  endpoint = mkOption {
+                    type = types.str;
+                    default = "http://127.0.0.1:8551";
+                    description = "HTTP-RPC server listening interface of engine API.";
                   };
-                  maxDatabaseSize = mkOption {
-                    type = types.int;
-                    default = 256;
-                    description = "Maximum size of the slasher database in gigabytes.";
+                  dataDir = mkOption {
+                    type = types.path;
+                    default = "/var/mnt/erigon";
+                    description = "Data directory for the blockchain.";
+                  };
+                  jwtSecretFile = mkOption {
+                    type = types.nullOr types.str;
+                    default = null;
+                    description = "Path to the token that ensures safe connection between CL and EL.";
+                    example = "/var/mnt/erigon/jwt.hex";
                   };
                 };
+              };
+
+              consensus = {
+                lighthouse = {
+                  enable = mkOption {
+                    type = types.bool;
+                    default = false;
+                    description = "Whether to enable Lighthouse.";
+                  };
+                  endpoint = mkOption {
+                    type = types.str;
+                    default = "http://127.0.0.1:5052";
+                    description = "HTTP server listening interface.";
+                  };
+                  execEndpoint = mkOption {
+                    type = types.nullOr types.str;
+                    default = null;
+                    description = "Server endpoint for an execution layer JWT-authenticated HTTP JSON-RPC connection.";
+                    example = "http://127.0.0.1:8551";
+                  };
+                  slasher = {
+                    enable = mkOption {
+                      type = types.bool;
+                      default = false;
+                      description = "Whether to enable slasher.";
+                    };
+                    historyLength = mkOption {
+                      type = types.int;
+                      default = 4096;
+                      description = "Number of epochs to store.";
+                    };
+                    maxDatabaseSize = mkOption {
+                      type = types.int;
+                      default = 256;
+                      description = "Maximum size of the slasher database in gigabytes.";
+                    };
+                  };
+                  dataDir = mkOption {
+                    type = types.path;
+                    default = "/var/mnt/lighthouse";
+                    description = "Data directory for the blockchain.";
+                  };
+                  jwtSecretFile = mkOption {
+                    type = types.nullOr types.path;
+                    default = null;
+                    description = "Path to the token that ensures safe connection between CL and EL.";
+                    example = "/var/mnt/lighthouse/jwt.hex";
+                  };
+                };
+              };
+
+              addons = {
                 mev-boost = {
                   enable = mkOption {
                     type = types.bool;
@@ -243,19 +269,8 @@
                   endpoint = mkOption {
                     type = types.str;
                     default = "http://127.0.0.1:18550";
-                    description = "Listening interface for MEV-Boost server.";
+                    description = "Listening interface for the MEV-Boost server.";
                   };
-                };
-                dataDir = mkOption {
-                  type = types.path;
-                  default = "/var/mnt/lighthouse";
-                  description = "Data directory for the blockchain.";
-                };
-                jwtSecretFile = mkOption {
-                  type = types.nullOr types.path;
-                  default = null;
-                  description = "Path to the token that ensures safe connection between CL and EL";
-                  example = "/var/mnt/lighthouse/jwt.hex";
                 };
               };
             };
@@ -272,12 +287,10 @@
               # Keeping this here for testing
               # {
               #   homestakeros = {
-              #     lighthouse = {
-              #       enable = true;
-              #       mev-boost.enable = true;
-              #     };
-              #     erigon.enable = true;
-              #     wireguard = {
+              #     consensus.lighthouse.enable = true;
+              #     addons.mev-boost.enable = true;
+              #     execution.erigon.enable = true;
+              #     vpn.wireguard = {
               #       enable = true;
               #       configFile = "/var/mnt/secrets/wg0.conf";
               #     };
@@ -295,7 +308,12 @@
           # Accessible through 'nix eval --json .#exports'
           exports = nixpkgs.lib.attrsets.mapAttrsRecursiveCond
             (v: ! nixpkgs.lib.options.isOption v)
-            (k: v: v.type.name)
+            (k: v: {
+              type = v.type.name;
+              default = v.default;
+              description = if v ? description then v.description else null;
+              example = if v ? example then v.example else null;
+            })
             homestakerosOptions;
 
           overlays = import ./overlays { inherit inputs; };
@@ -318,24 +336,25 @@
             let
               cfg = config.homestakeros;
 
-              # Function to get the active client
-              getActiveClient = clients:
+              # Function to parse a URL into its components
+              parseEndpoint = endpoint:
                 let
-                  enabledClients = builtins.filter (name: cfg.${name}.enable) clients;
-                  numEnabledClients = builtins.length enabledClients;
+                  regex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
+                  match = builtins.match regex endpoint;
                 in
-                if numEnabledClients == 1 then
-                  builtins.elemAt enabledClients 0
-                else if numEnabledClients >= 2 then
-                  builtins.throw "Multiple clients enabled for the same category: ${toString enabledClients}"
-                else
-                  null;
+                {
+                  addr = builtins.elemAt match 1;
+                  port = builtins.elemAt match 2;
+                };
+
+              # Function to get the active client
+              getActiveClients = clients: path: builtins.filter (clientName: path.${clientName}.enable) clients;
 
               # Get the active client from a list of available clients
               # Note: In nix, variables are not evaluated unless they are used somewhere
-              activeConsensusClient = getActiveClient [ "lighthouse" ];
-              activeExecutionClient = getActiveClient [ "erigon" ];
-              activeVPNClient = getActiveClient [ "wireguard" ];
+              activeConsensusClients = getActiveClients (builtins.attrNames cfg.consensus) cfg.consensus;
+              activeExecutionClients = getActiveClients (builtins.attrNames cfg.execution) cfg.execution;
+              activeVPNClients = getActiveClients (builtins.attrNames cfg.vpn) cfg.vpn;
             in
             {
               options.homestakeros = homestakerosOptions;
@@ -442,39 +461,32 @@
                 })
 
                 #################################################################### WIREGUARD
-                (mkIf (cfg.wireguard.enable) {
-                  networking.wg-quick.interfaces.${cfg.${activeVPNClient}.interfaceName}.configFile = cfg.wireguard.configFile;
+                (mkIf (cfg.vpn.wireguard.enable) {
+                  networking.wg-quick.interfaces.${cfg.vpn.wireguard.interfaceName}.configFile = cfg.vpn.wireguard.configFile;
                 })
 
                 #################################################################### ERIGON
-                (mkIf (cfg.erigon.enable) {
-                  environment.systemPackages = [
-                    pkgs.erigon
-                  ];
+                (
+                  let
+                    local.erigon.parsedEndpoint = parseEndpoint cfg.execution.erigon.endpoint;
+                  in
 
-                  systemd.services.erigon =
-                    let
-                      # Split endpoint to address and port
-                      endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
-                      endpointMatch = builtins.match endpointRegex cfg.erigon.endpoint;
-                      local.erigon.endpoint = {
-                        addr = builtins.elemAt endpointMatch 1;
-                        port = builtins.elemAt endpointMatch 2;
-                      };
-                    in
-                    {
+                  mkIf (cfg.execution.erigon.enable) {
+                    environment.systemPackages = [
+                      pkgs.erigon
+                    ];
+
+                    systemd.services.erigon = {
                       enable = true;
 
                       description = "execution, mainnet";
                       requires = [ ]
-                        ++ lib.optional (activeVPNClient == "wireguard")
-                        "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
+                        ++ lib.optional (elem "wireguard" activeVPNClients)
+                        "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
 
-                      after = [ ]
-                        ++ lib.optional (activeConsensusClient != null)
-                        "${activeConsensusClient}.service"
-                        ++ lib.optional (activeVPNClient == "wireguard")
-                        "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
+                      after = map (name: "${name}.service") activeConsensusClients
+                        ++ lib.optional (elem "wireguard" activeVPNClients)
+                        "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
 
                       serviceConfig = {
                         Restart = "always";
@@ -483,48 +495,53 @@
                       };
 
                       script = ''${pkgs.erigon}/bin/erigon \
-                      --datadir=${cfg.erigon.dataDir} \
-                      --chain mainnet \
-                      --authrpc.vhosts="*" \
-                      --authrpc.port ${local.erigon.endpoint.port} \
-                      --authrpc.addr ${local.erigon.endpoint.addr} \
-                      ${if cfg.erigon.jwtSecretFile != null then
-                        "--authrpc.jwtsecret=${cfg.erigon.jwtSecretFile}"
-                      else ""} \
-                      --metrics
-                    '';
+                        --datadir=${cfg.execution.erigon.dataDir} \
+                        --chain mainnet \
+                        --authrpc.vhosts="*" \
+                        --authrpc.port ${local.erigon.parsedEndpoint.port} \
+                        --authrpc.addr ${local.erigon.parsedEndpoint.addr} \
+                        ${if cfg.execution.erigon.jwtSecretFile != null then
+                          "--authrpc.jwtsecret=${cfg.execution.erigon.jwtSecretFile}"
+                        else ""} \
+                        --metrics
+                      '';
 
                       wantedBy = [ "multi-user.target" ];
                     };
 
-                  networking.firewall = {
-                    allowedTCPPorts = [ 30303 30304 42069 ];
-                    allowedUDPPorts = [ 30303 30304 42069 ];
-                  };
-                })
+                    networking.firewall = {
+                      allowedTCPPorts = [ 30303 30304 42069 ];
+                      allowedUDPPorts = [ 30303 30304 42069 ];
+                    };
+                  }
+                )
 
                 #################################################################### MEV-BOOST
-                (mkIf (activeConsensusClient != null && cfg.${activeConsensusClient}.mev-boost.enable) {
-                  # service
-                  systemd.services.mev-boost = {
-                    enable = true;
+                (
+                  let
+                    local.mev-boost.parsedEndpoint = parseEndpoint cfg.addons.mev-boost.endpoint;
+                  in
 
-                    description = "MEV-boost allows proof-of-stake Ethereum consensus clients to outsource block construction";
-                    requires = [ ]
-                      ++ lib.optional (activeVPNClient == "wireguard")
-                      "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
+                  mkIf (cfg.addons.mev-boost.enable) {
+                    systemd.services.mev-boost = {
+                      enable = true;
 
-                    after = [ ]
-                      ++ lib.optional (activeVPNClient == "wireguard")
-                      "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
+                      description = "MEV-boost allows proof-of-stake Ethereum consensus clients to outsource block construction";
+                      requires = [ ]
+                        ++ lib.optional (elem "wireguard" activeVPNClients)
+                        "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
 
-                    serviceConfig = {
-                      Restart = "always";
-                      RestartSec = "5s";
-                      Type = "simple";
-                    };
+                      after = [ ]
+                        ++ lib.optional (elem "wireguard" activeVPNClients)
+                        "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
 
-                    script = ''${pkgs.mev-boost}/bin/mev-boost \
+                      serviceConfig = {
+                        Restart = "always";
+                        RestartSec = "5s";
+                        Type = "simple";
+                      };
+
+                      script = ''${pkgs.mev-boost}/bin/mev-boost \
                       -mainnet \
                       -relay-check \
                       -relays ${lib.concatStringsSep "," [
@@ -536,26 +553,21 @@
                         "https://0x98650451ba02064f7b000f5768cf0cf4d4e492317d82871bdc87ef841a0743f69f0f1eea11168503240ac35d101c9135@mainnet-relay.securerpc.com"
                         "https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money"
                       ]} \
-                      -addr ${cfg.${activeConsensusClient}.mev-boost.endpoint}
+                      -addr ${local.mev-boost.parsedEndpoint.addr}:${local.mev-boost.parsedEndpoint.port}
                     '';
 
-                    wantedBy = [ "multi-user.target" ];
-                  };
-                })
+                      wantedBy = [ "multi-user.target" ];
+                    };
+                  }
+                )
 
                 #################################################################### LIGHTHOUSE
                 (
                   let
-                    # Split endpoint to address and port
-                    endpointRegex = "(https?://)?([^:/]+):([0-9]+)(/.*)?$";
-                    endpointMatch = builtins.match endpointRegex cfg.lighthouse.endpoint;
-                    local.lighthouse.endpoint = {
-                      addr = builtins.elemAt endpointMatch 1;
-                      port = builtins.elemAt endpointMatch 2;
-                    };
+                    local.lighthouse.parsedEndpoint = parseEndpoint cfg.consensus.lighthouse.endpoint;
                   in
-                  mkIf (cfg.lighthouse.enable) {
-                    # package
+
+                  mkIf (cfg.consensus.lighthouse.enable) {
                     environment.systemPackages = with pkgs; [
                       lighthouse
                     ];
@@ -565,14 +577,14 @@
 
                       description = "beacon, mainnet";
                       requires = [ ]
-                        ++ lib.optional (activeVPNClient == "wireguard")
-                        "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
+                        ++ lib.optional (elem "wireguard" activeVPNClients)
+                        "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
 
                       after = [ ]
-                        ++ lib.optional (cfg.lighthouse.mev-boost.enable)
+                        ++ lib.optional (cfg.addons.mev-boost.enable)
                         "mev-boost.service"
-                        ++ lib.optional (activeVPNClient == "wireguard")
-                        "wg-quick-${cfg.${activeVPNClient}.interfaceName}.service";
+                        ++ lib.optional (elem "wireguard" activeVPNClients)
+                        "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
 
                       serviceConfig = {
                         Restart = "always";
@@ -581,40 +593,46 @@
                       };
 
                       script = ''${pkgs.lighthouse}/bin/lighthouse bn \
-                      --datadir ${cfg.lighthouse.dataDir} \
+                      --datadir ${cfg.consensus.lighthouse.dataDir} \
                       --network mainnet \
-                      --http --http-address ${local.lighthouse.endpoint.addr} \
-                      --http-port ${local.lighthouse.endpoint.port} \
+                      --http --http-address ${local.lighthouse.parsedEndpoint.addr} \
+                      --http-port ${local.lighthouse.parsedEndpoint.port} \
                       --http-allow-origin "*" \
-                      ${if activeExecutionClient != null then
-                        "--execution-endpoint ${cfg.${activeExecutionClient}.endpoint}"
+                      ${if cfg.consensus.lighthouse.execEndpoint != null then
+                        "--execution-endpoint ${cfg.consensus.lighthouse.execEndpoint}"
                       else "" } \
-                      ${if cfg.lighthouse.mev-boost.enable then
-                        "--builder http://${cfg.lighthouse.mev-boost.endpoint}"
+                      ${if cfg.addons.mev-boost.enable then
+                        "--builder ${cfg.addons.mev-boost.endpoint}"
                       else "" } \
-                      ${if cfg.lighthouse.jwtSecretFile != null then
-                        "--execution-jwt ${cfg.lighthouse.jwtSecretFile}"
+                      ${if cfg.consensus.lighthouse.jwtSecretFile != null then
+                        "--execution-jwt ${cfg.consensus.lighthouse.jwtSecretFile}"
                       else ""} \
                       --prune-payloads false \
                       --metrics \
-                      ${if cfg.lighthouse.slasher.enable then
+                      ${if cfg.consensus.lighthouse.slasher.enable then
                         "--slasher "
-                        + " --slasher-history-length " + (toString cfg.lighthouse.slasher.historyLength)
-                        + " --slasher-max-db-size " + (toString cfg.lighthouse.slasher.maxDatabaseSize)
+                        + " --slasher-history-length " + (toString cfg.consensus.lighthouse.slasher.historyLength)
+                        + " --slasher-max-db-size " + (toString cfg.consensus.lighthouse.slasher.maxDatabaseSize)
                       else "" }
                     '';
                       wantedBy = [ "multi-user.target" ];
                     };
 
-                    # firewall
+                    # Firewall
                     networking.firewall = {
                       allowedTCPPorts = [ 9000 ];
                       allowedUDPPorts = [ 9000 ];
-                      interfaces = lib.mkIf (cfg.${activeVPNClient}.enable) {
-                        "${cfg.${activeVPNClient}.interfaceName}".allowedTCPPorts = [
-                          (lib.strings.toInt local.lighthouse.endpoint.port)
-                        ];
-                      };
+
+                      interfaces = builtins.listToAttrs (map
+                        (clientName: {
+                          name = "${cfg.vpn.${clientName}.interfaceName}";
+                          value = {
+                            allowedTCPPorts = [
+                              (lib.strings.toInt local.lighthouse.parsedEndpoint.port)
+                            ];
+                          };
+                        })
+                        activeVPNClients);
                     };
                   }
                 )
