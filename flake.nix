@@ -287,20 +287,12 @@
               # Keeping this here for testing
               # {
               #   homestakeros = {
-              #     consensus = {
-              #       lighthouse.enable = true;
-              #     };
-              #     addons = {
-              #       mev-boost.enable = true;
-              #     };
-              #     execution = {
-              #       erigon.enable = true;
-              #     };
-              #     vpn = {
-              #       wireguard = {
-              #         enable = true;
-              #         configFile = "/var/mnt/secrets/wg0.conf";
-              #       };
+              #     consensus.lighthouse.enable = true;
+              #     addons.mev-boost.enable = true;
+              #     execution.erigon.enable = true;
+              #     vpn.wireguard = {
+              #       enable = true;
+              #       configFile = "/var/mnt/secrets/wg0.conf";
               #     };
               #   };
               # }
@@ -476,7 +468,7 @@
                 #################################################################### ERIGON
                 (
                   let
-                    local.erigon.endpoint = parseEndpoint cfg.execution.erigon.endpoint;
+                    local.erigon.parsedEndpoint = parseEndpoint cfg.execution.erigon.endpoint;
                   in
 
                   mkIf (cfg.execution.erigon.enable) {
@@ -506,8 +498,8 @@
                         --datadir=${cfg.execution.erigon.dataDir} \
                         --chain mainnet \
                         --authrpc.vhosts="*" \
-                        --authrpc.port ${local.erigon.endpoint.port} \
-                        --authrpc.addr ${local.erigon.endpoint.addr} \
+                        --authrpc.port ${local.erigon.parsedEndpoint.port} \
+                        --authrpc.addr ${local.erigon.parsedEndpoint.addr} \
                         ${if cfg.execution.erigon.jwtSecretFile != null then
                           "--authrpc.jwtsecret=${cfg.execution.erigon.jwtSecretFile}"
                         else ""} \
@@ -527,7 +519,7 @@
                 #################################################################### MEV-BOOST
                 (
                   let
-                    local.mev-boost.endpoint = parseEndpoint cfg.addons.mev-boost.endpoint;
+                    local.mev-boost.parsedEndpoint = parseEndpoint cfg.addons.mev-boost.endpoint;
                   in
 
                   mkIf (cfg.addons.mev-boost.enable) {
@@ -561,7 +553,7 @@
                         "https://0x98650451ba02064f7b000f5768cf0cf4d4e492317d82871bdc87ef841a0743f69f0f1eea11168503240ac35d101c9135@mainnet-relay.securerpc.com"
                         "https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money"
                       ]} \
-                      -addr ${local.mev-boost.endpoint.addr}:${local.mev-boost.endpoint.port}
+                      -addr ${local.mev-boost.parsedEndpoint.addr}:${local.mev-boost.parsedEndpoint.port}
                     '';
 
                       wantedBy = [ "multi-user.target" ];
@@ -572,7 +564,7 @@
                 #################################################################### LIGHTHOUSE
                 (
                   let
-                    local.lighthouse.endpoint = parseEndpoint cfg.consensus.lighthouse.endpoint;
+                    local.lighthouse.parsedEndpoint = parseEndpoint cfg.consensus.lighthouse.endpoint;
                   in
 
                   mkIf (cfg.consensus.lighthouse.enable) {
@@ -603,8 +595,8 @@
                       script = ''${pkgs.lighthouse}/bin/lighthouse bn \
                       --datadir ${cfg.consensus.lighthouse.dataDir} \
                       --network mainnet \
-                      --http --http-address ${local.lighthouse.endpoint.addr} \
-                      --http-port ${local.lighthouse.endpoint.port} \
+                      --http --http-address ${local.lighthouse.parsedEndpoint.addr} \
+                      --http-port ${local.lighthouse.parsedEndpoint.port} \
                       --http-allow-origin "*" \
                       ${if cfg.consensus.lighthouse.execEndpoint != null then
                         "--execution-endpoint ${cfg.consensus.lighthouse.execEndpoint}"
@@ -636,7 +628,7 @@
                           name = "${cfg.vpn.${clientName}.interfaceName}";
                           value = {
                             allowedTCPPorts = [
-                              (lib.strings.toInt local.lighthouse.endpoint.port)
+                              (lib.strings.toInt local.lighthouse.parsedEndpoint.port)
                             ];
                           };
                         })
