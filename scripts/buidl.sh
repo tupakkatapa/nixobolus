@@ -59,7 +59,7 @@ Options:
       Display this help message.
 
   -v, --verbose
-      Display verbose output, including the contents of the built artifacts.
+      Display verbose output.
 
 Examples:
   Local, using pipe:
