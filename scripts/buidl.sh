@@ -39,36 +39,31 @@ fi
 # Function to display help message
 display_usage() {
   cat <<USAGE
-Usage: $0 [options]
+Usage: $0 [options] [json data]
+
+Arguments:
+  json data
+      Specify raw JSON data to inject into the base configuration. It can be provided as a
+      positional argument or piped into the script.
 
 Options:
-
   -b, --base <hostname>
       Set the base configuration with the specified hostname.
       Available configurations: "homestakeros".
 
-  -j, --json <data>
-      Specify raw JSON data to inject into the base configuration.
-
   -h, --help
-      Displays this help message.
+      Display this help message.
 
 Examples:
-  
-  Local:
-      nix run .#buidl -- --base homestakeros --json '{"erigon":{"enable":true}}'
+  Local, using pipe:
+      echo '{"execution":{"erigon":{"enable":true}}}' | nix run .#buidl -- --base homestakeros
 
-  Remote:
-      nix run github:ponkila/nixobolus#buidl -- -b homestakeros -j '{"erigon":{"enable":true}}'
+  Remote, using positional argument:
+      nix run github:ponkila/nixobolus#buidl -- -b homestakeros '{"execution":{"erigon":{"enable":true}}}'
 
 USAGE
 }
 
-# Check that any argument exists
-[[ $# -eq 0 ]] && {
-  display_usage
-  exit 1
-}
 
 # Parse command line arguments
 while [[ "$#" -gt 0 ]]; do
@@ -76,18 +71,27 @@ while [[ "$#" -gt 0 ]]; do
     -b|--base)
       hostname="$2"
       shift 2 ;;
-    -j|--json)
-      json_data="$2"
-      shift 2 ;;
     -h|--help)
       display_usage
       exit 0 ;;
     *)
-      echo "Error: unknown option -- '$1'"
-      echo "Try '--help' for more information."
-      exit 1 ;;
+      # Check if argument is JSON data
+      if [[ "$1" =~ ^\{.*\}$ ]]; then
+        json_data="$1"
+      else
+        echo "Error: unknown option -- '$1'"
+        echo "Try '--help' for more information."
+        exit 1
+      fi
+      shift ;;
   esac
 done
+
+# Read JSON data from stdin if it's not provided as an argument
+if [ -z "$json_data" ] && ! tty -s && [ -p /dev/stdin ]; then
+  # Read JSON data from stdin
+  json_data=$(</dev/stdin)
+fi
 
 # Check that base configuration has been set
 if [[ -z $hostname ]]; then
@@ -98,10 +102,9 @@ fi
 
 # Create data.nix from JSON data
 if [[ -n $json_data ]]; then
-
   # Escape double quotes
   esc_json_data="${json_data//\"/\\\"}"
-  
+
   # Convert JSON to Nix expression
   nix_expr=$(nix-instantiate --eval --expr "builtins.fromJSON \"$esc_json_data\"") || exit 1
 
