@@ -12,6 +12,7 @@ data_nix="/tmp/data.nix"
 nix_flags=(
   --impure
   --no-warn-dirty
+  --print-out-paths
   --accept-flake-config
   --extra-experimental-features 'nix-command flakes'
 )
