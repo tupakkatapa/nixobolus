@@ -17,6 +17,9 @@ nix_flags=(
   --extra-experimental-features 'nix-command flakes'
 )
 
+# Default verbose flag
+verbose=false
+
 # Cleanup which will be executed at exit
 cleanup() {
   if [ -f "$data_nix" ]; then
@@ -55,6 +58,9 @@ Options:
   -h, --help
       Display this help message.
 
+  -v, --verbose
+      Display verbose output, including the contents of the built artifacts.
+
 Examples:
   Local, using pipe:
       echo '{"execution":{"erigon":{"enable":true}}}' | nix run .#buidl -- --base homestakeros
@@ -65,7 +71,6 @@ Examples:
 USAGE
 }
 
-
 # Parse command line arguments
 while [[ "$#" -gt 0 ]]; do
   case $1 in
@@ -75,6 +80,9 @@ while [[ "$#" -gt 0 ]]; do
     -h|--help)
       display_usage
       exit 0 ;;
+    -v|--verbose)
+      verbose=true
+      shift ;;
     *)
       # Check if argument is JSON data
       if [[ "$1" =~ ^\{.*\}$ ]]; then
@@ -121,8 +129,8 @@ else
   cleanup
 fi
 
-# Display injected data
-if [ -f "$data_nix" ]; then
+# Display injected data if verbose is true
+if [ "$verbose" = true ] && [ -f "$data_nix" ]; then
   echo -e "$data_nix: \n$(cat $data_nix)"
 fi
 
