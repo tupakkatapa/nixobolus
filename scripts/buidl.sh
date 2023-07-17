@@ -46,7 +46,7 @@ Options:
       Set the base configuration with the specified hostname. Available configurations: 'homestakeros'.
 
   -o, --output <output_path>
-      Set the output path for the build result symlinks. Default: './result'
+      Set the output path for the build result symlinks. Default: './result'.
 
   -v, --verbose
       Enable verbose output, which displays the contents of the injected data and the trace for debugging purposes.
@@ -101,9 +101,9 @@ nix_flags=(
   --out-link "$output_path"
 )
 
-# Append '--show-trace' if verbose flag is true
+# Append '--show-trace' and '--debug' if verbose flag is true
 if [ "$verbose" = true ]; then
-  nix_flags+=("--show-trace")
+  nix_flags+=("--show-trace" "--debug" )
 fi
 
 # Read JSON data from stdin if it's not provided as an argument
@@ -139,11 +139,6 @@ else
   cleanup
 fi
 
-# Display injected data if verbose is true
-if [ "$verbose" = true ] && [ -f "$data_nix" ]; then
-  echo -e "$data_nix: \n$(cat $data_nix)"
-fi
-
 # Run nix build command
 output=$(nix build .#"$hostname" "${nix_flags[@]}")
 if [[ $output == *"error: could not find a flake.nix file"* ]]; then
@@ -151,8 +146,18 @@ if [[ $output == *"error: could not find a flake.nix file"* ]]; then
   nix build github:ponkila/nixobolus#"$hostname" "${nix_flags[@]}" || exit 1
 fi
 
+# Display injected data if verbose is true
+if [ "$verbose" = true ] && [ -f "$data_nix" ]; then
+  # Replace newlines with spaces, removes consecutive spaces and trailing space
+  echo "injected data: '$(cat $data_nix | tr '\n' ' ' | tr -s ' ' | sed 's/ $//')'"
+fi
+
 # Print the real paths of the symlinks
 for symlink in "$output_path"/*; do
   real_path=$(readlink -f "$symlink")
-  echo "$real_path"
+  if [ "$verbose" = true ]; then 
+    echo created symlink: \'"$symlink > $real_path"\'
+  else
+    echo "$real_path"
+  fi
 done
