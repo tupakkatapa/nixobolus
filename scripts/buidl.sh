@@ -5,20 +5,12 @@ set -o pipefail
 trap cleanup EXIT
 trap 'cleanup && exit 0' SIGINT
 
-# This path is also hard-coded in flake.nix
-data_nix="/tmp/data.nix"
-
-# Default flags for nix-command
-nix_flags=(
-  --impure
-  --no-warn-dirty
-  --print-out-paths
-  --accept-flake-config
-  --extra-experimental-features 'nix-command flakes'
-)
-
-# Default verbose flag
+# Default values
 verbose=false
+output_path="./result"
+
+# Do not change, this path is also hard-coded in flake.nix
+data_nix="/tmp/data.nix" 
 
 # Cleanup which will be executed at exit
 cleanup() {
@@ -29,13 +21,13 @@ cleanup() {
 
 # Check dependencies 
 if ! command -v nix-instantiate >/dev/null 2>&1; then
-  echo "Error: 'nix-instantiate' command not found. Please install the Nix package manager."
-  echo "For installation instructions, visit: https://nixos.org/download.html"
+  echo "error: 'nix-instantiate' command not found. Please install the Nix package manager."
+  echo "for installation instructions, visit: https://nixos.org/download.html"
   exit 1
 else
   if ! command -v nix >/dev/null 2>&1; then
-    echo "Error: 'nix' command not found. Please install the nix-command."
-    echo "You can install the nix-command by running 'nix-env -iA nixpkgs.nix'."
+    echo "error: 'nix' command not found. Please install the nix-command."
+    echo "you can install the nix-command by running 'nix-env -iA nixpkgs.nix'."
     exit 1
   fi
 fi
@@ -43,23 +35,24 @@ fi
 # Function to display help message
 display_usage() {
   cat <<USAGE
-Usage: $0 [options] [json data]
+Usage: $0 [options] [json_data]
 
 Arguments:
-  json data
-      Specify raw JSON data to inject into the base configuration. It can be provided as a
-      positional argument or piped into the script.
+  json_data
+      Specify raw JSON data to inject into the base configuration. It can be provided as a positional argument or piped into the script.
 
 Options:
   -b, --base <hostname>
-      Set the base configuration with the specified hostname.
-      Available configurations: "homestakeros".
+      Set the base configuration with the specified hostname. Available configurations: 'homestakeros'.
+
+  -o, --output <output_path>
+      Set the output path for the build result symlinks. Default: './result'
+
+  -v, --verbose
+      Enable verbose output, which displays the contents of the injected data and the trace for debugging purposes.
 
   -h, --help
       Display this help message.
-
-  -v, --verbose
-      Display verbose output.
 
 Examples:
   Local, using pipe:
@@ -77,24 +70,41 @@ while [[ "$#" -gt 0 ]]; do
     -b|--base)
       hostname="$2"
       shift 2 ;;
-    -h|--help)
-      display_usage
-      exit 0 ;;
+    -o|--output)
+      output_path="$2"
+      shift 2 ;;
     -v|--verbose)
       verbose=true
       shift ;;
+    -h|--help)
+      display_usage
+      exit 0 ;;
     *)
       # Check if argument is JSON data
       if [[ "$1" =~ ^\{.*\}$ ]]; then
         json_data="$1"
       else
-        echo "Error: unknown option -- '$1'"
-        echo "Try '--help' for more information."
+        echo "error: unknown option -- '$1'"
+        echo "try '--help' for more information."
         exit 1
       fi
       shift ;;
   esac
 done
+
+# Default flags for 'nix build' command
+nix_flags=(
+  --accept-flake-config
+  --extra-experimental-features 'nix-command flakes'
+  --impure
+  --no-warn-dirty
+  --out-link "$output_path"
+)
+
+# Append '--show-trace' if verbose flag is true
+if [ "$verbose" = true ]; then
+  nix_flags+=("--show-trace")
+fi
 
 # Read JSON data from stdin if it's not provided as an argument
 if [ -z "$json_data" ] && ! tty -s && [ -p /dev/stdin ]; then
@@ -104,8 +114,8 @@ fi
 
 # Check that base configuration has been set
 if [[ -z $hostname ]]; then
-  echo "Error: base configuration is required."
-  echo "Try '--help' for more information."
+  echo "error: base configuration is required."
+  echo "try '--help' for more information."
   exit 1
 fi
 
@@ -135,5 +145,14 @@ if [ "$verbose" = true ] && [ -f "$data_nix" ]; then
 fi
 
 # Run nix build command
-nix build .#"$hostname" "${nix_flags[@]}" || \
-  { echo "Fetching from GitHub"; nix build github:ponkila/nixobolus#"$hostname" "${nix_flags[@]}" || exit 1; }
+output=$(nix build .#"$hostname" "${nix_flags[@]}")
+if [[ $output == *"error: could not find a flake.nix file"* ]]; then
+  if [ "$verbose" = true ]; then echo "fetching from github:ponkila/nixobolus"; fi
+  nix build github:ponkila/nixobolus#"$hostname" "${nix_flags[@]}" || exit 1
+fi
+
+# Print the real paths of the symlinks
+for symlink in "$output_path"/*; do
+  real_path=$(readlink -f "$symlink")
+  echo "$real_path"
+done
