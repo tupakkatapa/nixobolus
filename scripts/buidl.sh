@@ -134,18 +134,13 @@ run_nix_build() {
   # Append '--show-trace' and '--debug' if verbose flag is true
   [[ "$verbose" = true ]] && nix_flags+=("--show-trace" "--debug")
   
-  # Execute the 'nix build' command and capture the output
+  # Execute the 'nix build' command
   output=$(nix build .#"$hostname" "${nix_flags[@]}")
-  exit_status=$?
 
   # Fallback to fetching from GitHub if the flake.nix file is not found
-  if [ $exit_status -ne 0 ]; then
-    if grep -q "error: could not find a flake.nix file" <<< "$output"; then
-      if [ "$verbose" = true ]; then echo "fetching from github:ponkila/nixobolus"; fi
-      nix build github:ponkila/nixobolus#"$hostname" "${nix_flags[@]}" || exit 1
-    else
-      exit 1
-    fi
+  if [[ $output == *"error: could not find a flake.nix file"* ]]; then
+    if [ "$verbose" = true ]; then echo "fetching from github:ponkila/nixobolus"; fi
+    nix build github:ponkila/nixobolus#"$hostname" "${nix_flags[@]}" || exit 1
   fi
 }
 
