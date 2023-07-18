@@ -135,7 +135,7 @@ run_nix_build() {
   [[ "$verbose" = true ]] && nix_flags+=("--show-trace" "--debug")
   
   # Execute the 'nix build' command
-  if [ -f ./flake.nix ]; then
+  if [ -f ./flake.nix ] || [ -f ../flake.nix ]; then
     nix build .#"$hostname" "${nix_flags[@]}" || exit 1
   else
     [ "$verbose" = true ] && echo "fetching from github:ponkila/nixobolus"
