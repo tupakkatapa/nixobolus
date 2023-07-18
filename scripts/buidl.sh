@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# script for building a host with injected json data
-# usage: sh ./scripts/buidl.sh --help
-# deps: nix
+# Script for building a host with injected json data
 
 set -o pipefail
 trap cleanup EXIT
