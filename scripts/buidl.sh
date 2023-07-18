@@ -151,7 +151,7 @@ print_output() {
   # Display injected data if verbose is true
   if [ "$verbose" = true ] && [ -f "$data_nix" ]; then
     # Replaces newlines with spaces, removes consecutive spaces and trailing space
-  echo "injected data: '$(< "$data_nix" tr '\n' ' ' | tr -s ' ' | sed 's/ $//')'"
+    echo "injected data: '$(< "$data_nix" tr '\n' ' ' | tr -s ' ' | sed 's/ $//')'"
   fi
 
   # Print the real paths of the symlinks
