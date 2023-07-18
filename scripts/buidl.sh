@@ -18,7 +18,7 @@ cleanup() {
   [[ -f "$data_nix" ]] && rm "$data_nix"
 }
 
-check_dependecies() {
+check_dependencies() {
   if ! command -v nix-instantiate >/dev/null 2>&1; then
     echo "error: 'nix-instantiate' command not found. Please install the Nix package manager."
     echo "for installation instructions, visit: https://nixos.org/download.html"
@@ -167,7 +167,7 @@ print_output() {
 
 main() {
   # Check necessary dependencies to run the script
-  check_dependecies
+  check_dependencies
 
   # Parse and validate command line arguments
   parse_arguments "$@"
