@@ -210,6 +210,30 @@
                     example = "/var/mnt/erigon/jwt.hex";
                   };
                 };
+
+                geth = {
+                  enable = mkOption {
+                    type = types.bool;
+                    default = false;
+                    description = "Whether to enable Geth.";
+                  };
+                  endpoint = mkOption {
+                    type = types.str;
+                    default = "http://127.0.0.1:8551";
+                    description = "HTTP-RPC server listening interface of engine API.";
+                  };
+                  dataDir = mkOption {
+                    type = types.path;
+                    default = "/var/mnt/geth";
+                    description = "Data directory for the blockchain.";
+                  };
+                  jwtSecretFile = mkOption {
+                    type = types.nullOr types.str;
+                    default = null;
+                    description = "Path to the token that ensures safe connection between CL and EL.";
+                    example = "/var/mnt/geth/jwt.hex";
+                  };
+                };
               };
 
               consensus = {
@@ -291,7 +315,10 @@
               #   homestakeros = {
               #     consensus.lighthouse.enable = true;
               #     addons.mev-boost.enable = true;
-              #     execution.erigon.enable = true;
+              #     execution = {
+              #       erigon.enable = true;
+              #       geth.enable = true;
+              #     };
               #     vpn.wireguard = {
               #       enable = true;
               #       configFile = "/var/mnt/secrets/wg0.conf";
@@ -506,6 +533,49 @@
                           "--authrpc.jwtsecret=${cfg.execution.erigon.jwtSecretFile}"
                         else ""} \
                         --metrics
+                      '';
+
+                      wantedBy = [ "multi-user.target" ];
+                    };
+
+                    networking.firewall = {
+                      allowedTCPPorts = [ 30303 30304 42069 ];
+                      allowedUDPPorts = [ 30303 30304 42069 ];
+                    };
+                  }
+                )
+
+                #################################################################### GETH
+                (
+                  let
+                    local.erigon.parsedEndpoint = parseEndpoint cfg.execution.geth.endpoint;
+                  in
+
+                  mkIf (cfg.execution.geth.enable) {
+                    environment.systemPackages = [
+                      pkgs.go-ethereum
+                    ];
+
+                    systemd.services.go-ethereum = {
+                      enable = true;
+
+                      description = "execution, mainnet";
+                      requires = [ ]
+                        ++ lib.optional (elem "wireguard" activeVPNClients)
+                        "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+
+                      after = map (name: "${name}.service") activeConsensusClients
+                        ++ lib.optional (elem "wireguard" activeVPNClients)
+                        "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+
+                      serviceConfig = {
+                        Restart = "always";
+                        RestartSec = "5s";
+                        Type = "simple";
+                      };
+
+                      # TODO
+                      script = ''${pkgs.go-ethereum}/bin/go-ethereum \
                       '';
 
                       wantedBy = [ "multi-user.target" ];
