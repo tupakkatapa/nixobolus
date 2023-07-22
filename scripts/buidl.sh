@@ -17,20 +17,6 @@ cleanup() {
   [[ -f "$data_nix" ]] && rm "$data_nix"
 }
 
-check_dependencies() {
-  if ! command -v nix-instantiate >/dev/null 2>&1; then
-    echo "error: 'nix-instantiate' command not found. Please install the Nix package manager."
-    echo "for installation instructions, visit: https://nixos.org/download.html"
-    exit 1
-  else
-    if ! command -v nix >/dev/null 2>&1; then
-      echo "error: 'nix' command not found. Please install the nix-command."
-      echo "you can install the nix-command by running 'nix-env -iA nixpkgs.nix'."
-      exit 1
-    fi
-  fi
-}
-
 display_usage() {
   cat <<USAGE
 Usage: $0 [options] [json_data]
@@ -165,9 +151,6 @@ print_output() {
 }
 
 main() {
-  # Check necessary dependencies to run the script
-  check_dependencies
-
   # Parse and validate command line arguments
   parse_arguments "$@"
 
