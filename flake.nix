@@ -103,8 +103,8 @@
             in
             pkgs.symlinkJoin {
               inherit name;
-              paths = [ buidl-script ] ++ [ /* buildInputs here */ ];
-              buildInputs = with pkgs; [ makeWrapper ];
+              paths = [ buidl-script ];
+              buildInputs = with pkgs; [ nix makeWrapper ];
               postBuild = "wrapProgram $out/bin/${name} --prefix PATH : $out/bin";
             };
         };
