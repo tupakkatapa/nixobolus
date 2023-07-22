@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Script for building a host with injected json data
-# Dependencies: Nix package manager, nix-command 
 
 set -o pipefail
 trap cleanup EXIT
