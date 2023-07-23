@@ -14,7 +14,7 @@ nix eval --json github:ponkila/nixobolus#exports
 ```
 The exports are then utilized to generate an HTML form. The user defines the options within the HTML frontend, and upon form submission, the form payload is sent to Nixobolus using a command as such:
 ```bash
-nix run github:ponkila/nixobolus#buidl -- --base homestakeros --json '{"erigon":{"enable":true}}'
+nix run github:ponkila/nixobolus#buidl -- --base homestakeros '{"execution":{"erigon":{"enable":true}}}'
 ```
 This command triggers the execution of the `scripts/buidl.sh` script, which generates a `/tmp/data.nix` file based on the provided JSON data and initiates the building process. The base configuration is automatically set up to import this file if it exists. The resulting output is stored in the `./result` directory.
 
