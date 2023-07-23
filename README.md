@@ -16,7 +16,7 @@ The exports are then utilized to generate an HTML form. The user defines the opt
 ```bash
 nix run github:ponkila/nixobolus#buidl -- --base homestakeros '{"execution":{"erigon":{"enable":true}}}'
 ```
-This command triggers the execution of the `scripts/buidl.sh` script, which generates a `/tmp/data.nix` file based on the provided JSON data and initiates the building process. The base configuration is automatically set up to import this file if it exists. By default, the resulting build symlinks are stored in the `./result` directory.
+This command triggers the execution of the `scripts/buidl.sh` script, which generates a `/tmp/data.nix` file based on the provided JSON data and initiates the building process. The base configuration is automatically set up to import this file if it exists. The resulting output is stored in the `./result` directory.
 
 ## Usage as a Module
 
@@ -34,9 +34,6 @@ To use Nixobolus as a module in your NixOS configuration, you can follow the exa
       modules = [
         ./configuration.nix
         nixobolus.nixosModules.homestakeros
-        {
-          homestakeros = { ... };
-        }
       ];
     };
   };
