@@ -127,19 +127,19 @@
                 system.stateVersion = "23.11";
               }
               # Keeping this here for testing
-              {
-                homestakeros = {
-                  consensus.lighthouse.enable = true;
-                  addons.mev-boost.enable = true;
-                  execution = {
-                    erigon.enable = true;
-                  };
-                  vpn.wireguard = {
-                    enable = true;
-                    configFile = "/var/mnt/secrets/wg0.conf";
-                  };
-                };
-              }
+              # {
+              #   homestakeros = {
+              #     consensus.lighthouse.enable = true;
+              #     addons.mev-boost.enable = true;
+              #     execution = {
+              #       erigon.enable = true;
+              #     };
+              #     vpn.wireguard = {
+              #       enable = true;
+              #       configFile = "/var/mnt/secrets/wg0.conf";
+              #     };
+              #   };
+              # }
               {
                 boot.loader.systemd-boot.enable = true;
                 boot.loader.efi.canTouchEfiVariables = true;
@@ -178,14 +178,11 @@
           # Accessible through 'nix eval --json .#exports'
           exports = {
             homestakeros = parseOpts (
-              getOpts [ nixosModules.homestakeros ]
+              getOpts [ ./modules/homestakeros/options.nix ]
             );
-            test = parseOpts (
-              getOpts [
-                { options.foo = nixpkgs.lib.mkEnableOption "test"; }
-                (nixpkgs.lib.mkIf false { foo = true; })
-              ]
-            );
+            # docs = nixpkgs.legacyPackages."aarch64-darwin".nixosOptionsDoc { 
+            #    options = (getOpts [ ./modules/homestakeros/options.nix ]); 
+            # };
           };
 
           # NixOS configuration entrypoints for the frontend
