@@ -2,7 +2,6 @@
 let
   cfg = config.homestakeros;
 in
-rec
 {
   inherit (import ./options.nix { inherit lib pkgs; }) options;
 
