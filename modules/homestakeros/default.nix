@@ -1,4 +1,4 @@
-{ config, lib, pkgs, inputs, ... }:
+{ config, lib, pkgs, inputs, outputs, ... }:
 let
   cfg = config.homestakeros;
 in
@@ -29,8 +29,8 @@ in
       (mkIf true {
         nixpkgs.overlays = [
           inputs.ethereum-nix.overlays.default
-          #inputs.overlays.additions
-          #inputs.overlays.modifications
+          outputs.overlays.additions
+          outputs.overlays.modifications
         ];
       })
 
