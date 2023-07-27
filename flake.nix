@@ -50,8 +50,10 @@
         "x86_64-linux"
       ];
       perSystem = { pkgs, lib, config, system, ... }: {
+        # Nix code formatter, accessible through 'nix fmt'
         formatter = nixpkgs.legacyPackages.${system}.nixpkgs-fmt;
 
+        # Git hook scripts for identifying issues before submission
         pre-commit.settings = {
           hooks = {
             shellcheck.enable = true;
@@ -66,9 +68,10 @@
             };
           };
         };
-        # Do not perform pre-commit hooks w/ nix flake check
+        # Do not perform hooks with 'nix flake check'
         pre-commit.check.enable = false;
 
+        # Development tools for devshell
         mission-control.scripts = { };
 
         # Devshells for bootstrapping
