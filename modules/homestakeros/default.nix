@@ -26,14 +26,6 @@ in
       activeVPNClients = getActiveClients (builtins.attrNames cfg.vpn) cfg.vpn;
     in
     mkMerge [
-      (mkIf true {
-        nixpkgs.overlays = [
-          inputs.ethereum-nix.overlays.default
-          outputs.overlays.additions
-          outputs.overlays.modifications
-        ];
-      })
-
       ################################################################### LOCALIZATION
       (mkIf true {
         networking.hostName = cfg.localization.hostname;

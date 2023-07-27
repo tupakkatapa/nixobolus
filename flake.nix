@@ -172,6 +172,13 @@
           # A accessible through 'nix eval --json .#exports'
           nixosModules.homestakeros = {
             imports = [ ./modules/homestakeros ];
+            config = {
+              nixpkgs.overlays = [
+                ethereum-nix.overlays.default
+                outputs.overlays.additions
+                outputs.overlays.modifications
+              ];
+            };
           };
 
           # Module option exports for the frontend
