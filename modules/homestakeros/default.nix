@@ -154,16 +154,16 @@ in
             };
 
             script = ''${pkgs.erigon}/bin/erigon \
-                        --datadir=${cfg.execution.erigon.dataDir} \
-                        --chain mainnet \
-                        --authrpc.vhosts="*" \
-                        --authrpc.port ${local.erigon.parsedEndpoint.port} \
-                        --authrpc.addr ${local.erigon.parsedEndpoint.addr} \
-                        ${if cfg.execution.erigon.jwtSecretFile != null then
-                          "--authrpc.jwtsecret=${cfg.execution.erigon.jwtSecretFile}"
-                        else ""} \
-                        --metrics
-                      '';
+              --datadir=${cfg.execution.erigon.dataDir} \
+              --chain mainnet \
+              --authrpc.vhosts="*" \
+              --authrpc.port ${local.erigon.parsedEndpoint.port} \
+              --authrpc.addr ${local.erigon.parsedEndpoint.addr} \
+              ${if cfg.execution.erigon.jwtSecretFile != null then
+                "--authrpc.jwtsecret=${cfg.execution.erigon.jwtSecretFile}"
+              else ""} \
+              --metrics
+            '';
 
             wantedBy = [ "multi-user.target" ];
           };
@@ -207,6 +207,7 @@ in
             script = ''${pkgs.go-ethereum}/bin/go-ethereum \
               --mainnet \
               --datadir ${cfg.execution.geth.dataDir} \
+              --authrpc.vhosts "*" \
               --authrpc.port ${local.geth.parsedEndpoint.port} \
               --authrpc.addr ${local.geth.parsedEndpoint.addr} \
               ${if cfg.execution.geth.jwtSecretFile != null then
