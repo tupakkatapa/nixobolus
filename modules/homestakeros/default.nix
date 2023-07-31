@@ -175,6 +175,56 @@ in
         }
       )
 
+      #################################################################### GETH
+      (
+        let
+          local.geth.parsedEndpoint = parseEndpoint cfg.execution.geth.endpoint;
+        in
+
+        mkIf (cfg.execution.geth.enable) {
+          environment.systemPackages = [
+            pkgs.go-ethereum
+          ];
+
+          systemd.services.go-ethereum = {
+            enable = true;
+
+            description = "execution, mainnet";
+            requires = [ ]
+              ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+
+            after = map (name: "${name}.service") activeConsensusClients
+              ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+
+            serviceConfig = {
+              Restart = "always";
+              RestartSec = "5s";
+              Type = "simple";
+            };
+
+            script = ''${pkgs.go-ethereum}/bin/go-ethereum \
+              --mainnet \
+              --datadir ${cfg.execution.geth.dataDir} \
+              --authrpc.port ${local.geth.parsedEndpoint.port} \
+              --authrpc.addr ${local.geth.parsedEndpoint.addr} \
+              ${if cfg.execution.geth.jwtSecretFile != null then
+                "--authrpc.jwtsecret ${cfg.execution.geth.jwtSecretFile}"
+              else ""} \
+              --metrics
+            '';
+
+            wantedBy = [ "multi-user.target" ];
+          };
+
+          networking.firewall = {
+            allowedTCPPorts = [ 30303 30304 42069 ];
+            allowedUDPPorts = [ 30303 30304 42069 ];
+          };
+        }
+      )
+
       #################################################################### MEV-BOOST
       (
         let
