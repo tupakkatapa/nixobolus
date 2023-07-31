@@ -258,9 +258,8 @@ in
             script = ''${pkgs.nethermind}/bin/nethermind \
               --config mainnet \
               --datadir ${cfg.execution.nethermind.dataDir} \
-              --JsonRpc.Enabled true \
-              --JsonRpc.Port ${local.nethermind.parsedEndpoint.port} \
-              --JsonRpc.Host ${local.nethermind.parsedEndpoint.addr} \
+              --JsonRpc.EngineHost ${local.nethermind.parsedEndpoint.addr} \
+              --JsonRpc.EnginePort ${local.nethermind.parsedEndpoint.port} \
               ${if cfg.execution.nethermind.jwtSecretFile != null then
                 "--JsonRpc.JwtSecretFile ${cfg.execution.nethermind.jwtSecretFile}"
               else ""} \
