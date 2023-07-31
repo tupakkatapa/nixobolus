@@ -225,6 +225,57 @@ in
         }
       )
 
+      #################################################################### NETHERMIND
+      (
+        let
+          local.nethermind.parsedEndpoint = parseEndpoint cfg.execution.nethermind.endpoint;
+        in
+
+        mkIf (cfg.execution.nethermind.enable) {
+          environment.systemPackages = [
+            pkgs.nethermind
+          ];
+
+          systemd.services.nethermind = {
+            enable = true;
+
+            description = "execution, mainnet";
+            requires = [ ]
+              ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+
+            after = map (name: "${name}.service") activeConsensusClients
+              ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+
+            serviceConfig = {
+              Restart = "always";
+              RestartSec = "5s";
+              Type = "simple";
+            };
+
+            script = ''${pkgs.nethermind}/bin/nethermind \
+              --config mainnet \
+              --datadir ${cfg.execution.nethermind.dataDir} \
+              --JsonRpc.Enabled true \
+              --JsonRpc.Port ${local.nethermind.parsedEndpoint.port} \
+              --JsonRpc.Host ${local.nethermind.parsedEndpoint.addr} \
+              ${if cfg.execution.nethermind.jwtSecretFile != null then
+                "--JsonRpc.JwtSecretFile ${cfg.execution.nethermind.jwtSecretFile}"
+              else ""} \
+              --Metrics.Enabled true
+            '';
+
+            wantedBy = [ "multi-user.target" ];
+          };
+
+          networking.firewall = {
+            allowedTCPPorts = [ 30303 30304 42069 ];
+            allowedUDPPorts = [ 30303 30304 42069 ];
+          };
+        }
+      )
+
       #################################################################### MEV-BOOST
       (
         let
