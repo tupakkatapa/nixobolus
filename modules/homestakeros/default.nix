@@ -276,6 +276,58 @@ in
         }
       )
 
+      #################################################################### BESU
+      (
+        let
+          local.besu.parsedEndpoint = parseEndpoint cfg.execution.besu.endpoint;
+        in
+
+        mkIf (cfg.execution.besu.enable) {
+          environment.systemPackages = [
+            pkgs.besu
+          ];
+
+          systemd.services.besu = {
+            enable = true;
+
+            description = "execution, mainnet";
+            requires = [ ]
+              ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+
+            after = map (name: "${name}.service") activeConsensusClients
+              ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+
+            serviceConfig = {
+              Restart = "always";
+              RestartSec = "5s";
+              Type = "simple";
+            };
+
+            script = ''${pkgs.besu}/bin/besu \
+              --network=mainnet \
+              --data-path=${cfg.execution.besu.dataDir} \
+              --engine-rpc-enabled=true \
+              --engine-host-allowlist="*" \
+              --engine-rpc-port=${local.besu.parsedEndpoint.port} \
+              --engine-rpc-host=${local.besu.parsedEndpoint.addr} \
+              ${if cfg.execution.besu.jwtSecretFile != null then
+                "--engine-jwt-secret=${cfg.execution.besu.jwtSecretFile}"       
+              else ""} \
+              --metrics-enabled=true
+            '';
+
+            wantedBy = [ "multi-user.target" ];
+          };
+
+          networking.firewall = {
+            allowedTCPPorts = [ 30303 30304 42069 ];
+            allowedUDPPorts = [ 30303 30304 42069 ];
+          };
+        }
+      )
+
       #################################################################### MEV-BOOST
       (
         let

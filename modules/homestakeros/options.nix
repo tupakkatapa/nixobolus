@@ -148,6 +148,30 @@
             example = "/var/mnt/nethermind/jwt.hex";
           };
         };
+
+        besu = {
+          enable = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Whether to enable Besu.";
+          };
+          endpoint = mkOption {
+            type = types.str;
+            default = "http://127.0.0.1:8551";
+            description = "HTTP-RPC server listening interface of engine API.";
+          };
+          dataDir = mkOption {
+            type = types.path;
+            default = "/var/mnt/besu";
+            description = "Data directory for the blockchain.";
+          };
+          jwtSecretFile = mkOption {
+            type = types.nullOr types.str;
+            default = null;
+            description = "Path to the token that ensures safe connection between CL and EL.";
+            example = "/var/mnt/besu/jwt.hex";
+          };
+        };
       };
 
       consensus = {
