@@ -27,104 +27,121 @@ in
     in
     mkMerge [
       ################################################################### LOCALIZATION
-      (mkIf true {
-        networking.hostName = cfg.localization.hostname;
-        time.timeZone = cfg.localization.timezone;
-      })
+      (
+        mkIf true {
+          networking.hostName = cfg.localization.hostname;
+          time.timeZone = cfg.localization.timezone;
+        }
+      )
 
       #################################################################### MOUNTS
-      (mkIf true {
-        systemd.mounts = lib.mapAttrsToList
-          (name: mount: {
-            enable = mount.enable or true;
-            description = mount.description or "${name} mount point";
-            what = mount.what;
-            where = mount.where;
-            type = mount.type or "ext4";
-            options = mount.options or "defaults";
-            before = lib.mkDefault (mount.before or [ ]);
-            wantedBy = mount.wantedBy or [ "multi-user.target" ];
-          })
-          cfg.mounts;
-      })
+      # cfg: https://www.freedesktop.org/software/systemd/man/systemd.mount.html#Options
+      (
+        mkIf true {
+          systemd.mounts = lib.mapAttrsToList
+            (name: mount: {
+              enable = mount.enable or true;
+              description = mount.description or "${name} mount point";
+              what = mount.what;
+              where = mount.where;
+              type = mount.type or "ext4";
+              options = mount.options or "defaults";
+              before = lib.mkDefault (mount.before or [ ]);
+              wantedBy = mount.wantedBy or [ "multi-user.target" ];
+            })
+            cfg.mounts;
+        }
+      )
 
       #################################################################### SSH (system level)
-      (mkIf true {
-        services.openssh = {
-          enable = true;
-          hostKeys = lib.mkIf (cfg.ssh.privateKeyFile != null) [{
-            path = cfg.ssh.privateKeyFile;
-            type = "ed25519";
-          }];
-          allowSFTP = false;
-          extraConfig = ''
-            AllowTcpForwarding yes
-            X11Forwarding no
-            #AllowAgentForwarding no
-            AllowStreamLocalForwarding no
-            AuthenticationMethods publickey
-          '';
-          settings.PasswordAuthentication = false;
-          settings.KbdInteractiveAuthentication = false;
-        };
-      })
+      (
+        mkIf true {
+          services.openssh = {
+            enable = true;
+            hostKeys = lib.mkIf (cfg.ssh.privateKeyFile != null) [{
+              path = cfg.ssh.privateKeyFile;
+              type = "ed25519";
+            }];
+            allowSFTP = false;
+            extraConfig = ''
+              AllowTcpForwarding yes
+              X11Forwarding no
+              #AllowAgentForwarding no
+              AllowStreamLocalForwarding no
+              AuthenticationMethods publickey
+            '';
+            settings.PasswordAuthentication = false;
+            settings.KbdInteractiveAuthentication = false;
+          };
+        }
+      )
 
       #################################################################### USER (core)
-      (mkIf true {
-        users.users.core = {
-          isNormalUser = true;
-          group = "core";
-          extraGroups = [ "wheel" ];
-          openssh.authorizedKeys.keys = cfg.ssh.authorizedKeys;
-          shell = pkgs.fish;
-        };
-        users.groups.core = { };
-        environment.shells = [ pkgs.fish ];
+      (
+        mkIf true {
+          users.users.core = {
+            isNormalUser = true;
+            group = "core";
+            extraGroups = [ "wheel" ];
+            openssh.authorizedKeys.keys = cfg.ssh.authorizedKeys;
+            shell = pkgs.fish;
+          };
+          users.groups.core = { };
+          environment.shells = [ pkgs.fish ];
 
-        programs = {
-          tmux.enable = true;
-          htop.enable = true;
-          git.enable = true;
-          fish.enable = true;
-          fish.loginShellInit = "fish_add_path --move --prepend --path $HOME/.nix-profile/bin /run/wrappers/bin /etc/profiles/per-user/$USER/bin /run/current-system/sw/bin /nix/var/nix/profiles/default/bin";
-        };
-      })
+          programs = {
+            tmux.enable = true;
+            htop.enable = true;
+            git.enable = true;
+            fish.enable = true;
+            fish.loginShellInit = "fish_add_path --move --prepend --path $HOME/.nix-profile/bin /run/wrappers/bin /etc/profiles/per-user/$USER/bin /run/current-system/sw/bin /nix/var/nix/profiles/default/bin";
+          };
+        }
+      )
 
       #################################################################### MOTD (no options)
-      (mkIf true {
-        programs.rust-motd = {
-          enable = true;
-          enableMotdInSSHD = true;
-          settings = {
-            banner = {
-              color = "yellow";
-              command = ''
-                echo ""
-                echo " +-------------+"
-                echo " | 10110 010   |"
-                echo " | 101 101 10  |"
-                echo " | 0   _____   |"
-                echo " |    / ___ \  |"
-                echo " |   / /__/ /  |"
-                echo " +--/ _____/---+"
-                echo "   / /"
-                echo "  /_/"
-                echo ""
-                systemctl --failed --quiet
-              '';
+      # cfg: https://github.com/rust-motd/rust-motd
+      (
+        mkIf true {
+          programs.rust-motd = {
+            enable = true;
+            enableMotdInSSHD = true;
+            settings = {
+              banner = {
+                color = "yellow";
+                command = ''
+                  echo ""
+                  echo " +-------------+"
+                  echo " | 10110 010   |"
+                  echo " | 101 101 10  |"
+                  echo " | 0   _____   |"
+                  echo " |    / ___ \  |"
+                  echo " |   / /__/ /  |"
+                  echo " +--/ _____/---+"
+                  echo "   / /"
+                  echo "  /_/"
+                  echo ""
+                  systemctl --failed --quiet
+                '';
+              };
+              uptime.prefix = "Uptime:";
+              last_login.core = 2;
             };
-            uptime.prefix = "Uptime:";
-            last_login.core = 2;
           };
-        };
-      })
+        }
+      )
 
       #################################################################### WIREGUARD
-      (mkIf (cfg.vpn.wireguard.enable) {
-        networking.wg-quick.interfaces.${cfg.vpn.wireguard.interfaceName}.configFile = cfg.vpn.wireguard.configFile;
-      })
+      # cfg: https://man7.org/linux/man-pages/man8/wg.8.html
+      (
+        mkIf (cfg.vpn.wireguard.enable) {
+          networking.wg-quick.interfaces.${cfg.vpn.wireguard.interfaceName}.configFile = cfg.vpn.wireguard.configFile;
+        }
+      )
 
       #################################################################### ERIGON
+      # cli: https://erigon.gitbook.io/erigon/advanced-usage/command-line-options
+      # sec: https://erigon.gitbook.io/erigon/basic-usage/default-ports-and-firewalls
       (
         let
           local.erigon.parsedEndpoint = parseEndpoint cfg.execution.erigon.endpoint;
@@ -176,6 +193,8 @@ in
       )
 
       #################################################################### GETH
+      # cli: https://geth.ethereum.org/docs/fundamentals/command-line-options
+      # sec: https://geth.ethereum.org/docs/fundamentals/security
       (
         let
           local.geth.parsedEndpoint = parseEndpoint cfg.execution.geth.endpoint;
@@ -227,6 +246,8 @@ in
       )
 
       #################################################################### NETHERMIND
+      # cli: https://docs.nethermind.io/nethermind/ethereum-client/configuration
+      # sec: https://docs.nethermind.io/nethermind/first-steps-with-nethermind/firewall-configuration
       (
         let
           local.nethermind.parsedEndpoint = parseEndpoint cfg.execution.nethermind.endpoint;
@@ -277,6 +298,8 @@ in
       )
 
       #################################################################### BESU
+      # cli: https://besu.hyperledger.org/stable/public-networks/reference/cli/options
+      # sec: https://besu.hyperledger.org/stable/public-networks/how-to/connect/configure-ports
       (
         let
           local.besu.parsedEndpoint = parseEndpoint cfg.execution.besu.endpoint;
@@ -329,6 +352,7 @@ in
       )
 
       #################################################################### MEV-BOOST
+      # cli: https://github.com/flashbots/mev-boost#mev-boost-cli-arguments
       (
         let
           local.mev-boost.parsedEndpoint = parseEndpoint cfg.addons.mev-boost.endpoint;
@@ -374,6 +398,8 @@ in
       )
 
       #################################################################### LIGHTHOUSE
+      # cli: https://lighthouse-book.sigmaprime.io/api-bn.html
+      # sec: https://lighthouse-book.sigmaprime.io/advanced_networking.html
       (
         let
           local.lighthouse.parsedEndpoint = parseEndpoint cfg.consensus.lighthouse.endpoint;
