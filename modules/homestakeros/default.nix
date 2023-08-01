@@ -220,8 +220,8 @@ in
           };
 
           networking.firewall = {
-            allowedTCPPorts = [ 30303 30304 42069 ];
-            allowedUDPPorts = [ 30303 30304 42069 ];
+            allowedTCPPorts = [ 30303 ];
+            allowedUDPPorts = [ 30303 ];
           };
         }
       )
@@ -270,8 +270,8 @@ in
           };
 
           networking.firewall = {
-            allowedTCPPorts = [ 30303 30304 42069 ];
-            allowedUDPPorts = [ 30303 30304 42069 ];
+            allowedTCPPorts = [ 30303 ];
+            allowedUDPPorts = [ 30303 ];
           };
         }
       )
@@ -322,8 +322,8 @@ in
           };
 
           networking.firewall = {
-            allowedTCPPorts = [ 30303 30304 42069 ];
-            allowedUDPPorts = [ 30303 30304 42069 ];
+            allowedTCPPorts = [ 30303 ];
+            allowedUDPPorts = [ 30303 ];
           };
         }
       )
