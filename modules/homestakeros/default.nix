@@ -623,6 +623,75 @@ in
 
       #################################################################### NIMBUS
       # cli: https://nimbus.guide/options.html
+      (
+        let
+          local.nimbus.parsedEndpoint = parseEndpoint cfg.consensus.nimbus.endpoint;
+        in
 
+        mkIf (cfg.consensus.nimbus.enable) {
+          environment.systemPackages = with pkgs; [
+            nimbus
+          ];
+
+          systemd.services.nimbus = {
+            enable = true;
+
+            description = "beacon, mainnet";
+            requires = [ ]
+              ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+
+            after = [ ]
+              ++ lib.optional (cfg.addons.mev-boost.enable)
+              "mev-boost.service"
+              ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+
+            serviceConfig = {
+              Restart = "always";
+              RestartSec = "5s";
+              Type = "simple";
+            };
+
+            script = ''${pkgs.nimbus}/bin/nimbus_beacon_node \
+                      --data-dir=${cfg.consensus.nimbus.dataDir} \
+                      --network=mainnet \
+                      --rest=true \
+                      --rest-port=${local.nimbus.parsedEndpoint.port} \
+                      --rest-address=${local.nimbus.parsedEndpoint.addr} \
+                      --rest-allow-origin="*" \
+                      --metrics=true \
+                      ${if cfg.consensus.nimbus.execEndpoint != null then
+                        "--el=${cfg.consensus.nimbus.execEndpoint}"
+                      else "" } \
+                      ${if cfg.consensus.nimbus.jwtSecretFile != null then
+                        "--jwt-secret=${cfg.consensus.nimbus.jwtSecretFile}"
+                      else ""} \
+                      ${if cfg.addons.mev-boost.enable then
+                        "--payload-builder=true"
+                        + "--payload-builder-url=${cfg.addons.mev-boost.endpoint}"
+                      else "" }
+                    '';
+            wantedBy = [ "multi-user.target" ];
+          };
+
+          # Firewall
+          networking.firewall = {
+            allowedTCPPorts = [ 9000 ];
+            allowedUDPPorts = [ 9000 ];
+
+            interfaces = builtins.listToAttrs (map
+              (clientName: {
+                name = "${cfg.vpn.${clientName}.interfaceName}";
+                value = {
+                  allowedTCPPorts = [
+                    (lib.strings.toInt local.nimbus.parsedEndpoint.port)
+                  ];
+                };
+              })
+              activeVPNClients);
+          };
+        }
+      )
     ];
 }
