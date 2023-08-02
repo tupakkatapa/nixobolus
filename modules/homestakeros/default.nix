@@ -548,5 +548,81 @@ in
           };
         }
       )
+
+      #################################################################### TEKU
+      # cli: https://docs.teku.consensys.net/reference/cli
+      (
+        let
+          local.teku.parsedEndpoint = parseEndpoint cfg.consensus.teku.endpoint;
+        in
+
+        mkIf (cfg.consensus.teku.enable) {
+          environment.systemPackages = with pkgs; [
+            teku
+          ];
+
+          systemd.services.teku = {
+            enable = true;
+
+            description = "beacon, mainnet";
+            requires = [ ]
+              ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+
+            after = [ ]
+              ++ lib.optional (cfg.addons.mev-boost.enable)
+              "mev-boost.service"
+              ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+
+            serviceConfig = {
+              Restart = "always";
+              RestartSec = "5s";
+              Type = "simple";
+            };
+
+            script = ''${pkgs.teku}/bin/teku \
+                      --data-base-path=${cfg.consensus.teku.dataDir} \
+                      --network=mainnet \
+                      --rest-api-enabled=true \
+                      --rest-api-port=${local.teku.parsedEndpoint.port} \
+                      --rest-api-interface=${local.teku.parsedEndpoint.addr} \
+                      --rest-api-host-allowlist="*" \
+                      --metrics-enabled=true \
+                      ${if cfg.consensus.teku.execEndpoint != null then
+                        "--ee-endpoint=${cfg.consensus.teku.execEndpoint}"
+                      else "" } \
+                      ${if cfg.consensus.teku.jwtSecretFile != null then
+                        "--ee-jwt-secret-file=${cfg.consensus.teku.jwtSecretFile}"
+                      else ""} \
+                      ${if cfg.addons.mev-boost.enable then
+                        "--builder-endpoint=${cfg.addons.mev-boost.endpoint}"
+                      else "" }
+                    '';
+            wantedBy = [ "multi-user.target" ];
+          };
+
+          # Firewall
+          networking.firewall = {
+            allowedTCPPorts = [ 9000 ];
+            allowedUDPPorts = [ 9000 ];
+
+            interfaces = builtins.listToAttrs (map
+              (clientName: {
+                name = "${cfg.vpn.${clientName}.interfaceName}";
+                value = {
+                  allowedTCPPorts = [
+                    (lib.strings.toInt local.teku.parsedEndpoint.port)
+                  ];
+                };
+              })
+              activeVPNClients);
+          };
+        }
+      )
+
+      #################################################################### NIMBUS
+      # cli: https://nimbus.guide/options.html
+
     ];
 }
