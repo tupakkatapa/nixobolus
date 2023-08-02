@@ -508,7 +508,7 @@ in
               Type = "simple";
             };
 
-            script = ''${pkgs.prysm}/bin/beacon-chain bn \
+            script = ''${pkgs.prysm}/bin/beacon-chain \
                       --datadir ${cfg.consensus.prysm.dataDir} \
                       --mainnet \
                       --grpc-gateway-host ${local.prysm.parsedEndpoint.addr} \
