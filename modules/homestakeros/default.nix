@@ -474,5 +474,79 @@ in
           };
         }
       )
+
+      #################################################################### PRYSM
+      # cli: https://docs.prylabs.network/docs/prysm-usage/parameters
+      # sec: https://docs.prylabs.network/docs/prysm-usage/p2p-host-ip
+      (
+        let
+          local.prysm.parsedEndpoint = parseEndpoint cfg.consensus.prysm.endpoint;
+        in
+
+        mkIf (cfg.consensus.prysm.enable) {
+          environment.systemPackages = with pkgs; [
+            prysm
+          ];
+
+          systemd.services.prysm = {
+            enable = true;
+
+            description = "beacon, mainnet";
+            requires = [ ]
+              ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+
+            after = [ ]
+              ++ lib.optional (cfg.addons.mev-boost.enable)
+              "mev-boost.service"
+              ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+
+            serviceConfig = {
+              Restart = "always";
+              RestartSec = "5s";
+              Type = "simple";
+            };
+
+            script = ''${pkgs.prysm}/bin/beacon-chain bn \
+                      --datadir ${cfg.consensus.prysm.dataDir} \
+                      --mainnet \
+                      --grpc-gateway-host ${local.prysm.parsedEndpoint.addr} \
+                      --grpc-gateway-port ${local.prysm.parsedEndpoint.port} \
+                      ${if cfg.consensus.prysm.execEndpoint != null  then
+                        "--execution-endpoint ${cfg.consensus.prysm.execEndpoint}"
+                      else "" } \
+                      ${if cfg.consensus.prysm.jwtSecretFile != null  then
+                        "---jwt-secret ${cfg.consensus.prysm.jwtSecretFile}"
+                      else "" } \
+                      ${if cfg.addons.mev-boost.enable then
+                        "--http-mev-relay ${cfg.addons.mev-boost.endpoint}"
+                      else "" } \
+                      ${if cfg.consensus.prysm.slasher.enable then
+                        "--historical-slasher-node"
+                        + "--slasher-datadir ${cfg.consensus.prysm.dataDir}/beacon/slasher_db"
+                      else "" }
+                    '';
+            wantedBy = [ "multi-user.target" ];
+          };
+
+          # Firewall
+          networking.firewall = {
+            allowedTCPPorts = [ 12000 13000 ];
+            allowedUDPPorts = [ 12000 13000 ];
+
+            interfaces = builtins.listToAttrs (map
+              (clientName: {
+                name = "${cfg.vpn.${clientName}.interfaceName}";
+                value = {
+                  allowedTCPPorts = [
+                    (lib.strings.toInt local.prysm.parsedEndpoint.port)
+                  ];
+                };
+              })
+              activeVPNClients);
+          };
+        }
+      )
     ];
 }

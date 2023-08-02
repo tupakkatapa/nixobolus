@@ -221,6 +221,43 @@
             example = "/var/mnt/lighthouse/jwt.hex";
           };
         };
+
+        prysm = {
+          enable = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Whether to enable Prysm.";
+          };
+          endpoint = mkOption {
+            type = types.str;
+            default = "http://127.0.0.1:3500";
+            description = "JSON-HTTP server listening interface.";
+          };
+          execEndpoint = mkOption {
+            type = types.nullOr types.str;
+            default = null;
+            description = "Server endpoint for an execution layer JWT-authenticated HTTP JSON-RPC connection.";
+            example = "http://127.0.0.1:8551";
+          };
+          slasher = {
+            enable = mkOption {
+              type = types.bool;
+              default = false;
+              description = "Whether to enable historical slasher.";
+            };
+          };
+          dataDir = mkOption {
+            type = types.path;
+            default = "/var/mnt/prysm";
+            description = "Data directory for the blockchain.";
+          };
+          jwtSecretFile = mkOption {
+            type = types.nullOr types.path;
+            default = null;
+            description = "Path to the token that ensures safe connection between CL and EL.";
+            example = "/var/mnt/prysm/jwt.hex";
+          };
+        };
       };
 
       addons = {
