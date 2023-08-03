@@ -187,10 +187,9 @@
             description = "HTTP server listening interface.";
           };
           execEndpoint = mkOption {
-            type = types.nullOr types.str;
-            default = null;
+            type = types.str;
+            default = "http://127.0.0.1:8551";
             description = "Server endpoint for an execution layer JWT-authenticated HTTP JSON-RPC connection.";
-            example = "http://127.0.0.1:8551";
           };
           slasher = {
             enable = mkOption {
@@ -234,10 +233,9 @@
             description = "JSON-HTTP server listening interface.";
           };
           execEndpoint = mkOption {
-            type = types.nullOr types.str;
-            default = null;
+            type = types.str;
+            default = "http://127.0.0.1:8551";
             description = "Server endpoint for an execution layer JWT-authenticated HTTP JSON-RPC connection.";
-            example = "http://127.0.0.1:8551";
           };
           slasher = {
             enable = mkOption {
@@ -271,10 +269,9 @@
             description = "JSON-HTTP server listening interface.";
           };
           execEndpoint = mkOption {
-            type = types.nullOr types.str;
-            default = null;
+            type = types.str;
+            default = "http://127.0.0.1:8551";
             description = "Server endpoint for an execution layer JWT-authenticated HTTP JSON-RPC connection.";
-            example = "http://127.0.0.1:8551";
           };
           dataDir = mkOption {
             type = types.path;
@@ -301,10 +298,9 @@
             description = "JSON-HTTP server listening interface.";
           };
           execEndpoint = mkOption {
-            type = types.nullOr types.str;
-            default = null;
+            type = types.str;
+            default = "http://127.0.0.1:8551";
             description = "Server endpoint for an execution layer JWT-authenticated HTTP JSON-RPC connection.";
-            example = "http://127.0.0.1:8551";
           };
           dataDir = mkOption {
             type = types.path;
