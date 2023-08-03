@@ -505,6 +505,7 @@ in
                       --grpc-gateway-port ${local.prysm.parsedEndpoint.port} \
                       --execution-endpoint ${cfg.consensus.prysm.execEndpoint} \
                       --jwt-secret ${cfg.consensus.prysm.jwtSecretFile} \
+                      --accept-terms-of-use \
                       ${if cfg.addons.mev-boost.enable then
                         "--http-mev-relay ${cfg.addons.mev-boost.endpoint}"
                       else "" } \
