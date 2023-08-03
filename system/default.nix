@@ -63,6 +63,7 @@
     btrfs-progs
     kexec-tools
     fuse-overlayfs
+    rsync
     bind
     file
     tree
