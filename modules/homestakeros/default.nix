@@ -223,7 +223,7 @@ in
               Type = "simple";
             };
 
-            script = ''${pkgs.go-ethereum}/bin/go-ethereum \
+            script = ''${pkgs.go-ethereum}/bin/geth \
               --mainnet \
               --datadir ${cfg.execution.geth.dataDir} \
               --authrpc.vhosts "*" \
