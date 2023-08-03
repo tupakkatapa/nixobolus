@@ -272,7 +272,7 @@ in
               Type = "simple";
             };
 
-            script = ''${pkgs.nethermind}/bin/nethermind \
+            script = ''${pkgs.nethermind}/bin/Nethermind.Runner \
               --config mainnet \
               --datadir ${cfg.execution.nethermind.dataDir} \
               --JsonRpc.EngineHost ${local.nethermind.parsedEndpoint.addr} \
