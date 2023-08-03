@@ -176,9 +176,7 @@ in
               --authrpc.vhosts="*" \
               --authrpc.port ${local.erigon.parsedEndpoint.port} \
               --authrpc.addr ${local.erigon.parsedEndpoint.addr} \
-              ${if cfg.execution.erigon.jwtSecretFile != null then
-                "--authrpc.jwtsecret=${cfg.execution.erigon.jwtSecretFile}"
-              else ""} \
+              --authrpc.jwtsecret=${cfg.execution.erigon.jwtSecretFile} \
               --metrics
             '';
 
@@ -229,9 +227,7 @@ in
               --authrpc.vhosts "*" \
               --authrpc.port ${local.geth.parsedEndpoint.port} \
               --authrpc.addr ${local.geth.parsedEndpoint.addr} \
-              ${if cfg.execution.geth.jwtSecretFile != null then
-                "--authrpc.jwtsecret ${cfg.execution.geth.jwtSecretFile}"
-              else ""} \
+              --authrpc.jwtsecret ${cfg.execution.geth.jwtSecretFile} \
               --metrics
             '';
 
@@ -281,9 +277,7 @@ in
               --datadir ${cfg.execution.nethermind.dataDir} \
               --JsonRpc.EngineHost ${local.nethermind.parsedEndpoint.addr} \
               --JsonRpc.EnginePort ${local.nethermind.parsedEndpoint.port} \
-              ${if cfg.execution.nethermind.jwtSecretFile != null then
-                "--JsonRpc.JwtSecretFile ${cfg.execution.nethermind.jwtSecretFile}"
-              else ""} \
+              --JsonRpc.JwtSecretFile ${cfg.execution.nethermind.jwtSecretFile} \
               --Metrics.Enabled true
             '';
 
@@ -335,9 +329,7 @@ in
               --engine-host-allowlist="*" \
               --engine-rpc-port=${local.besu.parsedEndpoint.port} \
               --engine-rpc-host=${local.besu.parsedEndpoint.addr} \
-              ${if cfg.execution.besu.jwtSecretFile != null then
-                "--engine-jwt-secret=${cfg.execution.besu.jwtSecretFile}"       
-              else ""} \
+              --engine-jwt-secret=${cfg.execution.besu.jwtSecretFile} \
               --metrics-enabled=true
             '';
 
@@ -433,20 +425,17 @@ in
             script = ''${pkgs.lighthouse}/bin/lighthouse bn \
                       --datadir ${cfg.consensus.lighthouse.dataDir} \
                       --network mainnet \
-                      --http --http-address ${local.lighthouse.parsedEndpoint.addr} \
+                      --http \
+                      --http-address ${local.lighthouse.parsedEndpoint.addr} \
                       --http-port ${local.lighthouse.parsedEndpoint.port} \
                       --http-allow-origin "*" \
-                      ${if cfg.consensus.lighthouse.execEndpoint != null then
-                        "--execution-endpoint ${cfg.consensus.lighthouse.execEndpoint}"
-                      else "" } \
+                      --execution-endpoint ${cfg.consensus.lighthouse.execEndpoint} \
+                      --execution-jwt ${cfg.consensus.lighthouse.jwtSecretFile} \
+                      --prune-payloads false \
+                      --metrics \
                       ${if cfg.addons.mev-boost.enable then
                         "--builder ${cfg.addons.mev-boost.endpoint}"
                       else "" } \
-                      ${if cfg.consensus.lighthouse.jwtSecretFile != null then
-                        "--execution-jwt ${cfg.consensus.lighthouse.jwtSecretFile}"
-                      else ""} \
-                      --prune-payloads false \
-                      --metrics \
                       ${if cfg.consensus.lighthouse.slasher.enable then
                         "--slasher "
                         + " --slasher-history-length " + (toString cfg.consensus.lighthouse.slasher.historyLength)
@@ -513,12 +502,8 @@ in
                       --mainnet \
                       --grpc-gateway-host ${local.prysm.parsedEndpoint.addr} \
                       --grpc-gateway-port ${local.prysm.parsedEndpoint.port} \
-                      ${if cfg.consensus.prysm.execEndpoint != null  then
-                        "--execution-endpoint ${cfg.consensus.prysm.execEndpoint}"
-                      else "" } \
-                      ${if cfg.consensus.prysm.jwtSecretFile != null  then
-                        "---jwt-secret ${cfg.consensus.prysm.jwtSecretFile}"
-                      else "" } \
+                      --execution-endpoint ${cfg.consensus.prysm.execEndpoint} \
+                      --jwt-secret ${cfg.consensus.prysm.jwtSecretFile} \
                       ${if cfg.addons.mev-boost.enable then
                         "--http-mev-relay ${cfg.addons.mev-boost.endpoint}"
                       else "" } \
@@ -589,12 +574,8 @@ in
                       --rest-api-interface=${local.teku.parsedEndpoint.addr} \
                       --rest-api-host-allowlist="*" \
                       --metrics-enabled=true \
-                      ${if cfg.consensus.teku.execEndpoint != null then
-                        "--ee-endpoint=${cfg.consensus.teku.execEndpoint}"
-                      else "" } \
-                      ${if cfg.consensus.teku.jwtSecretFile != null then
-                        "--ee-jwt-secret-file=${cfg.consensus.teku.jwtSecretFile}"
-                      else ""} \
+                      --ee-endpoint=${cfg.consensus.teku.execEndpoint} \
+                      --ee-jwt-secret-file=${cfg.consensus.teku.jwtSecretFile} \
                       ${if cfg.addons.mev-boost.enable then
                         "--builder-endpoint=${cfg.addons.mev-boost.endpoint}"
                       else "" }
@@ -661,12 +642,8 @@ in
                       --rest-address=${local.nimbus.parsedEndpoint.addr} \
                       --rest-allow-origin="*" \
                       --metrics=true \
-                      ${if cfg.consensus.nimbus.execEndpoint != null then
-                        "--el=${cfg.consensus.nimbus.execEndpoint}"
-                      else "" } \
-                      ${if cfg.consensus.nimbus.jwtSecretFile != null then
-                        "--jwt-secret=${cfg.consensus.nimbus.jwtSecretFile}"
-                      else ""} \
+                      --el=${cfg.consensus.nimbus.execEndpoint} \
+                      --jwt-secret=${cfg.consensus.nimbus.jwtSecretFile} \
                       ${if cfg.addons.mev-boost.enable then
                         "--payload-builder=true"
                         + "--payload-builder-url=${cfg.addons.mev-boost.endpoint}"
