@@ -328,7 +328,6 @@ in
               --engine-rpc-enabled=true \
               --engine-host-allowlist="*" \
               --engine-rpc-port=${local.besu.parsedEndpoint.port} \
-              --rpc-http-enabled=true \
               --rpc-http-host=${local.besu.parsedEndpoint.addr} \
               --engine-jwt-secret=${cfg.execution.besu.jwtSecretFile} \
               --metrics-enabled=true
