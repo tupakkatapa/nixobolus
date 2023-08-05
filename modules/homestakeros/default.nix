@@ -171,14 +171,13 @@ in
             };
 
             script = ''${pkgs.erigon}/bin/erigon \
-              --datadir=${cfg.execution.erigon.dataDir} \
+              --datadir ${cfg.execution.erigon.dataDir} \
               --chain mainnet \
-              --authrpc.vhosts="*" \
+              --authrpc.vhosts "*" \
               --authrpc.port ${local.erigon.parsedEndpoint.port} \
               --authrpc.addr ${local.erigon.parsedEndpoint.addr} \
-              --authrpc.jwtsecret=${cfg.execution.erigon.jwtSecretFile} \
-              --metrics
-            '';
+              --authrpc.jwtsecret ${cfg.execution.erigon.jwtSecretFile} \
+              --metrics'';
 
             wantedBy = [ "multi-user.target" ];
           };
@@ -228,8 +227,7 @@ in
               --authrpc.port ${local.geth.parsedEndpoint.port} \
               --authrpc.addr ${local.geth.parsedEndpoint.addr} \
               --authrpc.jwtsecret ${cfg.execution.geth.jwtSecretFile} \
-              --metrics
-            '';
+              --metrics'';
 
             wantedBy = [ "multi-user.target" ];
           };
@@ -278,8 +276,7 @@ in
               --JsonRpc.EngineHost ${local.nethermind.parsedEndpoint.addr} \
               --JsonRpc.EnginePort ${local.nethermind.parsedEndpoint.port} \
               --JsonRpc.JwtSecretFile ${cfg.execution.nethermind.jwtSecretFile} \
-              --Metrics.Enabled true
-            '';
+              --Metrics.Enabled true'';
 
             wantedBy = [ "multi-user.target" ];
           };
@@ -330,8 +327,7 @@ in
               --engine-rpc-port=${local.besu.parsedEndpoint.port} \
               --rpc-http-host=${local.besu.parsedEndpoint.addr} \
               --engine-jwt-secret=${cfg.execution.besu.jwtSecretFile} \
-              --metrics-enabled=true
-            '';
+              --metrics-enabled=true'';
 
             wantedBy = [ "multi-user.target" ];
           };
@@ -381,8 +377,7 @@ in
                         "https://0x98650451ba02064f7b000f5768cf0cf4d4e492317d82871bdc87ef841a0743f69f0f1eea11168503240ac35d101c9135@mainnet-relay.securerpc.com"
                         "https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money"
                       ]} \
-                      -addr ${local.mev-boost.parsedEndpoint.addr}:${local.mev-boost.parsedEndpoint.port}
-                    '';
+                      -addr ${local.mev-boost.parsedEndpoint.addr}:${local.mev-boost.parsedEndpoint.port}'';
 
             wantedBy = [ "multi-user.target" ];
           };
@@ -432,16 +427,16 @@ in
                       --execution-endpoint ${cfg.consensus.lighthouse.execEndpoint} \
                       --execution-jwt ${cfg.consensus.lighthouse.jwtSecretFile} \
                       --prune-payloads false \
-                      --metrics \
                       ${if cfg.addons.mev-boost.enable then
-                        "--builder ${cfg.addons.mev-boost.endpoint}"
+                      "--builder ${cfg.addons.mev-boost.endpoint}"
                       else "" } \
                       ${if cfg.consensus.lighthouse.slasher.enable then
-                        "--slasher "
-                        + " --slasher-history-length " + (toString cfg.consensus.lighthouse.slasher.historyLength)
-                        + " --slasher-max-db-size " + (toString cfg.consensus.lighthouse.slasher.maxDatabaseSize)
-                      else "" }
-                    '';
+                      "--slasher "
+                      + "--slasher-history-length " + (toString cfg.consensus.lighthouse.slasher.historyLength)
+                      + "--slasher-max-db-size " + (toString cfg.consensus.lighthouse.slasher.maxDatabaseSize)
+                      else "" } \
+                      --metrics'';
+
             wantedBy = [ "multi-user.target" ];
           };
 
@@ -504,15 +499,15 @@ in
                       --grpc-gateway-port ${local.prysm.parsedEndpoint.port} \
                       --execution-endpoint ${cfg.consensus.prysm.execEndpoint} \
                       --jwt-secret ${cfg.consensus.prysm.jwtSecretFile} \
-                      --accept-terms-of-use \
                       ${if cfg.addons.mev-boost.enable then
-                        "--http-mev-relay ${cfg.addons.mev-boost.endpoint}"
+                      "--http-mev-relay ${cfg.addons.mev-boost.endpoint}"
                       else "" } \
                       ${if cfg.consensus.prysm.slasher.enable then
-                        "--historical-slasher-node"
-                        + "--slasher-datadir ${cfg.consensus.prysm.dataDir}/beacon/slasher_db"
-                      else "" }
-                    '';
+                      "--historical-slasher-node " 
+                      + "--slasher-datadir ${cfg.consensus.prysm.dataDir}/beacon/slasher_db"
+                      else "" } \
+                      --accept-terms-of-use'';
+
             wantedBy = [ "multi-user.target" ];
           };
 
@@ -574,13 +569,13 @@ in
                       --rest-api-port=${local.teku.parsedEndpoint.port} \
                       --rest-api-interface=${local.teku.parsedEndpoint.addr} \
                       --rest-api-host-allowlist="*" \
-                      --metrics-enabled=true \
                       --ee-endpoint=${cfg.consensus.teku.execEndpoint} \
                       --ee-jwt-secret-file=${cfg.consensus.teku.jwtSecretFile} \
                       ${if cfg.addons.mev-boost.enable then
-                        "--builder-endpoint=${cfg.addons.mev-boost.endpoint}"
-                      else "" }
-                    '';
+                      "--builder-endpoint=${cfg.addons.mev-boost.endpoint}"
+                      else "" } \
+                      --metrics-enabled=true'';
+
             wantedBy = [ "multi-user.target" ];
           };
 
@@ -642,14 +637,14 @@ in
                       --rest-port=${local.nimbus.parsedEndpoint.port} \
                       --rest-address=${local.nimbus.parsedEndpoint.addr} \
                       --rest-allow-origin="*" \
-                      --metrics=true \
                       --el=${cfg.consensus.nimbus.execEndpoint} \
                       --jwt-secret=${cfg.consensus.nimbus.jwtSecretFile} \
                       ${if cfg.addons.mev-boost.enable then
-                        "--payload-builder=true"
-                        + "--payload-builder-url=${cfg.addons.mev-boost.endpoint}"
-                      else "" }
-                    '';
+                      "--payload-builder=true "
+                      + "--payload-builder-url=${cfg.addons.mev-boost.endpoint}"
+                      else "" } \
+                      --metrics=true'';
+
             wantedBy = [ "multi-user.target" ];
           };
 
