@@ -173,15 +173,14 @@ in
             enable = true;
 
             description = "rpcdaemon execution, mainnet";
-            requires = [ ]
+            requires = [ "erigon.service" ]
               ++ lib.optional (elem "wireguard" activeVPNClients)
-              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service"
-              ++ "erigon.service";
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
 
-            after = map (name: "${name}.service") activeConsensusClients
+            after = [ "erigon.service" ]
+              ++ map (name: "${name}.service") activeConsensusClients
               ++ lib.optional (elem "wireguard" activeVPNClients)
-              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service"
-              ++ "erigon.service";
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
 
             serviceConfig = {
               Restart = "always";
