@@ -159,6 +159,7 @@ in
                         --authrpc.vhosts="*" \
                         --authrpc.port ${local.erigon.parsedEndpoint.port} \
                         --authrpc.addr ${local.erigon.parsedEndpoint.addr} \
+                        --private.api.addr=localhost:9090 \
                         ${if cfg.execution.erigon.jwtSecretFile != null then
                           "--authrpc.jwtsecret=${cfg.execution.erigon.jwtSecretFile}"
                         else ""} \
@@ -168,9 +169,50 @@ in
             wantedBy = [ "multi-user.target" ];
           };
 
+          systemd.services.rpcdaemon = {
+            enable = true;
+
+            description = "rpcdaemon execution, mainnet";
+            requires = [ ]
+              ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service"
+              ++ "erigon.service";
+
+            after = map (name: "${name}.service") activeConsensusClients
+              ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service"
+              ++ "erigon.service";
+
+            serviceConfig = {
+              Restart = "always";
+              RestartSec = "5s";
+              Type = "simple";
+            };
+
+            script = ''${pkgs.erigon}/bin/rpcdaemon \
+              --datadir=${cfg.execution.erigon.dataDir} \
+              --txpool.api.addr=localhost:9090 \
+              --http.api=eth,erigon,web3,net,debug,trace,txpool \
+              --http.addr=${local.erigon.parsedEndpoint.addr}
+            '';
+
+            wantedBy = [ "multi-user.target" ];
+          };
+
           networking.firewall = {
             allowedTCPPorts = [ 30303 30304 42069 ];
             allowedUDPPorts = [ 30303 30304 42069 ];
+
+            interfaces = builtins.listToAttrs (map
+              (clientName: {
+                name = "${cfg.vpn.${clientName}.interfaceName}";
+                value = {
+                  allowedTCPPorts = [
+                    8545 # rpcdaemon
+                  ];
+                };
+              })
+              activeVPNClients);
           };
         }
       )
