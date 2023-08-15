@@ -8,6 +8,7 @@ trap 'cleanup && exit 0' SIGINT
 # Default argument values
 verbose=false
 output_path="./result"
+flake_url="github:ponkila/nixobolus"
 
 # Do not change, this path is also hard-coded in flake.nix
 data_nix="/tmp/data.nix"
@@ -28,6 +29,9 @@ Arguments:
 Options:
   -b, --base <hostname>
       Set the base configuration with the specified hostname. Available configurations: 'homestakeros'.
+
+  -f, --flake <url>
+      Set the URL of the nixobolus flake. The default value is 'github:ponkila/nixobolus'.
 
   -o, --output <output_path>
       Set the output path for the build result symlinks. Default: './result'.
@@ -53,6 +57,9 @@ parse_arguments() {
     case $1 in
       -b|--base)
         hostname="$2"
+        shift 2 ;;
+      -f|--flake)
+        flake_url="$2"
         shift 2 ;;
       -o|--output)
         output_path="$2"
@@ -106,6 +113,7 @@ run_nix_build() {
   local hostname="$1"
   local output_path="$2"
   local verbose="$3"
+  local flake_url="$4"
 
   # Default flags for the 'nix build' command
   declare -a nix_flags=(
@@ -120,12 +128,7 @@ run_nix_build() {
   [[ "$verbose" = true ]] && nix_flags+=("--show-trace" "--debug")
   
   # Execute the 'nix build' command
-  if [ -f ./flake.nix ] || [ -f ../flake.nix ]; then
-    nix build .#"$hostname" "${nix_flags[@]}" || exit 1
-  else
-    [ "$verbose" = true ] && echo "fetching from github:ponkila/nixobolus"
-    nix build github:ponkila/nixobolus#"$hostname" "${nix_flags[@]}" || exit 1
-  fi
+  nix build "$flake_url"#"$hostname" "${nix_flags[@]}" || exit 1
 }
 
 print_output() {
@@ -164,7 +167,7 @@ main() {
   [[ -n $json_data ]] && create_data_nix "$json_data" "$data_nix"
 
   # Run the 'nix build' command and fallback to fetching from GitHub if the flake is not found
-  run_nix_build "$hostname" "$output_path" $verbose
+  run_nix_build "$hostname" "$output_path" $verbose "$flake_url"
 
   # Display additional output, including injected data and created symlinks
   print_output "$output_path" "$data_nix" $verbose
