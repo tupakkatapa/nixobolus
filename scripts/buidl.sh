@@ -31,7 +31,7 @@ Options:
       Set the base configuration with the specified hostname. Available configurations: 'homestakeros'.
 
   -f, --flake <url>
-      Set the URL of the nixobolus flake. The default value is 'github:ponkila/nixobolus'.
+      Set the URL of the nixobolus flake. Default: 'github:ponkila/nixobolus'.
 
   -o, --output <output_path>
       Set the output path for the build result symlinks. Default: './result'.
