@@ -192,7 +192,8 @@ in
               --datadir=${cfg.execution.erigon.dataDir} \
               --txpool.api.addr=localhost:9090 \
               --http.api=eth,erigon,web3,net,debug,trace,txpool \
-              --http.addr=${local.erigon.parsedEndpoint.addr}
+              --http.addr=${local.erigon.parsedEndpoint.addr} \
+              --http.corsdomain="*"
             '';
 
             wantedBy = [ "multi-user.target" ];
