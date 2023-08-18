@@ -49,8 +49,8 @@ in
                 [ "mev-boost.service" ]
               else [ ]
             )
-            ++ lib.optional (elem "wireguard" activeVPNClients) 
-            "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+            ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
 
             serviceConfig = {
               ExecStart = concatStringsSep " \\\n\t" execStart;
@@ -412,33 +412,36 @@ in
         (createService serviceName serviceType execStart parsedEndpoint allowedPorts)
       )
 
+      # Nimbus is temporarily disabled due to a compile error.
+      # For more information, please refer to: https://github.com/ponkila/nixobolus/pull/25
+
       #################################################################### NIMBUS
       # cli: https://nimbus.guide/options.html
-      (
-        let
-          serviceName = "nimbus";
-          serviceType = "consensus";
+      # (
+      #   let
+      #     serviceName = "nimbus";
+      #     serviceType = "consensus";
 
-          parsedEndpoint = parseEndpoint cfg.consensus.nimbus.endpoint;
-          execStart = [
-            "${pkgs.nimbus}/bin/nimbus_beacon_node"
-            "--data-dir=${cfg.consensus.nimbus.dataDir}"
-            "--network=mainnet"
-            "--rest=true"
-            "--rest-port=${parsedEndpoint.port}"
-            "--rest-address=${parsedEndpoint.addr}"
-            "--rest-allow-origin=\"*\""
-            "--el=${cfg.consensus.nimbus.execEndpoint}"
-            "--jwt-secret=${cfg.consensus.nimbus.jwtSecretFile}"
-            (if cfg.addons.mev-boost.enable then
-              "--payload-builder=true \\\n\t"
-              + "--payload-builder-url=${cfg.addons.mev-boost.endpoint}"
-            else "")
-            "--metrics=true"
-          ];
-          allowedPorts = [ 9000 ];
-        in
-        (createService serviceName serviceType execStart parsedEndpoint allowedPorts)
-      )
+      #     parsedEndpoint = parseEndpoint cfg.consensus.nimbus.endpoint;
+      #     execStart = [
+      #       "${pkgs.nimbus}/bin/nimbus_beacon_node"
+      #       "--data-dir=${cfg.consensus.nimbus.dataDir}"
+      #       "--network=mainnet"
+      #       "--rest=true"
+      #       "--rest-port=${parsedEndpoint.port}"
+      #       "--rest-address=${parsedEndpoint.addr}"
+      #       "--rest-allow-origin=\"*\""
+      #       "--el=${cfg.consensus.nimbus.execEndpoint}"
+      #       "--jwt-secret=${cfg.consensus.nimbus.jwtSecretFile}"
+      #       (if cfg.addons.mev-boost.enable then
+      #         "--payload-builder=true \\\n\t"
+      #         + "--payload-builder-url=${cfg.addons.mev-boost.endpoint}"
+      #       else "")
+      #       "--metrics=true"
+      #     ];
+      #     allowedPorts = [ 9000 ];
+      #   in
+      #   (createService serviceName serviceType execStart parsedEndpoint allowedPorts)
+      # )
     ];
 }
