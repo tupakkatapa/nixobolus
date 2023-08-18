@@ -210,7 +210,7 @@ in
             "--authrpc.vhosts \"*\""
             "--authrpc.port ${parsedEndpoint.port}"
             "--authrpc.addr ${parsedEndpoint.addr}"
-            "--private.api.addr=localhost:9090"
+            "--private.api.addr=localhost:9090" # rpcdaemon
             "--authrpc.jwtsecret ${cfg.execution.erigon.jwtSecretFile}"
             "--metrics"
           ];
