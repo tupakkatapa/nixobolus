@@ -18,16 +18,15 @@ in
           port = builtins.elemAt match 2;
         };
 
+      # Function to get the active client
+      getActiveClients = clients: path: builtins.filter (serviceName: path.${serviceName}.enable) clients;
+
+      activeConsensusClients = getActiveClients (builtins.attrNames cfg.consensus) cfg.consensus;
+      activeExecutionClients = getActiveClients (builtins.attrNames cfg.execution) cfg.execution;
+      activeVPNClients = getActiveClients (builtins.attrNames cfg.vpn) cfg.vpn;
+
       # Function to create a service
       createService = serviceName: serviceType: execStart: parsedEndpoint: allowedPorts:
-        let
-          # Function to get the active client
-          getActiveClients = clients: path: builtins.filter (serviceName: path.${serviceName}.enable) clients;
-
-          activeConsensusClients = getActiveClients (builtins.attrNames cfg.consensus) cfg.consensus;
-          activeExecutionClients = getActiveClients (builtins.attrNames cfg.execution) cfg.execution;
-          activeVPNClients = getActiveClients (builtins.attrNames cfg.vpn) cfg.vpn;
-        in
         mkIf (cfg.${serviceType}.${serviceName}.enable) {
           environment.systemPackages = [
             pkgs.${serviceName}
@@ -218,8 +217,11 @@ in
         in
         (createService serviceName serviceType execStart parsedEndpoint allowedPorts)
       )
-      # TODO: AD HOC RPC DAEMON FOR ERIGON ONLY
       (
+        # TODO: AD HOC RPC DAEMON FOR ERIGON ONLY
+        let
+          parsedEndpoint = parseEndpoint cfg.execution.erigon.endpoint;
+        in
         mkIf (cfg.execution.erigon.enable) {
           systemd.services.rpcdaemon = {
             enable = true;
@@ -241,12 +243,12 @@ in
             };
 
             script = ''${pkgs.erigon}/bin/rpcdaemon \
-              --datadir=${cfg.execution.erigon.dataDir} \
-              --txpool.api.addr=localhost:9090 \
-              --http.api=eth,erigon,web3,net,debug,trace,txpool \
-              --http.addr=${local.erigon.parsedEndpoint.addr} \
-              --http.corsdomain="*"
-            '';
+                --datadir=${cfg.execution.erigon.dataDir} \
+                --txpool.api.addr=localhost:9090 \
+                --http.api=eth,erigon,web3,net,debug,trace,txpool \
+                --http.addr=${parsedEndpoint.addr} \
+                --http.corsdomain="*"
+              '';
 
             wantedBy = [ "multi-user.target" ];
           };
