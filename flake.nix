@@ -129,20 +129,6 @@
               {
                 system.stateVersion = "23.11";
               }
-              # Keeping this here for testing
-              # {
-              #   homestakeros = {
-              #     consensus.lighthouse.enable = true;
-              #     addons.mev-boost.enable = true;
-              #     execution = {
-              #       erigon.enable = true;
-              #     };
-              #     vpn.wireguard = {
-              #       enable = true;
-              #       configFile = "/var/mnt/secrets/wg0.conf";
-              #     };
-              #   };
-              # }
               {
                 boot.loader.systemd-boot.enable = true;
                 boot.loader.efi.canTouchEfiVariables = true;
