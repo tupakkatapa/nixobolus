@@ -210,12 +210,60 @@ in
             "--authrpc.vhosts \"*\""
             "--authrpc.port ${parsedEndpoint.port}"
             "--authrpc.addr ${parsedEndpoint.addr}"
+            "--private.api.addr=localhost:9090"
             "--authrpc.jwtsecret ${cfg.execution.erigon.jwtSecretFile}"
             "--metrics"
           ];
           allowedPorts = [ 30303 30304 42069 ];
         in
         (createService serviceName serviceType execStart parsedEndpoint allowedPorts)
+      )
+      # TODO: AD HOC RPC DAEMON FOR ERIGON ONLY
+      (
+        mkIf (cfg.execution.erigon.enable) {
+          systemd.services.rpcdaemon = {
+            enable = true;
+
+            description = "rpcdaemon execution, mainnet";
+            requires = [ "erigon.service" ]
+              ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+
+            after = [ "erigon.service" ]
+              ++ map (name: "${name}.service") activeConsensusClients
+              ++ lib.optional (elem "wireguard" activeVPNClients)
+              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+
+            serviceConfig = {
+              Restart = "always";
+              RestartSec = "5s";
+              Type = "simple";
+            };
+
+            script = ''${pkgs.erigon}/bin/rpcdaemon \
+              --datadir=${cfg.execution.erigon.dataDir} \
+              --txpool.api.addr=localhost:9090 \
+              --http.api=eth,erigon,web3,net,debug,trace,txpool \
+              --http.addr=${local.erigon.parsedEndpoint.addr} \
+              --http.corsdomain="*"
+            '';
+
+            wantedBy = [ "multi-user.target" ];
+          };
+
+          networking.firewall = {
+            interfaces = builtins.listToAttrs (map
+              (clientName: {
+                name = "${cfg.vpn.${clientName}.interfaceName}";
+                value = {
+                  allowedTCPPorts = [
+                    8545 # rpcdaemon
+                  ];
+                };
+              })
+              activeVPNClients);
+          };
+        }
       )
 
       #################################################################### GETH
