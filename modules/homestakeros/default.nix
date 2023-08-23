@@ -188,7 +188,7 @@ in
       #################################################################### WIREGUARD
       # cfg: https://man7.org/linux/man-pages/man8/wg.8.html
       (
-        mkIf (cfg.vpn.wireguard.enable) {
+        mkIf (cfg.vpn.wireguard.enable && cfg.vpn.wireguard.configFile != null) {
           networking.wg-quick.interfaces.${cfg.vpn.wireguard.interfaceName}.configFile = cfg.vpn.wireguard.configFile;
         }
       )
@@ -210,7 +210,9 @@ in
             "--authrpc.port ${parsedEndpoint.port}"
             "--authrpc.addr ${parsedEndpoint.addr}"
             "--private.api.addr=localhost:9090" # rpcdaemon
-            "--authrpc.jwtsecret ${cfg.execution.erigon.jwtSecretFile}"
+            (if cfg.execution.erigon.jwtSecretFile != null then
+              "--authrpc.jwtsecret ${cfg.execution.erigon.jwtSecretFile}"
+            else "")
             "--metrics"
           ];
           allowedPorts = [ 30303 30304 42069 ];
@@ -284,7 +286,9 @@ in
             "--authrpc.vhosts \"*\""
             "--authrpc.port ${parsedEndpoint.port}"
             "--authrpc.addr ${parsedEndpoint.addr}"
-            "--authrpc.jwtsecret ${cfg.execution.geth.jwtSecretFile}"
+            (if cfg.execution.geth.jwtSecretFile != null then
+              "--authrpc.jwtsecret ${cfg.execution.geth.jwtSecretFile}"
+            else "")
             "--metrics"
           ];
           allowedPorts = [ 30303 ];
@@ -307,7 +311,9 @@ in
             "--datadir ${cfg.execution.nethermind.dataDir}"
             "--JsonRpc.EngineHost ${parsedEndpoint.addr}"
             "--JsonRpc.EnginePort ${parsedEndpoint.port}"
-            "--JsonRpc.JwtSecretFile ${cfg.execution.nethermind.jwtSecretFile}"
+            (if cfg.execution.nethermind.jwtSecretFile != null then
+              "--JsonRpc.JwtSecretFile ${cfg.execution.nethermind.jwtSecretFile}"
+            else "")
             "--Metrics.Enabled true"
           ];
           allowedPorts = [ 30303 ];
@@ -332,7 +338,9 @@ in
             "--engine-host-allowlist=\"*\""
             "--engine-rpc-port=${parsedEndpoint.port}"
             "--rpc-http-host=${parsedEndpoint.addr}"
-            "--engine-jwt-secret=${cfg.execution.besu.jwtSecretFile}"
+            (if cfg.execution.besu.jwtSecretFile != null then
+              "--engine-jwt-secret=${cfg.execution.besu.jwtSecretFile}"
+            else "")
             "--metrics-enabled=true"
           ];
           allowedPorts = [ 30303 ];
@@ -386,7 +394,9 @@ in
             "--http-port ${parsedEndpoint.port}"
             "--http-allow-origin \"*\""
             "--execution-endpoint ${cfg.consensus.lighthouse.execEndpoint}"
-            "--execution-jwt ${cfg.consensus.lighthouse.jwtSecretFile}"
+            (if cfg.consensus.lighthouse.jwtSecretFile != null then
+              "--execution-jwt ${cfg.consensus.lighthouse.jwtSecretFile}"
+            else "")
             "--prune-payloads false"
             (if cfg.consensus.lighthouse.slasher.enable then
               "--slasher \\\n\t"
@@ -419,7 +429,9 @@ in
             "--grpc-gateway-host ${parsedEndpoint.addr}"
             "--grpc-gateway-port ${parsedEndpoint.port}"
             "--execution-endpoint ${cfg.consensus.prysm.execEndpoint}"
-            "--jwt-secret ${cfg.consensus.prysm.jwtSecretFile}"
+            (if cfg.consensus.prysm.jwtSecretFile != null then
+              "--jwt-secret ${cfg.consensus.prysm.jwtSecretFile}"
+            else "")
             (if cfg.addons.mev-boost.enable then
               "--http-mev-relay ${cfg.addons.mev-boost.endpoint}"
             else "")
@@ -451,7 +463,9 @@ in
             "--rest-api-interface=${parsedEndpoint.addr}"
             "--rest-api-host-allowlist=\"*\""
             "--ee-endpoint=${cfg.consensus.teku.execEndpoint}"
-            "--ee-jwt-secret-file=${cfg.consensus.teku.jwtSecretFile}"
+            (if cfg.consensus.teku.jwtSecretFile != null then
+              "--ee-jwt-secret-file=${cfg.consensus.teku.jwtSecretFile}"
+            else "")
             (if cfg.addons.mev-boost.enable then
               "--builder-endpoint=${cfg.addons.mev-boost.endpoint}"
             else "")
