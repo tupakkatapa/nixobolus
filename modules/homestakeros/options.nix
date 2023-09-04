@@ -320,6 +320,13 @@
       };
 
       addons = {
+        ssv-node = {
+          privateKeyFile = mkOption {
+            type = types.nullOr types.path;
+            default = "/var/mnt/secrets/ssv/ssv_operator_key";
+            description = "Path to the private SSV operator key. SSV-node starts after a 10-minute delay if the key exists.";
+          };
+        };
         mev-boost = {
           enable = mkOption {
             type = types.bool;

@@ -185,6 +185,28 @@ in
         }
       )
 
+      #################################################################### SSV
+      # doc: https://docs.ssv.network/learn/readme
+      (
+        let
+          ssvnode = "${inputs.ethereum-nix.packages."x86_64-linux".ssvnode}/bin/ssvnode";
+        in
+        mkIf (cfg.addons.ssv-node.privateKeyFile != null) {
+          systemd.services.ssv-autostart = {
+            description = "Automatically starts the SSV node if the private operator key exists";
+            unitConfig.ConditionPathExists = [ "${cfg.addons.ssv-node.privateKeyFile}" ];
+            serviceConfig = {
+              ExecStart = "sleep 600 && ${ssvnode} start-node";
+              Restart = "always";
+              RestartSec = "5s";
+              Type = "simple";
+            };
+
+            wantedBy = [ "multi-user.target" ];
+          };
+        }
+      )
+
       #################################################################### WIREGUARD
       # cfg: https://man7.org/linux/man-pages/man8/wg.8.html
       (
