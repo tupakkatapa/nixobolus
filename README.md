@@ -1,6 +1,6 @@
 # Nixobolus
 
-This project serves a couple of essential modules designed for [HomestakerOS](https://github.com/ponkila/HomestakerOS), a web UI that generates an integrated network of ephemeral Linux servers. These modules are also present in [our Ethereum infrastructure](https://github.com/ponkila/homestaking-infra), ensuring up-to-date and optimized functionality. Nixobolus utilizes [ethereum.nix](https://github.com/nix-community/ethereum.nix) for a package management solution for Ethereum-related components.
+This project serves a couple of essential modules that are designed for [HomestakerOS](https://github.com/ponkila/HomestakerOS), a web UI that generates an integrated network of ephemeral Linux servers. These modules are also present in [our Ethereum infrastructure](https://github.com/ponkila/homestaking-infra), ensuring up-to-date and optimized functionality. Nixobolus utilizes [ethereum.nix](https://github.com/nix-community/ethereum.nix) as a package management solution for Ethereum-related components.
 
 ## How does this work?
 
@@ -14,7 +14,7 @@ nix run github:ponkila/nixobolus#buidl -- --base homestakeros '{"execution":{"er
 ```
 This command triggers the execution of the `scripts/buidl.sh` script, which generates a `/tmp/data.nix` file based on the provided JSON data and initiates the building process. The base configuration is automatically set up to import this file if it exists. By default, the resulting build symlinks are stored in the `./result` directory.
 
-It is important to note that while the current script performs as intended, HomestakerOS has its own script derived from this one to meet its specific requirements and additional features.
+It is important to note that while the current build script performs as intended, HomestakerOS has its own script derived from this one to meet its specific requirements and additional features.
 
 ## Usage as a Module
 
