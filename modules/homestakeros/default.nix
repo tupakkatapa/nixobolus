@@ -187,20 +187,39 @@ in
       )
 
       #################################################################### SSV
-      # doc: https://docs.ssv.network/learn/readme
+      # cfg: https://docs.ssv.network/run-a-node/operator-node/installation#create-configuration-file
       (
         mkIf (cfg.addons.ssv-node.privateKeyFile != null) {
           systemd.services.ssv-autostart = {
-            description = "Automatically starts the SSV node if the private operator key exists";
+            description = "Start the SSV node if the private operator key exists";
             unitConfig.ConditionPathExists = [ "${cfg.addons.ssv-node.privateKeyFile}" ];
             serviceConfig = {
-              ExecStart = "sleep 600 && ${pkgs.ssvnode} start-node";
-              Restart = "always";
-              RestartSec = "5s";
-              Type = "simple";
+              ExecStart = concatStringsSep " \\\n\t" [
+                # The operator key is defined here, so it does not need to be evaluated
+                "export OPERATOR_KEY='$(cat ${cfg.addons.ssv-node.privateKeyFile})'"
+                "${pkgs.ssvnode}/bin/ssvnode start-node"
+              ];
+              Type = "oneshot";
             };
-
+            environment = {
+              DB_PATH = "${cfg.addons.ssv-node.dataDir}/db";
+              EVENTS_PATH = "${cfg.addons.ssv-node.dataDir}/debug.log";
+              LOG_LEVEL = "info";
+              NETWORK = "mainnet";
+              ETH_1_ADDR = "${cfg.addons.ssv-node.execEndpoint}";
+              BEACON_NODE_ADDR = "${cfg.addons.ssv-node.consEndpoint}";
+              METRICS_API_PORT = "15000";
+            };
             wantedBy = [ "multi-user.target" ];
+          };
+          systemd.timers.ssv-autostart = {
+            timerConfig.OnBootSec = "10min";
+            wantedBy = [ "timers.target" ];
+          };
+          # Firewall
+          networking.firewall = {
+            allowedTCPPorts = [ 13001 ];
+            allowedUDPPorts = [ 12001 ];
           };
         }
       )

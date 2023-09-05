@@ -324,7 +324,22 @@
           privateKeyFile = mkOption {
             type = types.nullOr types.path;
             default = "/var/mnt/secrets/ssv/ssv_operator_key";
-            description = "Path to the private SSV operator key. SSV-node starts after a 10-minute delay if the key exists.";
+            description = "Path to the private SSV operator key.";
+          };
+          execEndpoint = mkOption {
+            type = types.str;
+            default = "ws://127.0.0.1:8546/ws";
+            description = "WebSocket URL of the execution node to connect to.";
+          };
+          consEndpoint = mkOption {
+            type = types.str;
+            default = "http://127.0.0.1:5052";
+            description = "HTTP URL of the consensus node to connect to.";
+          };
+          dataDir = mkOption {
+            type = types.path;
+            default = "/var/mnt/ssv";
+            description = "Path to a persistent directory to store the node's database.";
           };
         };
         mev-boost = {
