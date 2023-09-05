@@ -66,6 +66,7 @@ in
             allowedTCPPorts = allowedPorts;
             allowedUDPPorts = allowedPorts;
 
+            # Function to allow ports for each of the enabled VPN clients
             interfaces = builtins.listToAttrs (map
               (VPNserviceName: {
                 name = "${cfg.vpn.${VPNserviceName}.interfaceName}";
