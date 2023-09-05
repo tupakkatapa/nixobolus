@@ -196,7 +196,7 @@ in
             serviceConfig = {
               ExecStart = concatStringsSep " \\\n\t" [
                 # The operator key is defined here, so it does not need to be evaluated
-                "export OPERATOR_KEY='$(cat ${cfg.addons.ssv-node.privateKeyFile})'"
+                "export OPERATOR_KEY=$(cat ${cfg.addons.ssv-node.privateKeyFile})"
                 "${pkgs.ssvnode}/bin/ssvnode start-node"
               ];
               Type = "oneshot";
