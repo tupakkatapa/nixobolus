@@ -209,6 +209,7 @@ in
               ETH_1_ADDR = "${cfg.addons.ssv-node.execEndpoint}";
               BEACON_NODE_ADDR = "${cfg.addons.ssv-node.consEndpoint}";
               METRICS_API_PORT = "15000";
+              EXPORTER = "true";
             };
             wantedBy = [ "multi-user.target" ];
           };
