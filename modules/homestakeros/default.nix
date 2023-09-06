@@ -249,6 +249,7 @@ in
             "--authrpc.vhosts \"*\""
             "--authrpc.port ${parsedEndpoint.port}"
             "--authrpc.addr ${parsedEndpoint.addr}"
+            "--ws"
             "--private.api.addr=localhost:9090" # rpcdaemon
             (if cfg.execution.erigon.jwtSecretFile != null then
               "--authrpc.jwtsecret ${cfg.execution.erigon.jwtSecretFile}"
