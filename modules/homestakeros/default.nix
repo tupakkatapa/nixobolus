@@ -1,4 +1,4 @@
-{ config, lib, pkgs, inputs, outputs, ... }:
+{ config, lib, pkgs, inputs, ... }:
 let
   cfg = config.homestakeros;
 in
@@ -189,7 +189,7 @@ in
       #################################################################### SSV
       # cfg: https://docs.ssv.network/run-a-node/operator-node/installation#create-configuration-file
       (
-        mkIf (cfg.addons.ssv-node.privateKeyFile != null) {
+        mkIf (cfg.addons.ssv-node.privateKeyFile != null && pkgs.system == "x86_64-linux") {
           systemd.services.ssv-autostart = {
             description = "Start the SSV node if the private operator key exists";
             unitConfig.ConditionPathExists = [ "${cfg.addons.ssv-node.privateKeyFile}" ];
