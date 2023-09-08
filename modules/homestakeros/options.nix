@@ -323,7 +323,7 @@
         ssv-node = {
           privateKeyFile = mkOption {
             type = types.nullOr types.path;
-            default = "/var/mnt/secrets/ssv/ssv_operator_key";
+            default = "/var/mnt/addons/ssv/ssv_operator_key";
             description = "Path to the private SSV operator key.";
           };
           execEndpoint = mkOption {
@@ -338,7 +338,7 @@
           };
           dataDir = mkOption {
             type = types.path;
-            default = "/var/mnt/ssv";
+            default = "/var/mnt/addons/ssv";
             description = "Path to a persistent directory to store the node's database.";
           };
         };
