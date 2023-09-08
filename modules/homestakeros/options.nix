@@ -328,7 +328,7 @@
           };
           execEndpoint = mkOption {
             type = types.str;
-            default = "ws://127.0.0.1:8546/ws";
+            default = "ws://127.0.0.1:8551";
             description = "WebSocket URL of the execution node to connect to.";
           };
           consEndpoint = mkOption {
