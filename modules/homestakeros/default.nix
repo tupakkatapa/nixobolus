@@ -260,7 +260,6 @@ in
             "--authrpc.vhosts \"*\""
             "--authrpc.port ${parsedEndpoint.port}"
             "--authrpc.addr ${parsedEndpoint.addr}"
-            "--ws"
             "--private.api.addr=localhost:9090" # rpcdaemon
             (if cfg.execution.erigon.jwtSecretFile != null then
               "--authrpc.jwtsecret ${cfg.execution.erigon.jwtSecretFile}"
@@ -301,7 +300,8 @@ in
                 --txpool.api.addr=localhost:9090 \
                 --http.api=eth,erigon,web3,net,debug,trace,txpool \
                 --http.addr=${parsedEndpoint.addr} \
-                --http.corsdomain="*"
+                --http.corsdomain="*" \
+                --ws
               '';
 
             wantedBy = [ "multi-user.target" ];
