@@ -216,7 +216,6 @@ in
           systemd.services.ssv-autostart = {
             description = "Start the SSV node if the private operator key exists";
             unitConfig.ConditionPathExists = [ "${cfg.addons.ssv-node.privateKeyFile}" ];
-            serviceConfig.Type = "oneshot";
             # The operator key is defined here, so it does not need to be evaluated
             script = ''
               export OPERATOR_KEY=$(cat ${cfg.addons.ssv-node.privateKeyFile})
