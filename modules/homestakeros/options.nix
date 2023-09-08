@@ -320,6 +320,28 @@
       };
 
       addons = {
+        ssv-node = {
+          privateKeyFile = mkOption {
+            type = types.nullOr types.path;
+            default = "/var/mnt/addons/ssv/ssv_operator_key";
+            description = "Path to the private SSV operator key.";
+          };
+          execEndpoint = mkOption {
+            type = types.str;
+            default = "ws://127.0.0.1:8545";
+            description = "WebSocket URL of the execution node to connect to.";
+          };
+          consEndpoint = mkOption {
+            type = types.str;
+            default = "http://127.0.0.1:5052";
+            description = "HTTP URL of the consensus node to connect to.";
+          };
+          dataDir = mkOption {
+            type = types.path;
+            default = "/var/mnt/addons/ssv";
+            description = "Path to a persistent directory to store the node's database.";
+          };
+        };
         mev-boost = {
           enable = mkOption {
             type = types.bool;
