@@ -1,4 +1,4 @@
-{ config, lib, pkgs, inputs, ... }:
+{ config, lib, pkgs, inputs, outputs, ... }:
 let
   cfg = config.homestakeros;
 in
