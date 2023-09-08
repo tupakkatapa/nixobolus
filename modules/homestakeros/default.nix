@@ -205,11 +205,10 @@ in
 
             eth2:
               BeaconNodeAddr: ${cfg.addons.ssv-node.consEndpoint}
+              Network: mainnet
 
             eth1:
               ETH1Addr: ${cfg.addons.ssv-node.execEndpoint}
-
-            MetricsAPIPort: 15000
           '';
         in
         mkIf (cfg.addons.ssv-node.privateKeyFile != null && pkgs.system == "x86_64-linux") {
