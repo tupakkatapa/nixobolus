@@ -188,6 +188,7 @@ in
 
       #################################################################### SSV
       # cfg: https://docs.ssv.network/run-a-node/operator-node/installation#create-configuration-file
+      # https://github.com/bloxapp/ssv/issues/1138
       (
         let
           ssvConfig = pkgs.writeText "config.yaml" ''
