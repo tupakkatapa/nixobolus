@@ -261,20 +261,21 @@ in
             "--datadir ${cfg.execution.erigon.dataDir}"
             "--chain mainnet"
             "--metrics"
-            # for auth
+            # auth for consensus client
             "--authrpc.vhosts \"*\""
             "--authrpc.port ${parsedEndpoint.port}"
             "--authrpc.addr ${parsedEndpoint.addr}"
             (if cfg.execution.erigon.jwtSecretFile != null then
               "--authrpc.jwtsecret ${cfg.execution.erigon.jwtSecretFile}"
             else "")
-            # for rpc
+            # json-rpc for interacting
+            "--http.addr=${parsedEndpoint.addr}"
+            "--http.api=eth,erigon,web3,net,debug,trace,txpool"
+            "--http.corsdomain=\"*\""
+            "--http.port=8545"
             "--private.api.addr=localhost:9090"
             "--txpool.api.addr=localhost:9090"
-            "--http.api=eth,erigon,web3,net,debug,trace,txpool"
-            "--http.addr=${parsedEndpoint.addr}"
-            "--http.corsdomain=\"*\""
-            # for ssv
+            # ws for ssv
             "--ws"
           ];
           allowedPorts = [ 30303 30304 42069 ];
