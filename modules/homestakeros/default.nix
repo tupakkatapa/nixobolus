@@ -70,10 +70,14 @@ in
             interfaces = builtins.listToAttrs (map
               (VPNserviceName: {
                 name = "${cfg.vpn.${VPNserviceName}.interfaceName}";
-                value = mkIf (serviceType == "consensus") {
-                  allowedTCPPorts = [
-                    (lib.strings.toInt parsedEndpoint.port)
-                  ];
+                value = {
+                  allowedTCPPorts =
+                    if serviceType == "consensus" then
+                      [ (lib.strings.toInt parsedEndpoint.port) ]
+                    else if serviceType == "execution" then
+                      [ 8545 ] # rpcdaemon 
+                    else
+                      [ ];
                 };
               })
               activeVPNClients);
@@ -256,69 +260,26 @@ in
             "${pkgs.erigon}/bin/erigon"
             "--datadir ${cfg.execution.erigon.dataDir}"
             "--chain mainnet"
+            "--metrics"
+            # for auth
             "--authrpc.vhosts \"*\""
             "--authrpc.port ${parsedEndpoint.port}"
             "--authrpc.addr ${parsedEndpoint.addr}"
-            "--private.api.addr=localhost:9090" # rpcdaemon
             (if cfg.execution.erigon.jwtSecretFile != null then
               "--authrpc.jwtsecret ${cfg.execution.erigon.jwtSecretFile}"
             else "")
-            "--metrics"
+            # for rpc
+            "--private.api.addr=localhost:9090"
+            "--txpool.api.addr=localhost:9090"
+            "--http.api=eth,erigon,web3,net,debug,trace,txpool"
+            "--http.addr=${parsedEndpoint.addr}"
+            "--http.corsdomain=\"*\""
+            # for ssv
+            "--ws"
           ];
           allowedPorts = [ 30303 30304 42069 ];
         in
         (createService serviceName serviceType execStart parsedEndpoint allowedPorts)
-      )
-      (
-        # TODO: AD HOC RPC DAEMON FOR ERIGON ONLY
-        let
-          parsedEndpoint = parseEndpoint cfg.execution.erigon.endpoint;
-        in
-        mkIf (cfg.execution.erigon.enable) {
-          systemd.services.rpcdaemon = {
-            enable = true;
-
-            description = "rpcdaemon execution, mainnet";
-            requires = [ "erigon.service" ]
-              ++ lib.optional (elem "wireguard" activeVPNClients)
-              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
-
-            after = [ "erigon.service" ]
-              ++ map (name: "${name}.service") activeConsensusClients
-              ++ lib.optional (elem "wireguard" activeVPNClients)
-              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
-
-            serviceConfig = {
-              Restart = "always";
-              RestartSec = "5s";
-              Type = "simple";
-            };
-
-            script = ''${pkgs.erigon}/bin/rpcdaemon \
-                --datadir=${cfg.execution.erigon.dataDir} \
-                --txpool.api.addr=localhost:9090 \
-                --http.api=eth,erigon,web3,net,debug,trace,txpool \
-                --http.addr=${parsedEndpoint.addr} \
-                --http.corsdomain="*" \
-                --ws
-              '';
-
-            wantedBy = [ "multi-user.target" ];
-          };
-
-          networking.firewall = {
-            interfaces = builtins.listToAttrs (map
-              (clientName: {
-                name = "${cfg.vpn.${clientName}.interfaceName}";
-                value = {
-                  allowedTCPPorts = [
-                    8545 # rpcdaemon
-                  ];
-                };
-              })
-              activeVPNClients);
-          };
-        }
       )
 
       #################################################################### GETH
