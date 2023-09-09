@@ -296,13 +296,26 @@ in
             "${pkgs.go-ethereum}/bin/geth"
             "--mainnet"
             "--datadir ${cfg.execution.geth.dataDir}"
+            "--metrics"
+            # auth for consensus client
             "--authrpc.vhosts \"*\""
             "--authrpc.port ${parsedEndpoint.port}"
             "--authrpc.addr ${parsedEndpoint.addr}"
             (if cfg.execution.geth.jwtSecretFile != null then
               "--authrpc.jwtsecret ${cfg.execution.geth.jwtSecretFile}"
             else "")
-            "--metrics"
+            # json-rpc for interacting
+            "--http.addr=${parsedEndpoint.addr}"
+            "--http.api=eth,web3,net,debug,trace,txpool"
+            "--http.corsdomain=\"*\""
+            "--http.port=8545"
+            "--http"
+            # ws for ssv
+            "--ws.addr=${parsedEndpoint.addr}"
+            "--ws.api=eth,web3,net,debug,trace,txpool"
+            "--ws.origins=\"*\""
+            "--ws.port=8545"
+            "--ws"
           ];
           allowedPorts = [ 30303 ];
         in
@@ -322,12 +335,20 @@ in
             "${pkgs.nethermind}/bin/Nethermind.Runner"
             "--config mainnet"
             "--datadir ${cfg.execution.nethermind.dataDir}"
+            "--Metrics.Enabled true"
+            # auth for consensus client
             "--JsonRpc.EngineHost ${parsedEndpoint.addr}"
             "--JsonRpc.EnginePort ${parsedEndpoint.port}"
             (if cfg.execution.nethermind.jwtSecretFile != null then
               "--JsonRpc.JwtSecretFile ${cfg.execution.nethermind.jwtSecretFile}"
             else "")
-            "--Metrics.Enabled true"
+            # json-rpc for interacting
+            "--JsonRpc.Enabled true"
+            "--JsonRpc.Host ${parsedEndpoint.addr}"
+            "--JsonRpc.Port 8584"
+            # ws for ssv
+            "--Init.WebSockersEnabled true"
+            "--JsonRpc.WebSocketsPort 8545"
           ];
           allowedPorts = [ 30303 ];
         in
@@ -347,6 +368,8 @@ in
             "${pkgs.besu}/bin/besu"
             "--network=mainnet"
             "--data-path=${cfg.execution.besu.dataDir}"
+            "--metrics-enabled=true"
+            # auth for consensus client
             "--engine-rpc-enabled=true"
             "--engine-host-allowlist=\"*\""
             "--engine-rpc-port=${parsedEndpoint.port}"
@@ -354,7 +377,18 @@ in
             (if cfg.execution.besu.jwtSecretFile != null then
               "--engine-jwt-secret=${cfg.execution.besu.jwtSecretFile}"
             else "")
-            "--metrics-enabled=true"
+            # json-rpc for interacting
+            "--rpc-http-api=ETH,NET,WEB3,TRACE,TXPOOL,DEBUG"
+            "--rpc-http-authentication-enabled=false"
+            "--rpc-http-cors-origins=\"*\""
+            "--rpc-http-enabled=true"
+            "--rpc-http-port=8584"
+            # ws for ssv
+            "--rpc-ws-api=ETH,NET,WEB3,TRACE,TXPOOL,DEBUG"
+            "--rpc-ws-authentication-enabled=false"
+            "--rpc-ws-enabled=true"
+            "--rpc-ws-host=${parsedEndpoint.addr}"
+            "--rpc-ws-port=8545"
           ];
           allowedPorts = [ 30303 ];
         in
