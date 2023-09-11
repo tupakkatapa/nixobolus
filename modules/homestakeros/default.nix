@@ -75,7 +75,7 @@ in
                     if serviceType == "consensus" then
                       [ (lib.strings.toInt parsedEndpoint.port) ]
                     else if serviceType == "execution" then
-                      [ 8545 ] # rpcdaemon 
+                      [ 8545 8546 ] # json-rpc / websockets 
                     else
                       [ ];
                 };
