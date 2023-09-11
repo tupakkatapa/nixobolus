@@ -306,13 +306,13 @@ in
             else "")
             # json-rpc for interacting
             "--http.addr=${parsedEndpoint.addr}"
-            "--http.api=eth,web3,net,debug,trace,txpool"
+            "--http.api=eth,web3,net,debug,txpool"
             "--http.corsdomain=\"*\""
             "--http.port=8545"
             "--http"
             # ws for ssv
             "--ws.addr=${parsedEndpoint.addr}"
-            "--ws.api=eth,web3,net,debug,trace,txpool"
+            "--ws.api=eth,web3,net,debug,txpool"
             "--ws.origins=\"*\""
             "--ws.port=8545"
             "--ws"
@@ -345,9 +345,9 @@ in
             # json-rpc for interacting
             "--JsonRpc.Enabled true"
             "--JsonRpc.Host ${parsedEndpoint.addr}"
-            "--JsonRpc.Port 8584"
+            "--JsonRpc.Port 8545"
             # ws for ssv
-            "--Init.WebSockersEnabled true"
+            "--Init.WebSocketsEnabled true"
             "--JsonRpc.WebSocketsPort 8545"
           ];
           allowedPorts = [ 30303 ];
@@ -382,13 +382,13 @@ in
             "--rpc-http-authentication-enabled=false"
             "--rpc-http-cors-origins=\"*\""
             "--rpc-http-enabled=true"
-            "--rpc-http-port=8584"
+            "--rpc-http-port=8545"
             # ws for ssv
             "--rpc-ws-api=ETH,NET,WEB3,TRACE,TXPOOL,DEBUG"
             "--rpc-ws-authentication-enabled=false"
             "--rpc-ws-enabled=true"
             "--rpc-ws-host=${parsedEndpoint.addr}"
-            "--rpc-ws-port=8545"
+            "--rpc-ws-port=8546"
           ];
           allowedPorts = [ 30303 ];
         in
