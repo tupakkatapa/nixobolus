@@ -70,10 +70,14 @@ in
             interfaces = builtins.listToAttrs (map
               (VPNserviceName: {
                 name = "${cfg.vpn.${VPNserviceName}.interfaceName}";
-                value = mkIf (serviceType == "consensus") {
-                  allowedTCPPorts = [
-                    (lib.strings.toInt parsedEndpoint.port)
-                  ];
+                value = {
+                  allowedTCPPorts =
+                    if serviceType == "consensus" then
+                      [ (lib.strings.toInt parsedEndpoint.port) ]
+                    else if serviceType == "execution" then
+                      [ 8545 8546 ] # json-rpc / websockets 
+                    else
+                      [ ];
                 };
               })
               activeVPNClients);
@@ -256,69 +260,27 @@ in
             "${pkgs.erigon}/bin/erigon"
             "--datadir ${cfg.execution.erigon.dataDir}"
             "--chain mainnet"
+            "--metrics"
+            # auth for consensus client
             "--authrpc.vhosts \"*\""
             "--authrpc.port ${parsedEndpoint.port}"
             "--authrpc.addr ${parsedEndpoint.addr}"
-            "--private.api.addr=localhost:9090" # rpcdaemon
             (if cfg.execution.erigon.jwtSecretFile != null then
               "--authrpc.jwtsecret ${cfg.execution.erigon.jwtSecretFile}"
             else "")
-            "--metrics"
+            # json-rpc for interacting
+            "--http.addr=${parsedEndpoint.addr}"
+            "--http.api=eth,erigon,web3,net,debug,trace,txpool"
+            "--http.corsdomain=\"*\""
+            "--http.port=8545"
+            "--private.api.addr=localhost:9090"
+            "--txpool.api.addr=localhost:9090"
+            # ws for ssv
+            "--ws"
           ];
           allowedPorts = [ 30303 30304 42069 ];
         in
         (createService serviceName serviceType execStart parsedEndpoint allowedPorts)
-      )
-      (
-        # TODO: AD HOC RPC DAEMON FOR ERIGON ONLY
-        let
-          parsedEndpoint = parseEndpoint cfg.execution.erigon.endpoint;
-        in
-        mkIf (cfg.execution.erigon.enable) {
-          systemd.services.rpcdaemon = {
-            enable = true;
-
-            description = "rpcdaemon execution, mainnet";
-            requires = [ "erigon.service" ]
-              ++ lib.optional (elem "wireguard" activeVPNClients)
-              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
-
-            after = [ "erigon.service" ]
-              ++ map (name: "${name}.service") activeConsensusClients
-              ++ lib.optional (elem "wireguard" activeVPNClients)
-              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
-
-            serviceConfig = {
-              Restart = "always";
-              RestartSec = "5s";
-              Type = "simple";
-            };
-
-            script = ''${pkgs.erigon}/bin/rpcdaemon \
-                --datadir=${cfg.execution.erigon.dataDir} \
-                --txpool.api.addr=localhost:9090 \
-                --http.api=eth,erigon,web3,net,debug,trace,txpool \
-                --http.addr=${parsedEndpoint.addr} \
-                --http.corsdomain="*" \
-                --ws
-              '';
-
-            wantedBy = [ "multi-user.target" ];
-          };
-
-          networking.firewall = {
-            interfaces = builtins.listToAttrs (map
-              (clientName: {
-                name = "${cfg.vpn.${clientName}.interfaceName}";
-                value = {
-                  allowedTCPPorts = [
-                    8545 # rpcdaemon
-                  ];
-                };
-              })
-              activeVPNClients);
-          };
-        }
       )
 
       #################################################################### GETH
@@ -334,13 +296,26 @@ in
             "${pkgs.go-ethereum}/bin/geth"
             "--mainnet"
             "--datadir ${cfg.execution.geth.dataDir}"
+            "--metrics"
+            # auth for consensus client
             "--authrpc.vhosts \"*\""
             "--authrpc.port ${parsedEndpoint.port}"
             "--authrpc.addr ${parsedEndpoint.addr}"
             (if cfg.execution.geth.jwtSecretFile != null then
               "--authrpc.jwtsecret ${cfg.execution.geth.jwtSecretFile}"
             else "")
-            "--metrics"
+            # json-rpc for interacting
+            "--http.addr=${parsedEndpoint.addr}"
+            "--http.api=eth,web3,net,debug,txpool"
+            "--http.corsdomain=\"*\""
+            "--http.port=8545"
+            "--http"
+            # ws for ssv
+            "--ws.addr=${parsedEndpoint.addr}"
+            "--ws.api=eth,web3,net,debug,txpool"
+            "--ws.origins=\"*\""
+            "--ws.port=8545"
+            "--ws"
           ];
           allowedPorts = [ 30303 ];
         in
@@ -360,12 +335,20 @@ in
             "${pkgs.nethermind}/bin/Nethermind.Runner"
             "--config mainnet"
             "--datadir ${cfg.execution.nethermind.dataDir}"
+            "--Metrics.Enabled true"
+            # auth for consensus client
             "--JsonRpc.EngineHost ${parsedEndpoint.addr}"
             "--JsonRpc.EnginePort ${parsedEndpoint.port}"
             (if cfg.execution.nethermind.jwtSecretFile != null then
               "--JsonRpc.JwtSecretFile ${cfg.execution.nethermind.jwtSecretFile}"
             else "")
-            "--Metrics.Enabled true"
+            # json-rpc for interacting
+            "--JsonRpc.Enabled true"
+            "--JsonRpc.Host ${parsedEndpoint.addr}"
+            "--JsonRpc.Port 8545"
+            # ws for ssv
+            "--Init.WebSocketsEnabled true"
+            "--JsonRpc.WebSocketsPort 8545"
           ];
           allowedPorts = [ 30303 ];
         in
@@ -385,6 +368,8 @@ in
             "${pkgs.besu}/bin/besu"
             "--network=mainnet"
             "--data-path=${cfg.execution.besu.dataDir}"
+            "--metrics-enabled=true"
+            # auth for consensus client
             "--engine-rpc-enabled=true"
             "--engine-host-allowlist=\"*\""
             "--engine-rpc-port=${parsedEndpoint.port}"
@@ -392,7 +377,18 @@ in
             (if cfg.execution.besu.jwtSecretFile != null then
               "--engine-jwt-secret=${cfg.execution.besu.jwtSecretFile}"
             else "")
-            "--metrics-enabled=true"
+            # json-rpc for interacting
+            "--rpc-http-api=ETH,NET,WEB3,TRACE,TXPOOL,DEBUG"
+            "--rpc-http-authentication-enabled=false"
+            "--rpc-http-cors-origins=\"*\""
+            "--rpc-http-enabled=true"
+            "--rpc-http-port=8545"
+            # ws for ssv
+            "--rpc-ws-api=ETH,NET,WEB3,TRACE,TXPOOL,DEBUG"
+            "--rpc-ws-authentication-enabled=false"
+            "--rpc-ws-enabled=true"
+            "--rpc-ws-host=${parsedEndpoint.addr}"
+            "--rpc-ws-port=8546"
           ];
           allowedPorts = [ 30303 ];
         in
