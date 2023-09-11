@@ -100,6 +100,78 @@
             example = "/var/mnt/erigon/jwt.hex";
           };
         };
+
+        geth = {
+          enable = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Whether to enable Geth.";
+          };
+          endpoint = mkOption {
+            type = types.str;
+            default = "http://127.0.0.1:8551";
+            description = "HTTP-RPC server listening interface of engine API.";
+          };
+          dataDir = mkOption {
+            type = types.path;
+            default = "/var/mnt/geth";
+            description = "Data directory for the blockchain.";
+          };
+          jwtSecretFile = mkOption {
+            type = types.nullOr types.str;
+            default = null;
+            description = "Path to the token that ensures safe connection between CL and EL.";
+            example = "/var/mnt/geth/jwt.hex";
+          };
+        };
+
+        nethermind = {
+          enable = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Whether to enable Nethermind.";
+          };
+          endpoint = mkOption {
+            type = types.str;
+            default = "http://127.0.0.1:8551";
+            description = "HTTP-RPC server listening interface of engine API.";
+          };
+          dataDir = mkOption {
+            type = types.path;
+            default = "/var/mnt/nethermind";
+            description = "Data directory for the blockchain.";
+          };
+          jwtSecretFile = mkOption {
+            type = types.nullOr types.str;
+            default = null;
+            description = "Path to the token that ensures safe connection between CL and EL.";
+            example = "/var/mnt/nethermind/jwt.hex";
+          };
+        };
+
+        besu = {
+          enable = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Whether to enable Besu.";
+          };
+          endpoint = mkOption {
+            type = types.str;
+            default = "http://127.0.0.1:8551";
+            description = "HTTP-RPC server listening interface of engine API.";
+          };
+          dataDir = mkOption {
+            type = types.path;
+            default = "/var/mnt/besu";
+            description = "Data directory for the blockchain.";
+          };
+          jwtSecretFile = mkOption {
+            type = types.nullOr types.str;
+            default = null;
+            description = "Path to the token that ensures safe connection between CL and EL.";
+            example = "/var/mnt/besu/jwt.hex";
+          };
+        };
       };
 
       consensus = {
@@ -115,10 +187,9 @@
             description = "HTTP server listening interface.";
           };
           execEndpoint = mkOption {
-            type = types.nullOr types.str;
-            default = null;
+            type = types.str;
+            default = "http://127.0.0.1:8551";
             description = "Server endpoint for an execution layer JWT-authenticated HTTP JSON-RPC connection.";
-            example = "http://127.0.0.1:8551";
           };
           slasher = {
             enable = mkOption {
@@ -149,9 +220,128 @@
             example = "/var/mnt/lighthouse/jwt.hex";
           };
         };
+
+        prysm = {
+          enable = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Whether to enable Prysm.";
+          };
+          endpoint = mkOption {
+            type = types.str;
+            default = "http://127.0.0.1:3500";
+            description = "JSON-HTTP server listening interface.";
+          };
+          execEndpoint = mkOption {
+            type = types.str;
+            default = "http://127.0.0.1:8551";
+            description = "Server endpoint for an execution layer JWT-authenticated HTTP JSON-RPC connection.";
+          };
+          slasher = {
+            enable = mkOption {
+              type = types.bool;
+              default = false;
+              description = "Whether to enable historical slasher.";
+            };
+          };
+          dataDir = mkOption {
+            type = types.path;
+            default = "/var/mnt/prysm";
+            description = "Data directory for the blockchain.";
+          };
+          jwtSecretFile = mkOption {
+            type = types.nullOr types.path;
+            default = null;
+            description = "Path to the token that ensures safe connection between CL and EL.";
+            example = "/var/mnt/prysm/jwt.hex";
+          };
+        };
+
+        teku = {
+          enable = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Whether to enable Teku.";
+          };
+          endpoint = mkOption {
+            type = types.str;
+            default = "http://127.0.0.1:5051";
+            description = "JSON-HTTP server listening interface.";
+          };
+          execEndpoint = mkOption {
+            type = types.str;
+            default = "http://127.0.0.1:8551";
+            description = "Server endpoint for an execution layer JWT-authenticated HTTP JSON-RPC connection.";
+          };
+          dataDir = mkOption {
+            type = types.path;
+            default = "/var/mnt/teku";
+            description = "Data directory for the blockchain.";
+          };
+          jwtSecretFile = mkOption {
+            type = types.nullOr types.path;
+            default = null;
+            description = "Path to the token that ensures safe connection between CL and EL.";
+            example = "/var/mnt/teku/jwt.hex";
+          };
+        };
+
+        # Nimbus is temporarily disabled due to a compile error.
+        # For more information, please refer to: https://github.com/ponkila/nixobolus/pull/25
+
+        #   nimbus = {
+        #     enable = mkOption {
+        #       type = types.bool;
+        #       default = false;
+        #       description = "Whether to enable Nimbus.";
+        #     };
+        #     endpoint = mkOption {
+        #       type = types.str;
+        #       default = "http://127.0.0.1:5052";
+        #       description = "JSON-HTTP server listening interface.";
+        #     };
+        #     execEndpoint = mkOption {
+        #       type = types.str;
+        #       default = "http://127.0.0.1:8551";
+        #       description = "Server endpoint for an execution layer JWT-authenticated HTTP JSON-RPC connection.";
+        #     };
+        #     dataDir = mkOption {
+        #       type = types.path;
+        #       default = "/var/mnt/nimbus";
+        #       description = "Data directory for the blockchain.";
+        #     };
+        #     jwtSecretFile = mkOption {
+        #       type = types.nullOr types.path;
+        #       default = null;
+        #       description = "Path to the token that ensures safe connection between CL and EL.";
+        #       example = "/var/mnt/nimbus/jwt.hex";
+        #     };
+        #   };
       };
 
       addons = {
+        ssv-node = {
+          privateKeyFile = mkOption {
+            type = types.nullOr types.path;
+            default = "/var/mnt/addons/ssv/ssv_operator_key";
+            description = "Path to the private SSV operator key.";
+          };
+          execEndpoint = mkOption {
+            type = types.str;
+            default = "ws://127.0.0.1:8545";
+            description = "WebSocket URL of the execution node to connect to.";
+          };
+          consEndpoint = mkOption {
+            type = types.str;
+            default = "http://127.0.0.1:5052";
+            description = "HTTP URL of the consensus node to connect to.";
+          };
+          dataDir = mkOption {
+            type = types.path;
+            default = "/var/mnt/addons/ssv";
+            description = "Path to a persistent directory to store the node's database.";
+          };
+        };
         mev-boost = {
           enable = mkOption {
             type = types.bool;
