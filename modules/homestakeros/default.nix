@@ -175,49 +175,62 @@ in
       # cfg: https://docs.ssv.network/run-a-node/operator-node/installation#create-configuration-file
       # https://github.com/bloxapp/ssv/issues/1138
       (
-        let
-          ssvConfig = pkgs.writeText "config.yaml" ''
-            global:
-              LogLevel: info
-              LogFilePath: ${cfg.addons.ssv-node.dataDir}/debug.log
+        mkIf
+          (
+            cfg.addons.ssv-node.privateKeyFile != null
+            && pkgs.system == "x86_64-linux"
+            && length activeConsensusClients > 0
+            && length activeExecutionClients > 0
+          )
+          {
+            systemd.services.ssv-autostart =
+              let
+                # TODO: This is a bad way to do this, prevents multiple instances
+                executionClient = builtins.elemAt activeExecutionClients 0;
+                consensusClient = builtins.elemAt activeConsensusClients 0;
+                parsedConsensusEndpoint = parseEndpoint cfg.consensus.${consensusClient}.endpoint;
 
-            db:
-              Path: ${cfg.addons.ssv-node.dataDir}/db
+                ssvConfig = pkgs.writeText "config.yaml" ''
+                  global:
+                    LogLevel: info
+                    LogFilePath: ${cfg.addons.ssv-node.dataDir}/debug.log
 
-            ssv:
-              Network: mainnet
-              ValidatorOptions:
-                BuilderProposals: true
+                  db:
+                    Path: ${cfg.addons.ssv-node.dataDir}/db
 
-            eth2:
-              BeaconNodeAddr: ${cfg.addons.ssv-node.consEndpoint}
-              Network: mainnet
+                  ssv:
+                    Network: mainnet
+                    ValidatorOptions:
+                      BuilderProposals: true
 
-            eth1:
-              ETH1Addr: ${cfg.addons.ssv-node.execEndpoint}
-          '';
-        in
-        mkIf (cfg.addons.ssv-node.privateKeyFile != null && pkgs.system == "x86_64-linux") {
-          systemd.services.ssv-autostart = {
-            description = "Start the SSV node if the private operator key exists";
-            unitConfig.ConditionPathExists = [ "${cfg.addons.ssv-node.privateKeyFile}" ];
-            # The operator key is defined here, so it does not need to be evaluated
-            script = ''
-              export OPERATOR_KEY=$(cat ${cfg.addons.ssv-node.privateKeyFile})
-              ${pkgs.ssvnode}/bin/ssvnode start-node --config ${ssvConfig}
-            '';
-            wantedBy = [ "multi-user.target" ];
-          };
-          systemd.timers.ssv-autostart = {
-            timerConfig.OnBootSec = "10min";
-            wantedBy = [ "timers.target" ];
-          };
-          # Firewall
-          networking.firewall = {
-            allowedTCPPorts = [ 13001 ];
-            allowedUDPPorts = [ 12001 ];
-          };
-        }
+                  eth2:
+                    BeaconNodeAddr: ws://${parsedConsensusEndpoint.addr}:${parsedConsensusEndpoint.port}:
+                    Network: mainnet
+
+                  eth1:
+                    ETH1Addr: ${cfg.execution.${executionClient}.endpoint}
+                '';
+              in
+              {
+                description = "Start the SSV node if the private operator key exists";
+                unitConfig.ConditionPathExists = [ "${cfg.addons.ssv-node.privateKeyFile}" ];
+                # The operator key is defined here, so it does not need to be evaluated
+                script = ''
+                  export OPERATOR_KEY=$(cat ${cfg.addons.ssv-node.privateKeyFile})
+                  ${pkgs.ssvnode}/bin/ssvnode start-node --config ${ssvConfig}
+                '';
+                wantedBy = [ "multi-user.target" ];
+              };
+            systemd.timers.ssv-autostart = {
+              timerConfig.OnBootSec = "10min";
+              wantedBy = [ "timers.target" ];
+            };
+            # Firewall
+            networking.firewall = {
+              allowedTCPPorts = [ 13001 ];
+              allowedUDPPorts = [ 12001 ];
+            };
+          }
       )
 
       #################################################################### WIREGUARD
