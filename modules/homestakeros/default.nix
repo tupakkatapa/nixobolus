@@ -18,6 +18,9 @@ in
           port = builtins.elemAt match 2;
         };
 
+      # Function to generate VPN client interface name from config file path
+      getVpnInterfaceName = VPNserviceName: builtins.elemAt (builtins.split "[.]" (builtins.baseNameOf cfg.vpn.${VPNserviceName}.configFile)) 0;
+
       # Function to get the active client
       getActiveClients = clients: path: builtins.filter (serviceName: path.${serviceName}.enable) clients;
 
@@ -39,7 +42,7 @@ in
             description = "${serviceType}, mainnet";
             requires = [ ]
               ++ lib.optional (elem "wireguard" activeVPNClients)
-              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+              "wg-quick-${getVpnInterfaceName "wireguard"}.service";
 
             after = (
               if serviceType == "execution" then
@@ -49,7 +52,7 @@ in
               else [ ]
             )
             ++ lib.optional (elem "wireguard" activeVPNClients)
-              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+              "wg-quick-${getVpnInterfaceName "wireguard"}.service";
 
             serviceConfig = {
               ExecStart = concatStringsSep " \\\n\t" execStart;
@@ -69,7 +72,7 @@ in
             # Function to allow ports for each of the enabled VPN clients
             interfaces = builtins.listToAttrs (map
               (VPNserviceName: {
-                name = "${cfg.vpn.${VPNserviceName}.interfaceName}";
+                name = "${getVpnInterfaceName VPNserviceName}";
                 value = {
                   allowedTCPPorts =
                     if serviceType == "consensus" then
@@ -237,7 +240,7 @@ in
       # cfg: https://man7.org/linux/man-pages/man8/wg.8.html
       (
         mkIf (cfg.vpn.wireguard.enable && cfg.vpn.wireguard.configFile != null) {
-          networking.wg-quick.interfaces.${cfg.vpn.wireguard.interfaceName}.configFile = cfg.vpn.wireguard.configFile;
+          networking.wg-quick.interfaces.${getVpnInterfaceName "wireguard"}.configFile = cfg.vpn.wireguard.configFile;
         }
       )
 

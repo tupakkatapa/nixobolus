@@ -54,11 +54,6 @@
             description = "A file path for the wg-quick configuration.";
             example = "/var/mnt/secrets/wg0.conf";
           };
-          interfaceName = mkOption {
-            type = types.str;
-            default = "wg0";
-            description = "The name assigned to the WireGuard network interface.";
-          };
         };
       };
 
