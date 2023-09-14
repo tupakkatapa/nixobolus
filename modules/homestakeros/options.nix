@@ -49,10 +49,9 @@
             description = "Whether to enable WireGuard.";
           };
           configFile = mkOption {
-            type = types.nullOr types.str;
-            default = null;
+            type = types.path;
+            default = "/var/mnt/secrets/wg0.conf";
             description = "A file path for the wg-quick configuration.";
-            example = "/var/mnt/secrets/wg0.conf";
           };
         };
       };

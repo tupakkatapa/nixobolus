@@ -239,7 +239,7 @@ in
       #################################################################### WIREGUARD
       # cfg: https://man7.org/linux/man-pages/man8/wg.8.html
       (
-        mkIf (cfg.vpn.wireguard.enable && cfg.vpn.wireguard.configFile != null) {
+        mkIf cfg.vpn.wireguard.enable {
           networking.wg-quick.interfaces.${getVpnInterfaceName "wireguard"}.configFile = cfg.vpn.wireguard.configFile;
         }
       )
