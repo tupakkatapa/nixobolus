@@ -18,6 +18,9 @@ in
           port = builtins.elemAt match 2;
         };
 
+      # Function to generate VPN client interface name from config file path
+      getVpnInterfaceName = VPNserviceName: builtins.elemAt (builtins.split "[.]" (builtins.baseNameOf cfg.vpn.${VPNserviceName}.configFile)) 0;
+
       # Function to get the active client
       getActiveClients = clients: path: builtins.filter (serviceName: path.${serviceName}.enable) clients;
 
@@ -39,7 +42,7 @@ in
             description = "${serviceType}, mainnet";
             requires = [ ]
               ++ lib.optional (elem "wireguard" activeVPNClients)
-              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+              "wg-quick-${getVpnInterfaceName "wireguard"}.service";
 
             after = (
               if serviceType == "execution" then
@@ -49,7 +52,7 @@ in
               else [ ]
             )
             ++ lib.optional (elem "wireguard" activeVPNClients)
-              "wg-quick-${cfg.vpn.wireguard.interfaceName}.service";
+              "wg-quick-${getVpnInterfaceName "wireguard"}.service";
 
             serviceConfig = {
               ExecStart = concatStringsSep " \\\n\t" execStart;
@@ -69,7 +72,7 @@ in
             # Function to allow ports for each of the enabled VPN clients
             interfaces = builtins.listToAttrs (map
               (VPNserviceName: {
-                name = "${cfg.vpn.${VPNserviceName}.interfaceName}";
+                name = "${getVpnInterfaceName VPNserviceName}";
                 value = {
                   allowedTCPPorts =
                     if serviceType == "consensus" then
@@ -84,166 +87,160 @@ in
           };
         };
     in
-    mkMerge [
+    {
       ################################################################### LOCALIZATION
-      (
-        mkIf true {
-          networking.hostName = cfg.localization.hostname;
-          time.timeZone = cfg.localization.timezone;
-        }
-      )
+      networking.hostName = cfg.localization.hostname;
+      time.timeZone = cfg.localization.timezone;
 
       #################################################################### MOUNTS
       # cfg: https://www.freedesktop.org/software/systemd/man/systemd.mount.html#Options
-      (
-        mkIf true {
-          systemd.mounts = lib.mapAttrsToList
-            (name: mount: {
-              enable = mount.enable or true;
-              description = mount.description or "${name} mount point";
-              what = mount.what;
-              where = mount.where;
-              type = mount.type or "ext4";
-              options = mount.options or "defaults";
-              before = lib.mkDefault (mount.before or [ ]);
-              wantedBy = mount.wantedBy or [ "multi-user.target" ];
-            })
-            cfg.mounts;
-        }
-      )
+      systemd.mounts = lib.mapAttrsToList
+        (name: mount: {
+          enable = mount.enable or true;
+          description = mount.description or "${name} mount point";
+          what = mount.what;
+          where = mount.where;
+          type = mount.type or "ext4";
+          options = mount.options or "defaults";
+          before = lib.mkDefault (mount.before or [ ]);
+          wantedBy = mount.wantedBy or [ "multi-user.target" ];
+        })
+        cfg.mounts;
 
       #################################################################### SSH (system level)
-      (
-        mkIf true {
-          services.openssh = {
-            enable = true;
-            hostKeys = lib.mkIf (cfg.ssh.privateKeyFile != null) [{
-              path = cfg.ssh.privateKeyFile;
-              type = "ed25519";
-            }];
-            allowSFTP = false;
-            extraConfig = ''
-              AllowTcpForwarding yes
-              X11Forwarding no
-              #AllowAgentForwarding no
-              AllowStreamLocalForwarding no
-              AuthenticationMethods publickey
-            '';
-            settings.PasswordAuthentication = false;
-            settings.KbdInteractiveAuthentication = false;
-          };
-        }
-      )
+      services.openssh = {
+        enable = true;
+        hostKeys = lib.mkIf (cfg.ssh.privateKeyFile != null) [{
+          path = cfg.ssh.privateKeyFile;
+          type = "ed25519";
+        }];
+        allowSFTP = false;
+        extraConfig = ''
+          AllowTcpForwarding yes
+          X11Forwarding no
+          #AllowAgentForwarding no
+          AllowStreamLocalForwarding no
+          AuthenticationMethods publickey
+        '';
+        settings.PasswordAuthentication = false;
+        settings.KbdInteractiveAuthentication = false;
+      };
 
       #################################################################### USER (core)
-      (
-        mkIf true {
-          users.users.core = {
-            isNormalUser = true;
-            group = "core";
-            extraGroups = [ "wheel" ];
-            openssh.authorizedKeys.keys = cfg.ssh.authorizedKeys;
-            shell = pkgs.fish;
-          };
-          users.groups.core = { };
-          environment.shells = [ pkgs.fish ];
+      users.users.core = {
+        isNormalUser = true;
+        group = "core";
+        extraGroups = [ "wheel" ];
+        openssh.authorizedKeys.keys = cfg.ssh.authorizedKeys;
+        shell = pkgs.fish;
+      };
+      users.groups.core = { };
+      environment.shells = [ pkgs.fish ];
 
-          programs = {
-            tmux.enable = true;
-            htop.enable = true;
-            git.enable = true;
-            fish.enable = true;
-            fish.loginShellInit = "fish_add_path --move --prepend --path $HOME/.nix-profile/bin /run/wrappers/bin /etc/profiles/per-user/$USER/bin /run/current-system/sw/bin /nix/var/nix/profiles/default/bin";
-          };
-        }
-      )
+      programs = {
+        tmux.enable = true;
+        htop.enable = true;
+        git.enable = true;
+        fish.enable = true;
+        fish.loginShellInit = "fish_add_path --move --prepend --path $HOME/.nix-profile/bin /run/wrappers/bin /etc/profiles/per-user/$USER/bin /run/current-system/sw/bin /nix/var/nix/profiles/default/bin";
+      };
 
       #################################################################### MOTD (no options)
       # cfg: https://github.com/rust-motd/rust-motd
-      (
-        mkIf true {
-          programs.rust-motd = {
-            enable = true;
-            enableMotdInSSHD = true;
-            settings = {
-              banner = {
-                color = "yellow";
-                command = ''
-                  echo ""
-                  echo " +-------------+"
-                  echo " | 10110 010   |"
-                  echo " | 101 101 10  |"
-                  echo " | 0   _____   |"
-                  echo " |    / ___ \  |"
-                  echo " |   / /__/ /  |"
-                  echo " +--/ _____/---+"
-                  echo "   / /"
-                  echo "  /_/"
-                  echo ""
-                  systemctl --failed --quiet
-                '';
-              };
-              uptime.prefix = "Uptime:";
-              last_login.core = 2;
-            };
+      programs.rust-motd = {
+        enable = true;
+        enableMotdInSSHD = true;
+        settings = {
+          banner = {
+            color = "yellow";
+            command = ''
+              echo ""
+              echo " +-------------+"
+              echo " | 10110 010   |"
+              echo " | 101 101 10  |"
+              echo " | 0   _____   |"
+              echo " |    / ___ \  |"
+              echo " |   / /__/ /  |"
+              echo " +--/ _____/---+"
+              echo "   / /"
+              echo "  /_/"
+              echo ""
+              systemctl --failed --quiet
+            '';
           };
-        }
-      )
+          uptime.prefix = "Uptime:";
+          last_login.core = 2;
+        };
+      };
 
+    } // lib.mkMerge [
       #################################################################### SSV
       # cfg: https://docs.ssv.network/run-a-node/operator-node/installation#create-configuration-file
       # https://github.com/bloxapp/ssv/issues/1138
       (
-        let
-          ssvConfig = pkgs.writeText "config.yaml" ''
-            global:
-              LogLevel: info
-              LogFilePath: ${cfg.addons.ssv-node.dataDir}/debug.log
+        mkIf
+          (
+            cfg.addons.ssv-node.privateKeyFile != null
+            && pkgs.system == "x86_64-linux"
+            && length activeConsensusClients > 0
+            && length activeExecutionClients > 0
+          )
+          {
+            systemd.services.ssv-autostart =
+              let
+                # TODO: This is a bad way to do this, prevents multiple instances
+                executionClient = builtins.elemAt activeExecutionClients 0;
+                consensusClient = builtins.elemAt activeConsensusClients 0;
+                parsedConsensusEndpoint = parseEndpoint cfg.consensus.${consensusClient}.endpoint;
 
-            db:
-              Path: ${cfg.addons.ssv-node.dataDir}/db
+                ssvConfig = pkgs.writeText "config.yaml" ''
+                  global:
+                    LogLevel: info
+                    LogFilePath: ${cfg.addons.ssv-node.dataDir}/debug.log
 
-            ssv:
-              Network: mainnet
-              ValidatorOptions:
-                BuilderProposals: true
+                  db:
+                    Path: ${cfg.addons.ssv-node.dataDir}/db
 
-            eth2:
-              BeaconNodeAddr: ${cfg.addons.ssv-node.consEndpoint}
-              Network: mainnet
+                  ssv:
+                    Network: mainnet
+                    ValidatorOptions:
+                      BuilderProposals: true
 
-            eth1:
-              ETH1Addr: ${cfg.addons.ssv-node.execEndpoint}
-          '';
-        in
-        mkIf (cfg.addons.ssv-node.privateKeyFile != null && pkgs.system == "x86_64-linux") {
-          systemd.services.ssv-autostart = {
-            description = "Start the SSV node if the private operator key exists";
-            unitConfig.ConditionPathExists = [ "${cfg.addons.ssv-node.privateKeyFile}" ];
-            # The operator key is defined here, so it does not need to be evaluated
-            script = ''
-              export OPERATOR_KEY=$(cat ${cfg.addons.ssv-node.privateKeyFile})
-              ${pkgs.ssvnode}/bin/ssvnode start-node --config ${ssvConfig}
-            '';
-            wantedBy = [ "multi-user.target" ];
-          };
-          systemd.timers.ssv-autostart = {
-            timerConfig.OnBootSec = "10min";
-            wantedBy = [ "timers.target" ];
-          };
-          # Firewall
-          networking.firewall = {
-            allowedTCPPorts = [ 13001 ];
-            allowedUDPPorts = [ 12001 ];
-          };
-        }
+                  eth2:
+                    BeaconNodeAddr: ws://${parsedConsensusEndpoint.addr}:${parsedConsensusEndpoint.port}:
+                    Network: mainnet
+
+                  eth1:
+                    ETH1Addr: ${cfg.execution.${executionClient}.endpoint}
+                '';
+              in
+              {
+                description = "Start the SSV node if the private operator key exists";
+                unitConfig.ConditionPathExists = [ "${cfg.addons.ssv-node.privateKeyFile}" ];
+                # The operator key is defined here, so it does not need to be evaluated
+                script = ''
+                  export OPERATOR_KEY=$(cat ${cfg.addons.ssv-node.privateKeyFile})
+                  ${pkgs.ssvnode}/bin/ssvnode start-node --config ${ssvConfig}
+                '';
+                wantedBy = [ "multi-user.target" ];
+              };
+            systemd.timers.ssv-autostart = {
+              timerConfig.OnBootSec = "10min";
+              wantedBy = [ "timers.target" ];
+            };
+            # Firewall
+            networking.firewall = {
+              allowedTCPPorts = [ 13001 ];
+              allowedUDPPorts = [ 12001 ];
+            };
+          }
       )
 
       #################################################################### WIREGUARD
       # cfg: https://man7.org/linux/man-pages/man8/wg.8.html
       (
         mkIf (cfg.vpn.wireguard.enable && cfg.vpn.wireguard.configFile != null) {
-          networking.wg-quick.interfaces.${cfg.vpn.wireguard.interfaceName}.configFile = cfg.vpn.wireguard.configFile;
+          networking.wg-quick.interfaces.${getVpnInterfaceName "wireguard"}.configFile = cfg.vpn.wireguard.configFile;
         }
       )
 
