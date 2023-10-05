@@ -1,9 +1,14 @@
-{ pkgs, config, lib, inputs, ... }:
 {
+  pkgs,
+  config,
+  lib,
+  inputs,
+  ...
+}: {
   nix = {
     # This will add each flake input as a registry
     # To make nix3 commands consistent with your flake
-    registry = lib.mapAttrs (_: value: { flake = value; }) inputs;
+    registry = lib.mapAttrs (_: value: {flake = value;}) inputs;
 
     # This will additionally add your inputs to the system's legacy channels
     # Making legacy nix commands consistent as well, awesome!
@@ -86,7 +91,7 @@
     # on the same host instead of using hard-coded IPs.
     # NOTE: --net must be the same on the containers, and not eq "host"
     # TODO: extend this with flannel ontop of wireguard for cross-node comms
-    defaultNetwork.settings = { dns_enabled = true; };
+    defaultNetwork.settings = {dns_enabled = true;};
   };
 
   # Reboots hanged system
@@ -106,7 +111,7 @@
   ];
 
   # Rip out packages
-  environment.defaultPackages = lib.mkForce [ ];
+  environment.defaultPackages = lib.mkForce [];
   environment.noXlibs = true;
   documentation.doc.enable = false;
   xdg.mime.enable = false;

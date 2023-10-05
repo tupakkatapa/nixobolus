@@ -50,7 +50,7 @@
         ...
       }: {
         # Nix code formatter, accessible through 'nix fmt'
-        formatter = nixpkgs.legacyPackages.${system}.nixpkgs-fmt;
+        formatter = nixpkgs.legacyPackages.${system}.alejandra;
 
         # Development shell
         # Accessible trough 'nix develop .# --impure' or 'direnv allow'
