@@ -15,113 +15,100 @@
   };
 
   inputs = {
+    devenv.url = "github:cachix/devenv";
     ethereum-nix.inputs.nixpkgs.follows = "nixpkgs";
     ethereum-nix.url = "github:nix-community/ethereum.nix";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    flake-root.url = "github:srid/flake-root";
-    mission-control.url = "github:Platonic-Systems/mission-control";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-23.05";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    pre-commit-hooks-nix.url = "github:hercules-ci/pre-commit-hooks.nix/flakeModule";
   };
 
-  outputs =
-    { self
-    , ethereum-nix
-    , flake-parts
-    , nixpkgs
-    , nixpkgs-stable
-    , ...
-    }@inputs:
-
-    flake-parts.lib.mkFlake { inherit inputs; } rec {
-
+  outputs = {
+    self,
+    ethereum-nix,
+    flake-parts,
+    nixpkgs,
+    nixpkgs-stable,
+    ...
+  } @ inputs:
+    flake-parts.lib.mkFlake {inherit inputs;} rec {
       imports = [
-        inputs.flake-root.flakeModule
-        inputs.mission-control.flakeModule
-        inputs.pre-commit-hooks-nix.flakeModule
+        inputs.devenv.flakeModule
       ];
+
       systems = [
         "aarch64-darwin"
         "aarch64-linux"
         "x86_64-darwin"
         "x86_64-linux"
       ];
-      perSystem = { pkgs, lib, config, system, ... }: {
+      perSystem = {
+        pkgs,
+        lib,
+        config,
+        system,
+        ...
+      }: {
         # Nix code formatter, accessible through 'nix fmt'
         formatter = nixpkgs.legacyPackages.${system}.nixpkgs-fmt;
 
-        # Git hook scripts for identifying issues before submission
-        pre-commit.settings = {
-          hooks = {
-            shellcheck.enable = true;
-            nixpkgs-fmt.enable = true;
-            flakecheck = {
-              enable = true;
-              name = "flakecheck";
-              description = "Check whether the flake evaluates and run its tests";
-              entry = "nix flake check --no-warn-dirty";
-              language = "system";
-              pass_filenames = false;
+        # Development shell
+        # Accessible trough 'nix develop .# --impure' or 'direnv allow'
+        devenv.shells = {
+          default = {
+            packages = with pkgs; [
+              cpio
+              git
+              jq
+              nix
+              nix-tree
+              rsync
+              ssh-to-age
+              zstd
+            ];
+            env = {
+              NIX_CONFIG = ''
+                accept-flake-config = true
+                extra-experimental-features = flakes nix-command
+                warn-dirty = false
+              '';
             };
+            pre-commit.hooks = {
+              alejandra.enable = true;
+              shellcheck.enable = true;
+            };
+            # Workaround for https://github.com/cachix/devenv/issues/760
+            containers = pkgs.lib.mkForce {};
           };
-        };
-        # Do not perform hooks with 'nix flake check'
-        pre-commit.check.enable = false;
-
-        # Development tools for devshell
-        mission-control.scripts = { };
-
-        # Devshells for bootstrapping
-        # Accessible through 'nix develop' or 'nix-shell' (legacy)
-        devShells.default = pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [
-            cpio
-            git
-            jq
-            nix
-            nix-tree
-            rsync
-            ssh-to-age
-            zstd
-          ];
-          inputsFrom = [
-            config.flake-root.devShell
-            config.mission-control.devShell
-          ];
-          shellHook = ''
-            ${config.pre-commit.installationScript}
-          '';
         };
 
         # Custom packages and aliases for building hosts
         # Accessible through 'nix build', 'nix run', etc
         packages = {
           "homestakeros" = flake.nixosConfigurations.homestakeros.config.system.build.kexecTree;
-          "buidl" =
-            let
-              pkgs = import nixpkgs { inherit system; };
-              name = "buidl";
-              buidl-script = (pkgs.writeScriptBin name (builtins.readFile ./scripts/buidl.sh)).overrideAttrs (old: {
-                buildCommand = "${old.buildCommand}\n patchShebangs $out";
-              });
-            in
+          "buidl" = let
+            pkgs = import nixpkgs {inherit system;};
+            name = "buidl";
+            buidl-script = (pkgs.writeScriptBin name (builtins.readFile ./scripts/buidl.sh)).overrideAttrs (old: {
+              buildCommand = "${old.buildCommand}\n patchShebangs $out";
+            });
+          in
             pkgs.symlinkJoin {
               inherit name;
-              paths = [ buidl-script ];
-              buildInputs = with pkgs; [ nix makeWrapper ];
+              paths = [buidl-script];
+              buildInputs = with pkgs; [nix makeWrapper];
               postBuild = "wrapProgram $out/bin/${name} --prefix PATH : $out/bin";
             };
         };
       };
-      flake =
-        let
-          inherit (self) outputs;
+      flake = let
+        inherit (self) outputs;
 
-          homestakeros = {
-            system = "x86_64-linux";
-            specialArgs = { inherit inputs outputs; };
-            modules = [
+        homestakeros = {
+          system = "x86_64-linux";
+          specialArgs = {inherit inputs outputs;};
+          modules =
+            [
               self.nixosModules.kexecTree
               self.nixosModules.homestakeros
               {
@@ -131,61 +118,71 @@
                 boot.loader.systemd-boot.enable = true;
                 boot.loader.efi.canTouchEfiVariables = true;
               }
-            ] ++ nixpkgs.lib.optional (builtins.pathExists /tmp/data.nix) /tmp/data.nix;
-          };
+            ]
+            ++ nixpkgs.lib.optional (builtins.pathExists /tmp/data.nix) /tmp/data.nix;
+        };
 
-          # Function to format module options
-          parseOpts = options:
-            nixpkgs.lib.attrsets.mapAttrsRecursiveCond (v: ! nixpkgs.lib.options.isOption v)
-              (k: v: {
-                type = v.type.name;
-                default = v.default;
-                description = if v ? description then v.description else null;
-                example = if v ? example then v.example else null;
-              })
-              options;
+        # Function to format module options
+        parseOpts = options:
+          nixpkgs.lib.attrsets.mapAttrsRecursiveCond (v: ! nixpkgs.lib.options.isOption v)
+          (k: v: {
+            type = v.type.name;
+            default = v.default;
+            description =
+              if v ? description
+              then v.description
+              else null;
+            example =
+              if v ? example
+              then v.example
+              else null;
+          })
+          options;
 
-          # Function to get options from module(s)
-          getOpts = modules:
-            builtins.removeAttrs (nixpkgs.lib.evalModules {
-              inherit modules;
-              specialArgs = { inherit nixpkgs; };
-            }).options [ "_module" ];
-        in
-        rec {
-          overlays = import ./overlays { inherit inputs; };
+        # Function to get options from module(s)
+        getOpts = modules:
+          builtins.removeAttrs
+          (nixpkgs.lib.evalModules {
+            inherit modules;
+            specialArgs = {inherit nixpkgs;};
+          })
+          .options ["_module"];
+      in rec {
+        overlays = import ./overlays {inherit inputs;};
 
-          # HomestakerOS module for Ethereum-related components
-          # A accessible through 'nix eval --json .#exports'
-          nixosModules.homestakeros = {
-            imports = [ ./modules/homestakeros ];
-            config = {
-              nixpkgs.overlays = [
-                ethereum-nix.overlays.default
-                outputs.overlays.additions
-                outputs.overlays.modifications
-              ];
-            };
-          };
-
-          # Module option exports for the frontend
-          # Accessible through 'nix eval --json .#exports'
-          exports = parseOpts (getOpts [
-            ./modules/homestakeros/options.nix
-          ]);
-
-          # NixOS configuration entrypoints for the frontend
-          nixosConfigurations = with nixpkgs.lib; {
-            "homestakeros" = nixosSystem homestakeros;
-          } // (with nixpkgs-stable.lib; { });
-
-          # Format modules
-          nixosModules.isoImage = {
-            imports = [ ./system ./system/formats/copytoram-iso.nix ];
-          };
-          nixosModules.kexecTree = {
-            imports = [ ./system ./system/formats/netboot-kexec.nix ];
+        # HomestakerOS module for Ethereum-related components
+        # A accessible through 'nix eval --json .#exports'
+        nixosModules.homestakeros = {
+          imports = [./modules/homestakeros];
+          config = {
+            nixpkgs.overlays = [
+              ethereum-nix.overlays.default
+              outputs.overlays.additions
+              outputs.overlays.modifications
+            ];
           };
         };
+
+        # Module option exports for the frontend
+        # Accessible through 'nix eval --json .#exports'
+        exports = parseOpts (getOpts [
+          ./modules/homestakeros/options.nix
+        ]);
+
+        # NixOS configuration entrypoints for the frontend
+        nixosConfigurations = with nixpkgs.lib;
+          {
+            "homestakeros" = nixosSystem homestakeros;
+          }
+          // (with nixpkgs-stable.lib; {});
+
+        # Format modules
+        nixosModules.isoImage = {
+          imports = [./system ./system/formats/copytoram-iso.nix];
+        };
+        nixosModules.kexecTree = {
+          imports = [./system ./system/formats/netboot-kexec.nix];
+        };
+      };
     };
 }
