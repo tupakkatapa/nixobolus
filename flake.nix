@@ -183,6 +183,9 @@
         nixosModules.kexecTree = {
           imports = [./system ./system/formats/netboot-kexec.nix];
         };
+        nixosModules.squashfs = {
+          imports = [./system ./system/formats/netboot-squashfs.nix];
+        };
       };
     };
 }
