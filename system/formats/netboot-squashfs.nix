@@ -61,15 +61,52 @@
     comp = "zstd -Xcompression-level 2";
   };
 
-  # A tree containing initrd.zst, bzImage and a squashfs.
+  system.build.netbootIpxeScript = pkgs.writeText "netboot.ipxe" ''
+    #!ipxe
+    # Use the cmdline variable to allow the user to specify custom kernel params
+    # when chainloading this script from other iPXE scripts like netboot.xyz
+    kernel bzImage rootfs=squashfs.img init=${config.system.build.toplevel}/init initrd=initrd.zst ${toString config.boot.kernelParams} ''${cmdline}
+    initrd initrd.zst
+    boot
+  '';
+
+  # A script invoking kexec on ./bzImage and ./initrd.zst.
+  # Usually used through system.build.kexecTree, but exposed here for composability.
+  system.build.kexecScript = pkgs.writeScript "kexec-boot" ''
+    #!/usr/bin/env bash
+    if ! kexec -v >/dev/null 2>&1; then
+      echo "kexec not found: please install kexec-tools" 2>&1
+      exit 1
+    fi
+    SCRIPT_DIR=$( cd -- "$( dirname -- "''${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+    kexec --load ''${SCRIPT_DIR}/bzImage \
+      --initrd=''${SCRIPT_DIR}/initrd.zst \
+      --command-line "rootfs=squashfs.img init=${config.system.build.toplevel}/init ${toString config.boot.kernelParams}"
+    systemctl kexec
+  '';
+
+  # A tree containing all the good stuff
   system.build.squashfs = pkgs.linkFarm "squashfs" [
+    {
+      name = "squashfs.img";
+      path = "${config.system.build.squashfsStore}";
+    }
+    {
+      # NOTE: this is only a small, initial ramdisk
+      name = "initrd.zst";
+      path = "${config.system.build.initialRamdisk}/initrd";
+    }
     {
       name = "bzImage";
       path = "${config.system.build.kernel}/${config.system.boot.loader.kernelFile}";
     }
     {
-      name = "squashfs.img";
-      path = "${config.system.build.squashfsStore}";
+      name = "kexec-boot";
+      path = config.system.build.kexecScript;
+    }
+    {
+      name = "netboot.ipxe";
+      path = config.system.build.netbootIpxeScript;
     }
   ];
 }
