@@ -151,7 +151,10 @@
         # HomestakerOS module for Ethereum-related components
         # A accessible through 'nix eval --json .#exports'
         nixosModules.homestakeros = {
-          imports = [./modules/homestakeros];
+          imports = [
+            ./modules/homestakeros
+            ./modules/homestakeros/system.nix
+          ];
           config = {
             nixpkgs.overlays = [
               ethereum-nix.overlays.default
@@ -176,10 +179,10 @@
 
         # Format modules
         nixosModules.isoImage = {
-          imports = [./system ./system/formats/copytoram-iso.nix];
+          imports = [./modules/copytoram-iso.nix];
         };
         nixosModules.kexecTree = {
-          imports = [./system ./system/formats/netboot-kexec.nix];
+          imports = [./modules/netboot-kexec.nix];
         };
       };
     };
