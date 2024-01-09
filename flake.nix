@@ -14,7 +14,6 @@
 
   inputs = {
     devenv.url = "github:cachix/devenv";
-    ethereum-nix.inputs.nixpkgs.follows = "nixpkgs";
     ethereum-nix.url = "github:nix-community/ethereum.nix";
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-23.05";
