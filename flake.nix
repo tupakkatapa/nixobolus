@@ -14,7 +14,6 @@
 
   inputs = {
     devenv.url = "github:cachix/devenv";
-    ethereum-nix.inputs.nixpkgs.follows = "nixpkgs";
     ethereum-nix.url = "github:nix-community/ethereum.nix";
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-23.05";
@@ -30,16 +29,12 @@
     ...
   } @ inputs:
     flake-parts.lib.mkFlake {inherit inputs;} rec {
+      systems = nixpkgs.lib.systems.flakeExposed;
       imports = [
         inputs.devenv.flakeModule
+        inputs.flake-parts.flakeModules.easyOverlay
       ];
 
-      systems = [
-        "aarch64-darwin"
-        "aarch64-linux"
-        "x86_64-darwin"
-        "x86_64-linux"
-      ];
       perSystem = {
         pkgs,
         lib,
@@ -47,6 +42,18 @@
         system,
         ...
       }: {
+        _module.args.pkgs = import inputs.nixpkgs {
+          inherit system;
+          overlays = [
+            self.overlays.default
+          ];
+          config = {};
+        };
+
+        overlayAttrs = {
+          inherit (config.packages) buidl nethermind nimbus prysm reth ssvnode teku homestakeros;
+        };
+
         # Nix code formatter, accessible through 'nix fmt'
         formatter = nixpkgs.legacyPackages.${system}.alejandra;
 
@@ -82,8 +89,7 @@
 
         # Custom packages and aliases for building hosts
         # Accessible through 'nix build', 'nix run', etc
-        packages = {
-          "homestakeros" = flake.nixosConfigurations.homestakeros.config.system.build.kexecTree;
+        packages = with flake.nixosConfigurations; {
           "buidl" = let
             pkgs = import nixpkgs {inherit system;};
             name = "buidl";
@@ -97,6 +103,15 @@
               buildInputs = with pkgs; [nix makeWrapper];
               postBuild = "wrapProgram $out/bin/${name} --prefix PATH : $out/bin";
             };
+
+          "nethermind" = inputs.ethereum-nix.packages.${system}.nethermind;
+          "nimbus" = inputs.ethereum-nix.packages.${system}.nimbus;
+          "prysm" = inputs.ethereum-nix.packages.${system}.prysm;
+          "reth" = inputs.ethereum-nix.packages.${system}.reth;
+          "ssvnode" = inputs.ethereum-nix.packages.${system}.ssvnode;
+          "teku" = inputs.ethereum-nix.packages.${system}.teku;
+
+          "homestakeros" = homestakeros.config.system.build.kexecTree;
         };
       };
       flake = let
@@ -145,7 +160,7 @@
             specialArgs = {inherit nixpkgs;};
           })
           .options ["_module"];
-      in rec {
+      in {
         overlays = import ./overlays {inherit inputs;};
 
         # HomestakerOS module for Ethereum-related components
@@ -155,13 +170,6 @@
             ./modules/homestakeros
             ./modules/homestakeros/system.nix
           ];
-          config = {
-            nixpkgs.overlays = [
-              ethereum-nix.overlays.default
-              outputs.overlays.additions
-              outputs.overlays.modifications
-            ];
-          };
         };
 
         # Module option exports for the frontend

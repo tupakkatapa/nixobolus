@@ -281,34 +281,34 @@
       # Nimbus is temporarily disabled due to a compile error.
       # For more information, please refer to: https://github.com/ponkila/nixobolus/pull/25
 
-      #   nimbus = {
-      #     enable = mkOption {
-      #       type = types.bool;
-      #       default = false;
-      #       description = "Whether to enable Nimbus.";
-      #     };
-      #     endpoint = mkOption {
-      #       type = types.str;
-      #       default = "http://127.0.0.1:5052";
-      #       description = "JSON-HTTP server listening interface.";
-      #     };
-      #     execEndpoint = mkOption {
-      #       type = types.str;
-      #       default = "http://127.0.0.1:8551";
-      #       description = "Server endpoint for an execution layer JWT-authenticated HTTP JSON-RPC connection.";
-      #     };
-      #     dataDir = mkOption {
-      #       type = types.path;
-      #       default = "/var/mnt/nimbus";
-      #       description = "Data directory for the blockchain.";
-      #     };
-      #     jwtSecretFile = mkOption {
-      #       type = types.nullOr types.path;
-      #       default = null;
-      #       description = "Path to the token that ensures safe connection between CL and EL.";
-      #       example = "/var/mnt/nimbus/jwt.hex";
-      #     };
-      #   };
+      nimbus = {
+        enable = mkOption {
+          type = types.bool;
+          default = false;
+          description = "Whether to enable Nimbus.";
+        };
+        endpoint = mkOption {
+          type = types.str;
+          default = "http://127.0.0.1:5052";
+          description = "JSON-HTTP server listening interface.";
+        };
+        execEndpoint = mkOption {
+          type = types.str;
+          default = "http://127.0.0.1:8551";
+          description = "Server endpoint for an execution layer JWT-authenticated HTTP JSON-RPC connection.";
+        };
+        dataDir = mkOption {
+          type = types.path;
+          default = "/var/mnt/nimbus";
+          description = "Data directory for the blockchain.";
+        };
+        jwtSecretFile = mkOption {
+          type = types.nullOr types.path;
+          default = null;
+          description = "Path to the token that ensures safe connection between CL and EL.";
+          example = "/var/mnt/nimbus/jwt.hex";
+        };
+      };
     };
 
     addons = {
