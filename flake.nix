@@ -77,32 +77,22 @@
           };
         };
 
-        # Custom packages and aliases for building hosts
-        # Accessible through 'nix build', 'nix run', etc
-        packages = with flake.nixosConfigurations; {
-          "buidl" = let
-            pkgs = import nixpkgs {inherit system;};
-            name = "buidl";
-            buidl-script = (pkgs.writeScriptBin name (builtins.readFile ./scripts/buidl.sh)).overrideAttrs (old: {
-              buildCommand = "${old.buildCommand}\n patchShebangs $out";
-            });
-          in
-            pkgs.symlinkJoin {
-              inherit name;
-              paths = [buidl-script];
-              buildInputs = with pkgs; [nix makeWrapper];
-              postBuild = "wrapProgram $out/bin/${name} --prefix PATH : $out/bin";
-            };
-
-          "nethermind" = inputs.ethereum-nix.packages.${system}.nethermind;
-          "nimbus" = inputs.ethereum-nix.packages.${system}.nimbus;
-          "prysm" = inputs.ethereum-nix.packages.${system}.prysm;
-          "reth" = inputs.ethereum-nix.packages.${system}.reth;
-          "ssvnode" = inputs.ethereum-nix.packages.${system}.ssvnode;
-          "teku" = inputs.ethereum-nix.packages.${system}.teku;
-
-          "homestakeros" = homestakeros.config.system.build.kexecTree;
-        };
+        # Custom packages, accessible trough 'nix build', 'nix run', etc.
+        packages =
+          rec {
+            "buidl" = pkgs.callPackage ./packages/buidl {};
+            # Ethereum.nix
+            "nethermind" = inputs.ethereum-nix.packages.${system}.nethermind;
+            "nimbus" = inputs.ethereum-nix.packages.${system}.nimbus;
+            "prysm" = inputs.ethereum-nix.packages.${system}.prysm;
+            "reth" = inputs.ethereum-nix.packages.${system}.reth;
+            "ssvnode" = inputs.ethereum-nix.packages.${system}.ssvnode;
+            "teku" = inputs.ethereum-nix.packages.${system}.teku;
+          }
+          # Entrypoint aliases, accessible trough 'nix build'
+          // (with flake.nixosConfigurations; {
+            "homestakeros" = homestakeros.config.system.build.kexecTree;
+          });
       };
       flake = let
         inherit (self) outputs;
