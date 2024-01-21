@@ -1,5 +1,4 @@
-# https://www.reddit.com/r/NixOS/comments/13si0vs/check_out_my_nixos_module_to_set_disk_space/
-# https://git.dblsaiko.net/systems/plain/common/modules/sys2x/gc.nix
+# https://git.sr.ht/~dblsaiko/nix-extras/tree/9f6228f4b4bf6cbc94fb19240dc55940a00dd02d/item/common/modules/sys2x/gc.nix
 {
   pkgs,
   lib,
