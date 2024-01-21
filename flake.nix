@@ -61,16 +61,6 @@
         # Accessible trough 'nix develop .# --impure' or 'direnv allow'
         devenv.shells = {
           default = {
-            packages = with pkgs; [
-              cpio
-              git
-              jq
-              nix
-              nix-tree
-              rsync
-              ssh-to-age
-              zstd
-            ];
             env = {
               NIX_CONFIG = ''
                 accept-flake-config = true
