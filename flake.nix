@@ -161,8 +161,6 @@
           })
           .options ["_module"];
       in {
-        overlays = import ./overlays {inherit inputs;};
-
         # HomestakerOS module for Ethereum-related components
         # A accessible through 'nix eval --json .#exports'
         nixosModules.homestakeros = {
