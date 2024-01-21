@@ -115,11 +115,8 @@
               self.nixosModules.kexecTree
               self.nixosModules.homestakeros
               {
+                boot.loader.grub.enable = false;
                 system.stateVersion = "23.11";
-              }
-              {
-                boot.loader.systemd-boot.enable = true;
-                boot.loader.efi.canTouchEfiVariables = true;
               }
             ]
             ++ nixpkgs.lib.optional (builtins.pathExists /tmp/data.nix) /tmp/data.nix;
