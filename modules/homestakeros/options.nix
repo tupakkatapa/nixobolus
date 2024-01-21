@@ -278,9 +278,6 @@
         };
       };
 
-      # Nimbus is temporarily disabled due to a compile error.
-      # For more information, please refer to: https://github.com/ponkila/nixobolus/pull/25
-
       nimbus = {
         enable = mkOption {
           type = types.bool;
