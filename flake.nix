@@ -61,6 +61,9 @@
         # Accessible trough 'nix develop .# --impure' or 'direnv allow'
         devenv.shells = {
           default = {
+            packages = with pkgs; [
+              buidl
+            ];
             env = {
               NIX_CONFIG = ''
                 accept-flake-config = true
