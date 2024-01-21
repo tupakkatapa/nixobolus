@@ -42,6 +42,7 @@
         system,
         ...
       }: {
+        # Overlays
         _module.args.pkgs = import inputs.nixpkgs {
           inherit system;
           overlays = [
@@ -49,7 +50,6 @@
           ];
           config = {};
         };
-
         overlayAttrs = {
           inherit (config.packages) buidl nethermind nimbus prysm reth ssvnode teku homestakeros;
         };
@@ -167,11 +167,9 @@
         ]);
 
         # NixOS configuration entrypoints for the frontend
-        nixosConfigurations = with nixpkgs.lib;
-          {
-            "homestakeros" = nixosSystem homestakeros;
-          }
-          // (with nixpkgs-stable.lib; {});
+        nixosConfigurations = with nixpkgs.lib; {
+          "homestakeros" = nixosSystem homestakeros;
+        };
 
         # Format modules
         nixosModules.isoImage = {
