@@ -192,6 +192,10 @@
         nixosModules.kexecTree = {
           imports = [./modules/netboot-kexec.nix];
         };
+        # Other
+        nixosModules.sys2x-gc = {
+          imports = [./modules/sys2x-gc.nix];
+        };
       };
     };
 }
