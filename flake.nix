@@ -42,6 +42,7 @@
         system,
         ...
       }: {
+        # Overlays
         _module.args.pkgs = import inputs.nixpkgs {
           inherit system;
           overlays = [
@@ -49,7 +50,6 @@
           ];
           config = {};
         };
-
         overlayAttrs = {
           inherit (config.packages) buidl nethermind nimbus prysm reth ssvnode teku homestakeros;
         };
@@ -62,14 +62,7 @@
         devenv.shells = {
           default = {
             packages = with pkgs; [
-              cpio
-              git
-              jq
-              nix
-              nix-tree
-              rsync
-              ssh-to-age
-              zstd
+              buidl
             ];
             env = {
               NIX_CONFIG = ''
@@ -87,32 +80,22 @@
           };
         };
 
-        # Custom packages and aliases for building hosts
-        # Accessible through 'nix build', 'nix run', etc
-        packages = with flake.nixosConfigurations; {
-          "buidl" = let
-            pkgs = import nixpkgs {inherit system;};
-            name = "buidl";
-            buidl-script = (pkgs.writeScriptBin name (builtins.readFile ./scripts/buidl.sh)).overrideAttrs (old: {
-              buildCommand = "${old.buildCommand}\n patchShebangs $out";
-            });
-          in
-            pkgs.symlinkJoin {
-              inherit name;
-              paths = [buidl-script];
-              buildInputs = with pkgs; [nix makeWrapper];
-              postBuild = "wrapProgram $out/bin/${name} --prefix PATH : $out/bin";
-            };
-
-          "nethermind" = inputs.ethereum-nix.packages.${system}.nethermind;
-          "nimbus" = inputs.ethereum-nix.packages.${system}.nimbus;
-          "prysm" = inputs.ethereum-nix.packages.${system}.prysm;
-          "reth" = inputs.ethereum-nix.packages.${system}.reth;
-          "ssvnode" = inputs.ethereum-nix.packages.${system}.ssvnode;
-          "teku" = inputs.ethereum-nix.packages.${system}.teku;
-
-          "homestakeros" = homestakeros.config.system.build.kexecTree;
-        };
+        # Custom packages, accessible trough 'nix build', 'nix run', etc.
+        packages =
+          rec {
+            "buidl" = pkgs.callPackage ./packages/buidl {};
+            # Ethereum.nix
+            "nethermind" = inputs.ethereum-nix.packages.${system}.nethermind;
+            "nimbus" = inputs.ethereum-nix.packages.${system}.nimbus;
+            "prysm" = inputs.ethereum-nix.packages.${system}.prysm;
+            "reth" = inputs.ethereum-nix.packages.${system}.reth;
+            "ssvnode" = inputs.ethereum-nix.packages.${system}.ssvnode;
+            "teku" = inputs.ethereum-nix.packages.${system}.teku;
+          }
+          # Entrypoint aliases, accessible trough 'nix build'
+          // (with flake.nixosConfigurations; {
+            "homestakeros" = homestakeros.config.system.build.kexecTree;
+          });
       };
       flake = let
         inherit (self) outputs;
@@ -125,11 +108,8 @@
               self.nixosModules.kexecTree
               self.nixosModules.homestakeros
               {
+                boot.loader.grub.enable = false;
                 system.stateVersion = "23.11";
-              }
-              {
-                boot.loader.systemd-boot.enable = true;
-                boot.loader.efi.canTouchEfiVariables = true;
               }
             ]
             ++ nixpkgs.lib.optional (builtins.pathExists /tmp/data.nix) /tmp/data.nix;
@@ -161,8 +141,6 @@
           })
           .options ["_module"];
       in {
-        overlays = import ./overlays {inherit inputs;};
-
         # HomestakerOS module for Ethereum-related components
         # A accessible through 'nix eval --json .#exports'
         nixosModules.homestakeros = {
@@ -179,11 +157,9 @@
         ]);
 
         # NixOS configuration entrypoints for the frontend
-        nixosConfigurations = with nixpkgs.lib;
-          {
-            "homestakeros" = nixosSystem homestakeros;
-          }
-          // (with nixpkgs-stable.lib; {});
+        nixosConfigurations = with nixpkgs.lib; {
+          "homestakeros" = nixosSystem homestakeros;
+        };
 
         # Format modules
         nixosModules.isoImage = {
