@@ -108,7 +108,6 @@
               self.nixosModules.kexecTree
               self.nixosModules.homestakeros
               {
-                boot.loader.grub.enable = false;
                 system.stateVersion = "23.11";
               }
             ]
