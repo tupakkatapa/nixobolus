@@ -5,6 +5,9 @@
   modulesPath,
   ...
 }: {
+  # No bootloader
+  boot.loader.grub.enable = false;
+
   # These kmodules are implicit requirements of netboot
   boot.initrd.availableKernelModules = ["squashfs" "overlay" "btrfs"];
   boot.initrd.kernelModules = ["loop" "overlay"];
