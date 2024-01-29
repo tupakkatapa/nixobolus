@@ -207,6 +207,8 @@ in {
         (
           cfg.addons.ssv-node.privateKeyFile
           != null
+          && cfg.addons.ssv-node.privateKeyPasswordFile
+          != null
           && pkgs.system == "x86_64-linux"
           && length activeConsensusClients > 0
           && length activeExecutionClients > 0
@@ -237,13 +239,19 @@ in {
 
               eth1:
                 ETH1Addr: ${cfg.execution.${executionClient}.endpoint}
+
+              KeyStore:
+                PrivateKeyFile: ${cfg.addons.ssv-node.privateKeyFile}
+                PasswordFile: ${cfg.addons.ssv-node.privateKeyPasswordFile}
             '';
           in {
             description = "Start the SSV node if the private operator key exists";
-            unitConfig.ConditionPathExists = ["${cfg.addons.ssv-node.privateKeyFile}"];
+            unitConfig.ConditionPathExists = [
+              "${cfg.addons.ssv-node.privateKeyFile}"
+              "${cfg.addons.ssv-node.privateKeyPasswordFile}"
+            ];
             # The operator key is defined here, so it does not need to be evaluated
             script = ''
-              export OPERATOR_KEY=$(cat ${cfg.addons.ssv-node.privateKeyFile})
               ${pkgs.ssvnode}/bin/ssvnode start-node --config ${ssvConfig}
             '';
             wantedBy = ["multi-user.target"];

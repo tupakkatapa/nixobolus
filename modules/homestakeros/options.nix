@@ -315,6 +315,11 @@
           default = "/var/mnt/addons/ssv/ssv_operator_key";
           description = "Path to the private SSV operator key.";
         };
+        privateKeyPasswordFile = mkOption {
+          type = types.nullOr types.path;
+          default = "/var/mnt/addons/ssv/password";
+          description = "Path to the password file of SSV operator key";
+        };
         dataDir = mkOption {
           type = types.path;
           default = "/var/mnt/addons/ssv";
