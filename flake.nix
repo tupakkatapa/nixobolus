@@ -51,7 +51,19 @@
           config = {};
         };
         overlayAttrs = {
-          inherit (config.packages) buidl nethermind nimbus prysm reth ssvnode teku homestakeros;
+          inherit
+            (config.packages)
+            erigon
+            lighthouse
+            nethermind
+            nimbus
+            prysm
+            reth
+            ssvnode
+            teku
+            buidl
+            homestakeros
+            ;
         };
 
         # Nix code formatter, accessible through 'nix fmt'
@@ -85,6 +97,8 @@
           rec {
             "buidl" = pkgs.callPackage ./packages/buidl {};
             # Ethereum.nix
+            "erigon" = inputs.ethereum-nix.packages.${system}.erigon;
+            "lighthouse" = inputs.ethereum-nix.packages.${system}.lighthouse;
             "nethermind" = inputs.ethereum-nix.packages.${system}.nethermind;
             "nimbus" = inputs.ethereum-nix.packages.${system}.nimbus;
             "prysm" = inputs.ethereum-nix.packages.${system}.prysm;
