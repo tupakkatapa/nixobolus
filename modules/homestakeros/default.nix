@@ -234,7 +234,7 @@ in {
                   BuilderProposals: true
 
               eth2:
-                BeaconNodeAddr: ws://${parsedConsensusEndpoint.addr}:${parsedConsensusEndpoint.port}:
+                BeaconNodeAddr: ws://${parsedConsensusEndpoint.addr}:${parsedConsensusEndpoint.port}
                 Network: mainnet
 
               eth1:
