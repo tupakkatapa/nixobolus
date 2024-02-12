@@ -257,6 +257,11 @@ in {
               ${pkgs.ssvnode}/bin/ssvnode start-node --config ${ssvConfig}
             '';
             wantedBy = ["multi-user.target"];
+            serviceConfig = {
+              Restart = "always";
+              RestartSec = "5s";
+              Type = "simple";
+            };
           };
           systemd.timers.ssv-autostart = {
             timerConfig.OnBootSec = "10min";
