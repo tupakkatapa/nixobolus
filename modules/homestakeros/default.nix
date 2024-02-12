@@ -240,7 +240,7 @@ in {
               eth1:
                 # This assumes that the websocket is bind to the same port, true for erigon, not for others
                 # TODO: Consider having a variable name for websocket endpoint
-                ETH1Addr: ws://${parsedExecutionEndpoint.addr}:${parsedExecutionEndpoint.port}
+                ETH1Addr: ws://${parsedExecutionEndpoint.addr}:8545
 
               KeyStore:
                 PrivateKeyFile: ${cfg.addons.ssv-node.privateKeyFile}
