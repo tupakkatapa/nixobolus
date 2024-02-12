@@ -218,7 +218,7 @@ in {
             # TODO: This is a bad way to do this, prevents multiple instances
             executionClient = builtins.elemAt activeExecutionClients 0;
             consensusClient = builtins.elemAt activeConsensusClients 0;
-            parsedConsensusEndpoint = parseEndpoint cfg.consensus.${consensusClient}.endpoint;
+            parsedExecutionEndpoint = parseEndpoint cfg.execution.${executionClient}.endpoint;
 
             ssvConfig = pkgs.writeText "config.yaml" ''
               global:
@@ -234,11 +234,13 @@ in {
                   BuilderProposals: true
 
               eth2:
-                BeaconNodeAddr: ws://${parsedConsensusEndpoint.addr}:${parsedConsensusEndpoint.port}
+                BeaconNodeAddr: ${cfg.consensus.${consensusClient}.endpoint}
                 Network: mainnet
 
               eth1:
-                ETH1Addr: ${cfg.execution.${executionClient}.endpoint}
+                # This assumes that the websocket is bind to the same port, true for erigon, not for others
+                # TODO: Consider having a variable name for websocket endpoint
+                ETH1Addr: ws://${parsedExecutionEndpoint.addr}:${parsedExecutionEndpoint.port}
 
               KeyStore:
                 PrivateKeyFile: ${cfg.addons.ssv-node.privateKeyFile}
