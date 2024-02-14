@@ -207,6 +207,8 @@ in {
         (
           cfg.addons.ssv-node.privateKeyFile
           != null
+          && cfg.addons.ssv-node.privateKeyPasswordFile
+          != null
           && pkgs.system == "x86_64-linux"
           && length activeConsensusClients > 0
           && length activeExecutionClients > 0
@@ -216,7 +218,7 @@ in {
             # TODO: This is a bad way to do this, prevents multiple instances
             executionClient = builtins.elemAt activeExecutionClients 0;
             consensusClient = builtins.elemAt activeConsensusClients 0;
-            parsedConsensusEndpoint = parseEndpoint cfg.consensus.${consensusClient}.endpoint;
+            parsedExecutionEndpoint = parseEndpoint cfg.execution.${executionClient}.endpoint;
 
             ssvConfig = pkgs.writeText "config.yaml" ''
               global:
@@ -232,21 +234,34 @@ in {
                   BuilderProposals: true
 
               eth2:
-                BeaconNodeAddr: ws://${parsedConsensusEndpoint.addr}:${parsedConsensusEndpoint.port}:
+                BeaconNodeAddr: ${cfg.consensus.${consensusClient}.endpoint}
                 Network: mainnet
 
               eth1:
-                ETH1Addr: ${cfg.execution.${executionClient}.endpoint}
+                # This assumes that the websocket is bind to the same port, true for erigon, not for others
+                # TODO: Consider having a variable name for websocket endpoint
+                ETH1Addr: ws://${parsedExecutionEndpoint.addr}:8546
+
+              KeyStore:
+                PrivateKeyFile: ${cfg.addons.ssv-node.privateKeyFile}
+                PasswordFile: ${cfg.addons.ssv-node.privateKeyPasswordFile}
             '';
           in {
             description = "Start the SSV node if the private operator key exists";
-            unitConfig.ConditionPathExists = ["${cfg.addons.ssv-node.privateKeyFile}"];
+            unitConfig.ConditionPathExists = [
+              "${cfg.addons.ssv-node.privateKeyFile}"
+              "${cfg.addons.ssv-node.privateKeyPasswordFile}"
+            ];
             # The operator key is defined here, so it does not need to be evaluated
             script = ''
-              export OPERATOR_KEY=$(cat ${cfg.addons.ssv-node.privateKeyFile})
               ${pkgs.ssvnode}/bin/ssvnode start-node --config ${ssvConfig}
             '';
             wantedBy = ["multi-user.target"];
+            serviceConfig = {
+              Restart = "always";
+              RestartSec = "5s";
+              Type = "simple";
+            };
           };
           systemd.timers.ssv-autostart = {
             timerConfig.OnBootSec = "10min";
