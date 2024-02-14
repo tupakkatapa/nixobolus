@@ -18,6 +18,7 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-23.05";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    keep-core.url = "github:jhvst/nix-config?dir=packages/keep-core";
   };
 
   outputs = {
@@ -53,7 +54,10 @@
         overlayAttrs = {
           inherit
             (config.packages)
+            buidl
             erigon
+            homestakeros
+            keep-core
             lighthouse
             nethermind
             nimbus
@@ -61,8 +65,6 @@
             reth
             ssvnode
             teku
-            buidl
-            homestakeros
             ;
         };
 
@@ -105,6 +107,8 @@
             "reth" = inputs.ethereum-nix.packages.${system}.reth;
             "ssvnode" = inputs.ethereum-nix.packages.${system}.ssvnode;
             "teku" = inputs.ethereum-nix.packages.${system}.teku;
+
+            "keep-core" = inputs.keep-core.packages.${system}.keep-core;
           }
           # Entrypoint aliases, accessible trough 'nix build'
           // (with flake.nixosConfigurations; {
