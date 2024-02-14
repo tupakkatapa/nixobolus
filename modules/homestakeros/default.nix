@@ -504,7 +504,7 @@ in {
             )
             "--metrics"
           ];
-          allowedPorts = [9000];
+          allowedPorts = [9000 9001];
         in (createService serviceName serviceType execStart parsedEndpoint allowedPorts)
       )
 
