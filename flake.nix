@@ -54,6 +54,7 @@
         overlayAttrs = {
           inherit
             (config.packages)
+            blutgang
             buidl
             erigon
             homestakeros
@@ -99,6 +100,7 @@
           rec {
             "buidl" = pkgs.callPackage ./packages/buidl {};
             # Ethereum.nix
+            "blutgang" = inputs.ethereum-nix.packages.${system}.blutgang;
             "erigon" = inputs.ethereum-nix.packages.${system}.erigon;
             "lighthouse" = inputs.ethereum-nix.packages.${system}.lighthouse;
             "nethermind" = inputs.ethereum-nix.packages.${system}.nethermind;
