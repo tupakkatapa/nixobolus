@@ -80,7 +80,7 @@
     #!ipxe
     # Use the cmdline variable to allow the user to specify custom kernel params
     # when chainloading this script from other iPXE scripts like netboot.xyz
-    kernel bzImage init=${config.system.build.toplevel}/init initrd=initrd.zst ${toString config.boot.kernelParams} ''${cmdline}
+    kernel bzImage init=init initrd=initrd.zst ${toString config.boot.kernelParams} ''${cmdline}
     initrd initrd.zst
     boot
   '';
@@ -96,7 +96,7 @@
     SCRIPT_DIR=$( cd -- "$( dirname -- "''${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
     kexec --load ''${SCRIPT_DIR}/bzImage \
       --initrd=''${SCRIPT_DIR}/initrd.zst \
-      --command-line "init=${config.system.build.toplevel}/init ${toString config.boot.kernelParams}"
+      --command-line "init=init ${toString config.boot.kernelParams}"
     systemctl kexec
   '';
 
@@ -105,6 +105,10 @@
     {
       name = "initrd.zst";
       path = "${config.system.build.netbootRamdisk}/initrd";
+    }
+    {
+      name = "init";
+      path = "${config.system.build.toplevel}/init";
     }
     {
       name = "bzImage";
