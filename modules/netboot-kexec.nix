@@ -86,6 +86,9 @@
     boot
   '';
 
+  # variables.ipxe updates the boot stanza for the kernel, changing with
+  # Flake derivation hash changes, i.e., during a git update. For the updated
+  # image to boot, it must dynamically generate changes in the iPXE menu.
   system.build.netbootIpxeVariables = pkgs.writeText "variables.ipxe" ''
     #!ipxe
     set kernel-params init=${config.system.build.toplevel}/init initrd=initrd.zst ${toString config.boot.kernelParams}
