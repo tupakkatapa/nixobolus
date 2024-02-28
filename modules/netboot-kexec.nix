@@ -80,9 +80,18 @@
     #!ipxe
     # Use the cmdline variable to allow the user to specify custom kernel params
     # when chainloading this script from other iPXE scripts like netboot.xyz
-    kernel bzImage init=${config.system.build.toplevel}/init initrd=initrd.zst ${toString config.boot.kernelParams} ''${cmdline}
+    chain --autofree variables.ipxe
+    kernel bzImage ''${kernel-params} ''${cmdline}
     initrd initrd.zst
     boot
+  '';
+
+  # variables.ipxe updates the boot stanza for the kernel, changing with
+  # Flake derivation hash changes, i.e., during a git update. For the updated
+  # image to boot, it must dynamically generate changes in the iPXE menu.
+  system.build.netbootIpxeVariables = pkgs.writeText "variables.ipxe" ''
+    #!ipxe
+    set kernel-params init=${config.system.build.toplevel}/init initrd=initrd.zst ${toString config.boot.kernelParams}
   '';
 
   # A script invoking kexec on ./bzImage and ./initrd.zst.
@@ -117,6 +126,10 @@
     {
       name = "netboot.ipxe";
       path = config.system.build.netbootIpxeScript;
+    }
+    {
+      name = "variables.ipxe";
+      path = config.system.build.netbootIpxeVariables;
     }
   ];
 }
