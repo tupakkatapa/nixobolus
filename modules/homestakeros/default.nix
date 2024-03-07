@@ -430,6 +430,13 @@ in {
             "--rpc-ws-enabled=true"
             "--rpc-ws-host=${parsedEndpoint.addr}"
             "--rpc-ws-port=8546"
+            # tommi's extra flags
+            "--pruning-enabled=true"
+            "--sync-mode=X_SNAP"
+            "--host-allowlist=\"*\""
+            "--data-storage-format=BONSAI"
+            "--p2p-host=${parsedEndpoint.addr}"
+            "--p2p-port=30303"
           ];
           allowedPorts = [30303];
         in (createService serviceName serviceType execStart parsedEndpoint allowedPorts)
