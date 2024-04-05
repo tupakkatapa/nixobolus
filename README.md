@@ -1,3 +1,10 @@
+
+⚠️ **This repository has been merged with the [HomestakerOS](https://github.com/ponkila/HomestakerOS) repository and now exists solely for archival purposes.**
+
+**Please visit the [pull request](https://github.com/ponkila/HomestakerOS/pull/44) where this merge was implemented for more information.**
+
+---
+
 # Nixobolus
 
 This project serves a couple of essential modules that are designed for [HomestakerOS](https://github.com/ponkila/HomestakerOS), a web UI that generates an integrated network of ephemeral Linux servers. These modules are also used in [our Ethereum infrastructure](https://github.com/ponkila/homestaking-infra), ensuring up-to-date and optimized functionality. Nixobolus utilizes [ethereum.nix](https://github.com/nix-community/ethereum.nix) as a package management solution for Ethereum-related components.
